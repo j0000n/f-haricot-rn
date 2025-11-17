@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "haricot",
-    "slug": "haricot",
+    "slug": "haricot-react-native",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -1651,7 +1651,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "33a0f11a-89e8-4396-af40-6c1b53c49adb"
+        "projectId": "ae51b79c-33a3-4080-998b-064b1ee67e77"
       }
     },
     "owner": "haricot-app-syndicate"
