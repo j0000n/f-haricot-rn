@@ -1,0 +1,1659 @@
+{
+  "expo": {
+    "name": "haricot",
+    "slug": "haricot",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "haricot",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.haricotappsyndicate.haricot",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSSpeechRecognitionUsageDescription": "This app uses speech recognition to help you quickly add tasks and ingredients by voice.",
+        "NSMicrophoneUsageDescription": "This app needs microphone access to recognize your voice for adding tasks and ingredients.",
+        "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to attach images to tasks.",
+        "NSCameraUsageDescription": "This app needs access to your camera to take photos for tasks."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "backgroundImage": "./assets/images/android-icon-background.png",
+        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ],
+      "package": "com.haricotappsyndicate.haricot"
+    },
+    "web": {
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff",
+          "dark": {
+            "backgroundColor": "#000000"
+          }
+        }
+      ],
+      "expo-secure-store",
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./assets/fonts/Peignot.ttf",
+            "./assets/fonts/source-sans-pro.light.ttf",
+            "./assets/fonts/source-sans-pro.light-italic.ttf",
+            "./assets/fonts/source-sans-pro.regular.ttf",
+            "./assets/fonts/source-sans-pro.semibold.ttf",
+            "./assets/fonts/source-sans-pro.bold.ttf",
+            "./assets/fonts/EastMarketNF.ttf",
+            "./assets/fonts/Metaloxcide.ttf",
+            "./assets/fonts/W95FA.otf",
+            "./assets/fonts/OpenDyslexic-Regular.otf",
+            "./assets/fonts/OpenDyslexic-Italic.otf",
+            "./assets/fonts/OpenDyslexic-Bold.otf",
+            "./assets/fonts/OpenDyslexic-Bold-Italic.otf",
+            "./assets/fonts/Amiamie/Amiamie-Black.ttf",
+            "./assets/fonts/Amiamie/Amiamie-BlackItalic.ttf",
+            "./assets/fonts/Amiamie/Amiamie-BlackItalicRound.ttf",
+            "./assets/fonts/Amiamie/Amiamie-BlackRound.ttf",
+            "./assets/fonts/Amiamie/Amiamie-Italic.ttf",
+            "./assets/fonts/Amiamie/Amiamie-ItalicRound.ttf",
+            "./assets/fonts/Amiamie/Amiamie-Light.ttf",
+            "./assets/fonts/Amiamie/Amiamie-LightItalic.ttf",
+            "./assets/fonts/Amiamie/Amiamie-Regular.ttf",
+            "./assets/fonts/Amiamie/Amiamie-RegularRound.ttf",
+            "./assets/fonts/Basalte/Basalte-Fond.otf",
+            "./assets/fonts/Basalte/Basalte-Multicolor.otf",
+            "./assets/fonts/Basalte/Basalte-Volume.otf",
+            "./assets/fonts/FT-88/FT88-Bold.ttf",
+            "./assets/fonts/FT-88/FT88-Expanded.ttf",
+            "./assets/fonts/FT-88/FT88-Gothique.ttf",
+            "./assets/fonts/FT-88/FT88-Italic.ttf",
+            "./assets/fonts/FT-88/FT88-Regular.ttf",
+            "./assets/fonts/FT-88/FT88-School.ttf",
+            "./assets/fonts/FT-88/FT88-Serif.ttf",
+            "./assets/fonts/Frick/Frick0.3-Condensed.otf",
+            "./assets/fonts/Frick/Frick0.3-Regular.otf",
+            "./assets/fonts/Garabosse/Garabosse-Gaillard·e.otf",
+            "./assets/fonts/Garabosse/Garabosse-Mignon·ne.otf",
+            "./assets/fonts/Garabosse/Garabosse-Nonpareil·le.otf",
+            "./assets/fonts/Garabosse/Garabosse-Parangon.otf",
+            "./assets/fonts/Garabosse/Garabosse-Perle.otf",
+            "./assets/fonts/Gloock-Regular.ttf",
+            "./assets/fonts/Gnomon-Foreground.ttf",
+            "./assets/fonts/Gnomon-Simple.ttf",
+            "./assets/fonts/GreatVibes-Regular.ttf",
+            "./assets/fonts/Latitude Equateur/Equateur-Regular.ttf",
+            "./assets/fonts/Latitude Equateur/Latitude-Regular.ttf",
+            "./assets/fonts/NationalPark-VariableVF.ttf",
+            "./assets/fonts/Saira/Saira-Black.ttf",
+            "./assets/fonts/Saira/Saira-BlackItalic.ttf",
+            "./assets/fonts/Saira/Saira-Bold.ttf",
+            "./assets/fonts/Saira/Saira-BoldItalic.ttf",
+            "./assets/fonts/Saira/Saira-ExtraBold.ttf",
+            "./assets/fonts/Saira/Saira-ExtraBoldItalic.ttf",
+            "./assets/fonts/Saira/Saira-ExtraLight.ttf",
+            "./assets/fonts/Saira/Saira-ExtraLightItalic.ttf",
+            "./assets/fonts/Saira/Saira-Italic.ttf",
+            "./assets/fonts/Saira/Saira-Light.ttf",
+            "./assets/fonts/Saira/Saira-LightItalic.ttf",
+            "./assets/fonts/Saira/Saira-Medium.ttf",
+            "./assets/fonts/Saira/Saira-MediumItalic.ttf",
+            "./assets/fonts/Saira/Saira-Regular.ttf",
+            "./assets/fonts/Saira/Saira-SemiBold.ttf",
+            "./assets/fonts/Saira/Saira-SemiBoldItalic.ttf",
+            "./assets/fonts/Saira/Saira-Thin.ttf",
+            "./assets/fonts/Saira/Saira-ThinItalic.ttf",
+            "./assets/fonts/Saira/SairaCondensed-Black.ttf",
+            "./assets/fonts/Saira/SairaCondensed-BlackItalic.ttf",
+            "./assets/fonts/Saira/SairaCondensed-Bold.ttf",
+            "./assets/fonts/Saira/SairaCondensed-BoldItalic.ttf",
+            "./assets/fonts/Saira/SairaCondensed-ExtraBold.ttf",
+            "./assets/fonts/Saira/SairaCondensed-ExtraBoldItalic.ttf",
+            "./assets/fonts/Saira/SairaCondensed-ExtraLight.ttf",
+            "./assets/fonts/Saira/SairaCondensed-ExtraLightItalic.ttf",
+            "./assets/fonts/Saira/SairaCondensed-Italic.ttf",
+            "./assets/fonts/Saira/SairaCondensed-Light.ttf",
+            "./assets/fonts/Saira/SairaCondensed-LightItalic.ttf",
+            "./assets/fonts/Saira/SairaCondensed-Medium.ttf",
+            "./assets/fonts/Saira/SairaCondensed-MediumItalic.ttf",
+            "./assets/fonts/Saira/SairaCondensed-Regular.ttf",
+            "./assets/fonts/Saira/SairaCondensed-SemiBold.ttf",
+            "./assets/fonts/Saira/SairaCondensed-SemiBoldItalic.ttf",
+            "./assets/fonts/Saira/SairaCondensed-Thin.ttf",
+            "./assets/fonts/Saira/SairaCondensed-ThinItalic.ttf",
+            "./assets/fonts/Saira/SairaExpanded-Black.ttf",
+            "./assets/fonts/Saira/SairaExpanded-BlackItalic.ttf",
+            "./assets/fonts/Saira/SairaExpanded-Bold.ttf",
+            "./assets/fonts/Saira/SairaExpanded-BoldItalic.ttf",
+            "./assets/fonts/Saira/SairaExpanded-ExtraBold.ttf",
+            "./assets/fonts/Saira/SairaExpanded-ExtraBoldItalic.ttf",
+            "./assets/fonts/Saira/SairaExpanded-ExtraLight.ttf",
+            "./assets/fonts/Saira/SairaExpanded-ExtraLightItalic.ttf",
+            "./assets/fonts/Saira/SairaExpanded-Italic.ttf",
+            "./assets/fonts/Saira/SairaExpanded-Light.ttf",
+            "./assets/fonts/Saira/SairaExpanded-LightItalic.ttf",
+            "./assets/fonts/Saira/SairaExpanded-Medium.ttf",
+            "./assets/fonts/Saira/SairaExpanded-MediumItalic.ttf",
+            "./assets/fonts/Saira/SairaExpanded-Regular.ttf",
+            "./assets/fonts/Saira/SairaExpanded-SemiBold.ttf",
+            "./assets/fonts/Saira/SairaExpanded-SemiBoldItalic.ttf",
+            "./assets/fonts/Saira/SairaExpanded-Thin.ttf",
+            "./assets/fonts/Saira/SairaExpanded-ThinItalic.ttf",
+            "./assets/fonts/Saira/SairaExtraCondensed-Black.ttf",
+            "./assets/fonts/Saira/SairaExtraCondensed-BlackItalic.ttf",
+            "./assets/fonts/Saira/SairaExtraCondensed-Bold.ttf",
+            "./assets/fonts/Saira/SairaExtraCondensed-BoldItalic.ttf",
+            "./assets/fonts/Saira/SairaExtraCondensed-ExtraBold.ttf",
+            "./assets/fonts/Saira/SairaExtraCondensed-ExtraBoldItalic.ttf",
+            "./assets/fonts/Saira/SairaExtraCondensed-ExtraLight.ttf",
+            "./assets/fonts/Saira/SairaExtraCondensed-ExtraLightItalic.ttf",
+            "./assets/fonts/Saira/SairaExtraCondensed-Italic.ttf",
+            "./assets/fonts/Saira/SairaExtraCondensed-Light.ttf",
+            "./assets/fonts/Saira/SairaExtraCondensed-LightItalic.ttf",
+            "./assets/fonts/Saira/SairaExtraCondensed-Medium.ttf",
+            "./assets/fonts/Saira/SairaExtraCondensed-MediumItalic.ttf",
+            "./assets/fonts/Saira/SairaExtraCondensed-Regular.ttf",
+            "./assets/fonts/Saira/SairaExtraCondensed-SemiBold.ttf",
+            "./assets/fonts/Saira/SairaExtraCondensed-SemiBoldItalic.ttf",
+            "./assets/fonts/Saira/SairaExtraCondensed-Thin.ttf",
+            "./assets/fonts/Saira/SairaExtraCondensed-ThinItalic.ttf",
+            "./assets/fonts/Saira/SairaSemiCondensed-Black.ttf",
+            "./assets/fonts/Saira/SairaSemiCondensed-BlackItalic.ttf",
+            "./assets/fonts/Saira/SairaSemiCondensed-Bold.ttf",
+            "./assets/fonts/Saira/SairaSemiCondensed-BoldItalic.ttf",
+            "./assets/fonts/Saira/SairaSemiCondensed-ExtraBold.ttf",
+            "./assets/fonts/Saira/SairaSemiCondensed-ExtraBoldItalic.ttf",
+            "./assets/fonts/Saira/SairaSemiCondensed-ExtraLight.ttf",
+            "./assets/fonts/Saira/SairaSemiCondensed-ExtraLightItalic.ttf",
+            "./assets/fonts/Saira/SairaSemiCondensed-Italic.ttf",
+            "./assets/fonts/Saira/SairaSemiCondensed-Light.ttf",
+            "./assets/fonts/Saira/SairaSemiCondensed-LightItalic.ttf",
+            "./assets/fonts/Saira/SairaSemiCondensed-Medium.ttf",
+            "./assets/fonts/Saira/SairaSemiCondensed-MediumItalic.ttf",
+            "./assets/fonts/Saira/SairaSemiCondensed-Regular.ttf",
+            "./assets/fonts/Saira/SairaSemiCondensed-SemiBold.ttf",
+            "./assets/fonts/Saira/SairaSemiCondensed-SemiBoldItalic.ttf",
+            "./assets/fonts/Saira/SairaSemiCondensed-Thin.ttf",
+            "./assets/fonts/Saira/SairaSemiCondensed-ThinItalic.ttf",
+            "./assets/fonts/Saira/SairaSemiExpanded-Black.ttf",
+            "./assets/fonts/Saira/SairaSemiExpanded-BlackItalic.ttf",
+            "./assets/fonts/Saira/SairaSemiExpanded-Bold.ttf",
+            "./assets/fonts/Saira/SairaSemiExpanded-BoldItalic.ttf",
+            "./assets/fonts/Saira/SairaSemiExpanded-ExtraBold.ttf",
+            "./assets/fonts/Saira/SairaSemiExpanded-ExtraBoldItalic.ttf",
+            "./assets/fonts/Saira/SairaSemiExpanded-ExtraLight.ttf",
+            "./assets/fonts/Saira/SairaSemiExpanded-ExtraLightItalic.ttf",
+            "./assets/fonts/Saira/SairaSemiExpanded-Italic.ttf",
+            "./assets/fonts/Saira/SairaSemiExpanded-Light.ttf",
+            "./assets/fonts/Saira/SairaSemiExpanded-LightItalic.ttf",
+            "./assets/fonts/Saira/SairaSemiExpanded-Medium.ttf",
+            "./assets/fonts/Saira/SairaSemiExpanded-MediumItalic.ttf",
+            "./assets/fonts/Saira/SairaSemiExpanded-Regular.ttf",
+            "./assets/fonts/Saira/SairaSemiExpanded-SemiBold.ttf",
+            "./assets/fonts/Saira/SairaSemiExpanded-SemiBoldItalic.ttf",
+            "./assets/fonts/Saira/SairaSemiExpanded-Thin.ttf",
+            "./assets/fonts/Saira/SairaSemiExpanded-ThinItalic.ttf",
+            "./assets/fonts/Saira/SairaUltraCondensed-Black.ttf",
+            "./assets/fonts/Saira/SairaUltraCondensed-BlackItalic.ttf",
+            "./assets/fonts/Saira/SairaUltraCondensed-Bold.ttf",
+            "./assets/fonts/Saira/SairaUltraCondensed-BoldItalic.ttf",
+            "./assets/fonts/Saira/SairaUltraCondensed-ExtraBold.ttf",
+            "./assets/fonts/Saira/SairaUltraCondensed-ExtraBoldItalic.ttf",
+            "./assets/fonts/Saira/SairaUltraCondensed-ExtraLight.ttf",
+            "./assets/fonts/Saira/SairaUltraCondensed-ExtraLightItalic.ttf",
+            "./assets/fonts/Saira/SairaUltraCondensed-Italic.ttf",
+            "./assets/fonts/Saira/SairaUltraCondensed-Light.ttf",
+            "./assets/fonts/Saira/SairaUltraCondensed-LightItalic.ttf",
+            "./assets/fonts/Saira/SairaUltraCondensed-Medium.ttf",
+            "./assets/fonts/Saira/SairaUltraCondensed-MediumItalic.ttf",
+            "./assets/fonts/Saira/SairaUltraCondensed-Regular.ttf",
+            "./assets/fonts/Saira/SairaUltraCondensed-SemiBold.ttf",
+            "./assets/fonts/Saira/SairaUltraCondensed-SemiBoldItalic.ttf",
+            "./assets/fonts/Saira/SairaUltraCondensed-Thin.ttf",
+            "./assets/fonts/Saira/SairaUltraCondensed-ThinItalic.ttf",
+            "./assets/fonts/Venus+/Venus+Acier.otf",
+            "./assets/fonts/Venus+/Venus+Carrare.otf",
+            "./assets/fonts/Venus+/Venus+Cormier.otf",
+            "./assets/fonts/Venus+/Venus+Martre.otf",
+            "./assets/fonts/Venus+/Venus+Plomb.otf",
+            "./assets/fonts/libertinage/Libertinage-a.ttf",
+            "./assets/fonts/libertinage/Libertinage-b.ttf",
+            "./assets/fonts/libertinage/Libertinage-c.ttf",
+            "./assets/fonts/libertinage/Libertinage-d.ttf",
+            "./assets/fonts/libertinage/Libertinage-e.ttf",
+            "./assets/fonts/libertinage/Libertinage-f.ttf",
+            "./assets/fonts/libertinage/Libertinage-g.ttf",
+            "./assets/fonts/libertinage/Libertinage-h.ttf",
+            "./assets/fonts/libertinage/Libertinage-i.ttf",
+            "./assets/fonts/libertinage/Libertinage-j.ttf",
+            "./assets/fonts/libertinage/Libertinage-k.ttf",
+            "./assets/fonts/libertinage/Libertinage-l.ttf",
+            "./assets/fonts/libertinage/Libertinage-m.ttf",
+            "./assets/fonts/libertinage/Libertinage-n.ttf",
+            "./assets/fonts/libertinage/Libertinage-o.ttf",
+            "./assets/fonts/libertinage/Libertinage-p.ttf",
+            "./assets/fonts/libertinage/Libertinage-q.ttf",
+            "./assets/fonts/libertinage/Libertinage-r.ttf",
+            "./assets/fonts/libertinage/Libertinage-s.ttf",
+            "./assets/fonts/libertinage/Libertinage-t.ttf",
+            "./assets/fonts/libertinage/Libertinage-u.ttf",
+            "./assets/fonts/libertinage/Libertinage-v.ttf",
+            "./assets/fonts/libertinage/Libertinage-w.ttf",
+            "./assets/fonts/libertinage/Libertinage-x.ttf",
+            "./assets/fonts/libertinage/Libertinage-y.ttf",
+            "./assets/fonts/libertinage/Libertinage-z.ttf",
+            "./assets/fonts/libertinage/Libertinage.ttf",
+            "./assets/fonts/sprat/Sprat-Regular.otf",
+            "./assets/fonts/sprat/Sprat-Light.otf",
+            "./assets/fonts/sprat/Sprat-Medium.otf",
+            "./assets/fonts/sprat/Sprat-Bold.otf",
+            "./assets/fonts/sprat/Sprat-Black.otf",
+            "./assets/fonts/sprat/Sprat-CondensedBlack.otf",
+            "./assets/fonts/sprat/Sprat-CondensedBold.otf",
+            "./assets/fonts/sprat/Sprat-CondensedLight.otf",
+            "./assets/fonts/sprat/Sprat-CondensedMedium.otf",
+            "./assets/fonts/sprat/Sprat-CondensedThin.otf",
+            "./assets/fonts/sprat/Sprat-CondesedRegular.otf",
+            "./assets/fonts/sprat/Sprat-ExtendedBlack.otf",
+            "./assets/fonts/sprat/Sprat-ExtendedBold.otf",
+            "./assets/fonts/sprat/Sprat-ExtendedLight.otf",
+            "./assets/fonts/sprat/Sprat-ExtendedMedium.otf",
+            "./assets/fonts/sprat/Sprat-ExtendedRegular.otf",
+            "./assets/fonts/sprat/Sprat-ExtendedThin.otf",
+            "./assets/fonts/sprat/Sprat-Thin.otf",
+            "./assets/fonts/sprat/SpratVF.ttf",
+            "./assets/fonts/zarathustra-v01.otf"
+          ],
+          "android": {
+            "fonts": [
+              {
+                "fontFamily": "Peignot",
+                "fontDefinitions": [
+                  {
+                    "path": "./assets/fonts/Peignot.ttf"
+                  }
+                ]
+              },
+              {
+                "fontFamily": "Source Sans Pro",
+                "fontDefinitions": [
+                  {
+                    "path": "./assets/fonts/source-sans-pro.light.ttf",
+                    "fontWeight": 300
+                  },
+                  {
+                    "path": "./assets/fonts/source-sans-pro.light-italic.ttf",
+                    "fontWeight": 300,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/source-sans-pro.regular.ttf",
+                    "fontWeight": 400
+                  },
+                  {
+                    "path": "./assets/fonts/source-sans-pro.semibold.ttf",
+                    "fontWeight": 600
+                  },
+                  {
+                    "path": "./assets/fonts/source-sans-pro.bold.ttf",
+                    "fontWeight": 700
+                  }
+                ]
+              },
+              {
+                "fontFamily": "East Market NF",
+                "fontDefinitions": [
+                  {
+                    "path": "./assets/fonts/EastMarketNF.ttf"
+                  }
+                ]
+              },
+              {
+                "fontFamily": "Metaloxcide",
+                "fontDefinitions": [
+                  {
+                    "path": "./assets/fonts/Metaloxcide.ttf"
+                  }
+                ]
+              },
+              {
+                "fontFamily": "W95FA",
+                "fontDefinitions": [
+                  {
+                    "path": "./assets/fonts/W95FA.otf"
+                  }
+                ]
+              },
+              {
+                "fontFamily": "OpenDyslexic",
+                "fontDefinitions": [
+                  {
+                    "path": "./assets/fonts/OpenDyslexic-Regular.otf",
+                    "fontWeight": 400
+                  },
+                  {
+                    "path": "./assets/fonts/OpenDyslexic-Italic.otf",
+                    "fontWeight": 400,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/OpenDyslexic-Bold.otf",
+                    "fontWeight": 700
+                  },
+                  {
+                    "path": "./assets/fonts/OpenDyslexic-Bold-Italic.otf",
+                    "fontWeight": 700,
+                    "fontStyle": "italic"
+                  }
+                ]
+              },
+              {
+                "fontFamily": "Sprat-Regular",
+                "fontDefinitions": [
+                  {
+                    "path": "./assets/fonts/sprat/Sprat-Regular.otf",
+                    "fontWeight": 400
+                  }
+                ]
+              },
+              {
+                "fontFamily": "Sprat-Light",
+                "fontDefinitions": [
+                  {
+                    "path": "./assets/fonts/sprat/Sprat-Light.otf",
+                    "fontWeight": 300
+                  }
+                ]
+              },
+              {
+                "fontFamily": "Sprat-Medium",
+                "fontDefinitions": [
+                  {
+                    "path": "./assets/fonts/sprat/Sprat-Medium.otf",
+                    "fontWeight": 500
+                  }
+                ]
+              },
+              {
+                "fontFamily": "Sprat-Bold",
+                "fontDefinitions": [
+                  {
+                    "path": "./assets/fonts/sprat/Sprat-Bold.otf",
+                    "fontWeight": 700
+                  }
+                ]
+              },
+              {
+                "fontFamily": "Amiamie",
+                "fontDefinitions": [
+                  {
+                    "path": "./assets/fonts/Amiamie/Amiamie-Regular.ttf",
+                    "fontWeight": 400
+                  },
+                  {
+                    "path": "./assets/fonts/Amiamie/Amiamie-Italic.ttf",
+                    "fontWeight": 400,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Amiamie/Amiamie-Light.ttf",
+                    "fontWeight": 300
+                  },
+                  {
+                    "path": "./assets/fonts/Amiamie/Amiamie-LightItalic.ttf",
+                    "fontWeight": 300,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Amiamie/Amiamie-Black.ttf",
+                    "fontWeight": 900
+                  },
+                  {
+                    "path": "./assets/fonts/Amiamie/Amiamie-BlackItalic.ttf",
+                    "fontWeight": 900,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Amiamie/Amiamie-RegularRound.ttf",
+                    "fontWeight": 400
+                  },
+                  {
+                    "path": "./assets/fonts/Amiamie/Amiamie-ItalicRound.ttf",
+                    "fontWeight": 400,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Amiamie/Amiamie-BlackRound.ttf",
+                    "fontWeight": 900
+                  },
+                  {
+                    "path": "./assets/fonts/Amiamie/Amiamie-BlackItalicRound.ttf",
+                    "fontWeight": 900,
+                    "fontStyle": "italic"
+                  }
+                ]
+              },
+              {
+                "fontFamily": "Basalte",
+                "fontDefinitions": [
+                  {
+                    "path": "./assets/fonts/Basalte/Basalte-Fond.otf"
+                  },
+                  {
+                    "path": "./assets/fonts/Basalte/Basalte-Multicolor.otf"
+                  },
+                  {
+                    "path": "./assets/fonts/Basalte/Basalte-Volume.otf"
+                  }
+                ]
+              },
+              {
+                "fontFamily": "FT-88",
+                "fontDefinitions": [
+                  {
+                    "path": "./assets/fonts/FT-88/FT88-Regular.ttf",
+                    "fontWeight": 400
+                  },
+                  {
+                    "path": "./assets/fonts/FT-88/FT88-Italic.ttf",
+                    "fontWeight": 400,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/FT-88/FT88-Bold.ttf",
+                    "fontWeight": 700
+                  },
+                  {
+                    "path": "./assets/fonts/FT-88/FT88-Expanded.ttf",
+                    "fontWeight": 400
+                  },
+                  {
+                    "path": "./assets/fonts/FT-88/FT88-Gothique.ttf",
+                    "fontWeight": 400
+                  },
+                  {
+                    "path": "./assets/fonts/FT-88/FT88-School.ttf",
+                    "fontWeight": 400
+                  },
+                  {
+                    "path": "./assets/fonts/FT-88/FT88-Serif.ttf",
+                    "fontWeight": 400
+                  }
+                ]
+              },
+              {
+                "fontFamily": "Frick",
+                "fontDefinitions": [
+                  {
+                    "path": "./assets/fonts/Frick/Frick0.3-Regular.otf",
+                    "fontWeight": 400
+                  },
+                  {
+                    "path": "./assets/fonts/Frick/Frick0.3-Condensed.otf",
+                    "fontWeight": 400
+                  }
+                ]
+              },
+              {
+                "fontFamily": "Garabosse",
+                "fontDefinitions": [
+                  {
+                    "path": "./assets/fonts/Garabosse/Garabosse-Gaillard·e.otf"
+                  },
+                  {
+                    "path": "./assets/fonts/Garabosse/Garabosse-Mignon·ne.otf"
+                  },
+                  {
+                    "path": "./assets/fonts/Garabosse/Garabosse-Nonpareil·le.otf"
+                  },
+                  {
+                    "path": "./assets/fonts/Garabosse/Garabosse-Parangon.otf"
+                  },
+                  {
+                    "path": "./assets/fonts/Garabosse/Garabosse-Perle.otf"
+                  }
+                ]
+              },
+              {
+                "fontFamily": "Gloock",
+                "fontDefinitions": [
+                  {
+                    "path": "./assets/fonts/Gloock-Regular.ttf",
+                    "fontWeight": 400
+                  }
+                ]
+              },
+              {
+                "fontFamily": "Gnomon",
+                "fontDefinitions": [
+                  {
+                    "path": "./assets/fonts/Gnomon-Foreground.ttf"
+                  },
+                  {
+                    "path": "./assets/fonts/Gnomon-Simple.ttf"
+                  }
+                ]
+              },
+              {
+                "fontFamily": "GreatVibes",
+                "fontDefinitions": [
+                  {
+                    "path": "./assets/fonts/GreatVibes-Regular.ttf",
+                    "fontWeight": 400
+                  }
+                ]
+              },
+              {
+                "fontFamily": "Equateur",
+                "fontDefinitions": [
+                  {
+                    "path": "./assets/fonts/Latitude Equateur/Equateur-Regular.ttf",
+                    "fontWeight": 400
+                  }
+                ]
+              },
+              {
+                "fontFamily": "Latitude",
+                "fontDefinitions": [
+                  {
+                    "path": "./assets/fonts/Latitude Equateur/Latitude-Regular.ttf",
+                    "fontWeight": 400
+                  }
+                ]
+              },
+              {
+                "fontFamily": "NationalPark",
+                "fontDefinitions": [
+                  {
+                    "path": "./assets/fonts/NationalPark-VariableVF.ttf"
+                  }
+                ]
+              },
+              {
+                "fontFamily": "Saira",
+                "fontDefinitions": [
+                  {
+                    "path": "./assets/fonts/Saira/Saira-Thin.ttf",
+                    "fontWeight": 100
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/Saira-ThinItalic.ttf",
+                    "fontWeight": 100,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/Saira-ExtraLight.ttf",
+                    "fontWeight": 200
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/Saira-ExtraLightItalic.ttf",
+                    "fontWeight": 200,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/Saira-Light.ttf",
+                    "fontWeight": 300
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/Saira-LightItalic.ttf",
+                    "fontWeight": 300,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/Saira-Regular.ttf",
+                    "fontWeight": 400
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/Saira-Italic.ttf",
+                    "fontWeight": 400,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/Saira-Medium.ttf",
+                    "fontWeight": 500
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/Saira-MediumItalic.ttf",
+                    "fontWeight": 500,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/Saira-SemiBold.ttf",
+                    "fontWeight": 600
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/Saira-SemiBoldItalic.ttf",
+                    "fontWeight": 600,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/Saira-Bold.ttf",
+                    "fontWeight": 700
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/Saira-BoldItalic.ttf",
+                    "fontWeight": 700,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/Saira-ExtraBold.ttf",
+                    "fontWeight": 800
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/Saira-ExtraBoldItalic.ttf",
+                    "fontWeight": 800,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/Saira-Black.ttf",
+                    "fontWeight": 900
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/Saira-BlackItalic.ttf",
+                    "fontWeight": 900,
+                    "fontStyle": "italic"
+                  }
+                ]
+              },
+              {
+                "fontFamily": "Saira Condensed",
+                "fontDefinitions": [
+                  {
+                    "path": "./assets/fonts/Saira/SairaCondensed-Thin.ttf",
+                    "fontWeight": 100
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaCondensed-ThinItalic.ttf",
+                    "fontWeight": 100,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaCondensed-ExtraLight.ttf",
+                    "fontWeight": 200
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaCondensed-ExtraLightItalic.ttf",
+                    "fontWeight": 200,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaCondensed-Light.ttf",
+                    "fontWeight": 300
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaCondensed-LightItalic.ttf",
+                    "fontWeight": 300,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaCondensed-Regular.ttf",
+                    "fontWeight": 400
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaCondensed-Italic.ttf",
+                    "fontWeight": 400,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaCondensed-Medium.ttf",
+                    "fontWeight": 500
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaCondensed-MediumItalic.ttf",
+                    "fontWeight": 500,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaCondensed-SemiBold.ttf",
+                    "fontWeight": 600
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaCondensed-SemiBoldItalic.ttf",
+                    "fontWeight": 600,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaCondensed-Bold.ttf",
+                    "fontWeight": 700
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaCondensed-BoldItalic.ttf",
+                    "fontWeight": 700,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaCondensed-ExtraBold.ttf",
+                    "fontWeight": 800
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaCondensed-ExtraBoldItalic.ttf",
+                    "fontWeight": 800,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaCondensed-Black.ttf",
+                    "fontWeight": 900
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaCondensed-BlackItalic.ttf",
+                    "fontWeight": 900,
+                    "fontStyle": "italic"
+                  }
+                ]
+              },
+              {
+                "fontFamily": "Saira Expanded",
+                "fontDefinitions": [
+                  {
+                    "path": "./assets/fonts/Saira/SairaExpanded-Thin.ttf",
+                    "fontWeight": 100
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaExpanded-ThinItalic.ttf",
+                    "fontWeight": 100,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaExpanded-ExtraLight.ttf",
+                    "fontWeight": 200
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaExpanded-ExtraLightItalic.ttf",
+                    "fontWeight": 200,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaExpanded-Light.ttf",
+                    "fontWeight": 300
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaExpanded-LightItalic.ttf",
+                    "fontWeight": 300,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaExpanded-Regular.ttf",
+                    "fontWeight": 400
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaExpanded-Italic.ttf",
+                    "fontWeight": 400,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaExpanded-Medium.ttf",
+                    "fontWeight": 500
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaExpanded-MediumItalic.ttf",
+                    "fontWeight": 500,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaExpanded-SemiBold.ttf",
+                    "fontWeight": 600
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaExpanded-SemiBoldItalic.ttf",
+                    "fontWeight": 600,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaExpanded-Bold.ttf",
+                    "fontWeight": 700
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaExpanded-BoldItalic.ttf",
+                    "fontWeight": 700,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaExpanded-ExtraBold.ttf",
+                    "fontWeight": 800
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaExpanded-ExtraBoldItalic.ttf",
+                    "fontWeight": 800,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaExpanded-Black.ttf",
+                    "fontWeight": 900
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaExpanded-BlackItalic.ttf",
+                    "fontWeight": 900,
+                    "fontStyle": "italic"
+                  }
+                ]
+              },
+              {
+                "fontFamily": "Saira Extra Condensed",
+                "fontDefinitions": [
+                  {
+                    "path": "./assets/fonts/Saira/SairaExtraCondensed-Thin.ttf",
+                    "fontWeight": 100
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaExtraCondensed-ThinItalic.ttf",
+                    "fontWeight": 100,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaExtraCondensed-ExtraLight.ttf",
+                    "fontWeight": 200
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaExtraCondensed-ExtraLightItalic.ttf",
+                    "fontWeight": 200,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaExtraCondensed-Light.ttf",
+                    "fontWeight": 300
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaExtraCondensed-LightItalic.ttf",
+                    "fontWeight": 300,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaExtraCondensed-Regular.ttf",
+                    "fontWeight": 400
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaExtraCondensed-Italic.ttf",
+                    "fontWeight": 400,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaExtraCondensed-Medium.ttf",
+                    "fontWeight": 500
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaExtraCondensed-MediumItalic.ttf",
+                    "fontWeight": 500,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaExtraCondensed-SemiBold.ttf",
+                    "fontWeight": 600
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaExtraCondensed-SemiBoldItalic.ttf",
+                    "fontWeight": 600,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaExtraCondensed-Bold.ttf",
+                    "fontWeight": 700
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaExtraCondensed-BoldItalic.ttf",
+                    "fontWeight": 700,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaExtraCondensed-ExtraBold.ttf",
+                    "fontWeight": 800
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaExtraCondensed-ExtraBoldItalic.ttf",
+                    "fontWeight": 800,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaExtraCondensed-Black.ttf",
+                    "fontWeight": 900
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaExtraCondensed-BlackItalic.ttf",
+                    "fontWeight": 900,
+                    "fontStyle": "italic"
+                  }
+                ]
+              },
+              {
+                "fontFamily": "Saira Semi Condensed",
+                "fontDefinitions": [
+                  {
+                    "path": "./assets/fonts/Saira/SairaSemiCondensed-Thin.ttf",
+                    "fontWeight": 100
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaSemiCondensed-ThinItalic.ttf",
+                    "fontWeight": 100,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaSemiCondensed-ExtraLight.ttf",
+                    "fontWeight": 200
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaSemiCondensed-ExtraLightItalic.ttf",
+                    "fontWeight": 200,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaSemiCondensed-Light.ttf",
+                    "fontWeight": 300
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaSemiCondensed-LightItalic.ttf",
+                    "fontWeight": 300,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaSemiCondensed-Regular.ttf",
+                    "fontWeight": 400
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaSemiCondensed-Italic.ttf",
+                    "fontWeight": 400,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaSemiCondensed-Medium.ttf",
+                    "fontWeight": 500
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaSemiCondensed-MediumItalic.ttf",
+                    "fontWeight": 500,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaSemiCondensed-SemiBold.ttf",
+                    "fontWeight": 600
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaSemiCondensed-SemiBoldItalic.ttf",
+                    "fontWeight": 600,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaSemiCondensed-Bold.ttf",
+                    "fontWeight": 700
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaSemiCondensed-BoldItalic.ttf",
+                    "fontWeight": 700,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaSemiCondensed-ExtraBold.ttf",
+                    "fontWeight": 800
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaSemiCondensed-ExtraBoldItalic.ttf",
+                    "fontWeight": 800,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaSemiCondensed-Black.ttf",
+                    "fontWeight": 900
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaSemiCondensed-BlackItalic.ttf",
+                    "fontWeight": 900,
+                    "fontStyle": "italic"
+                  }
+                ]
+              },
+              {
+                "fontFamily": "Saira Semi Expanded",
+                "fontDefinitions": [
+                  {
+                    "path": "./assets/fonts/Saira/SairaSemiExpanded-Thin.ttf",
+                    "fontWeight": 100
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaSemiExpanded-ThinItalic.ttf",
+                    "fontWeight": 100,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaSemiExpanded-ExtraLight.ttf",
+                    "fontWeight": 200
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaSemiExpanded-ExtraLightItalic.ttf",
+                    "fontWeight": 200,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaSemiExpanded-Light.ttf",
+                    "fontWeight": 300
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaSemiExpanded-LightItalic.ttf",
+                    "fontWeight": 300,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaSemiExpanded-Regular.ttf",
+                    "fontWeight": 400
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaSemiExpanded-Italic.ttf",
+                    "fontWeight": 400,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaSemiExpanded-Medium.ttf",
+                    "fontWeight": 500
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaSemiExpanded-MediumItalic.ttf",
+                    "fontWeight": 500,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaSemiExpanded-SemiBold.ttf",
+                    "fontWeight": 600
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaSemiExpanded-SemiBoldItalic.ttf",
+                    "fontWeight": 600,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaSemiExpanded-Bold.ttf",
+                    "fontWeight": 700
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaSemiExpanded-BoldItalic.ttf",
+                    "fontWeight": 700,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaSemiExpanded-ExtraBold.ttf",
+                    "fontWeight": 800
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaSemiExpanded-ExtraBoldItalic.ttf",
+                    "fontWeight": 800,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaSemiExpanded-Black.ttf",
+                    "fontWeight": 900
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaSemiExpanded-BlackItalic.ttf",
+                    "fontWeight": 900,
+                    "fontStyle": "italic"
+                  }
+                ]
+              },
+              {
+                "fontFamily": "Saira Ultra Condensed",
+                "fontDefinitions": [
+                  {
+                    "path": "./assets/fonts/Saira/SairaUltraCondensed-Thin.ttf",
+                    "fontWeight": 100
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaUltraCondensed-ThinItalic.ttf",
+                    "fontWeight": 100,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaUltraCondensed-ExtraLight.ttf",
+                    "fontWeight": 200
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaUltraCondensed-ExtraLightItalic.ttf",
+                    "fontWeight": 200,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaUltraCondensed-Light.ttf",
+                    "fontWeight": 300
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaUltraCondensed-LightItalic.ttf",
+                    "fontWeight": 300,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaUltraCondensed-Regular.ttf",
+                    "fontWeight": 400
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaUltraCondensed-Italic.ttf",
+                    "fontWeight": 400,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaUltraCondensed-Medium.ttf",
+                    "fontWeight": 500
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaUltraCondensed-MediumItalic.ttf",
+                    "fontWeight": 500,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaUltraCondensed-SemiBold.ttf",
+                    "fontWeight": 600
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaUltraCondensed-SemiBoldItalic.ttf",
+                    "fontWeight": 600,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaUltraCondensed-Bold.ttf",
+                    "fontWeight": 700
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaUltraCondensed-BoldItalic.ttf",
+                    "fontWeight": 700,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaUltraCondensed-ExtraBold.ttf",
+                    "fontWeight": 800
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaUltraCondensed-ExtraBoldItalic.ttf",
+                    "fontWeight": 800,
+                    "fontStyle": "italic"
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaUltraCondensed-Black.ttf",
+                    "fontWeight": 900
+                  },
+                  {
+                    "path": "./assets/fonts/Saira/SairaUltraCondensed-BlackItalic.ttf",
+                    "fontWeight": 900,
+                    "fontStyle": "italic"
+                  }
+                ]
+              },
+              {
+                "fontFamily": "Venus Acier",
+                "fontDefinitions": [
+                  {
+                    "path": "./assets/fonts/Venus+/Venus+Acier.otf"
+                  }
+                ]
+              },
+              {
+                "fontFamily": "Venus Carrare",
+                "fontDefinitions": [
+                  {
+                    "path": "./assets/fonts/Venus+/Venus+Carrare.otf"
+                  }
+                ]
+              },
+              {
+                "fontFamily": "Venus Cormier",
+                "fontDefinitions": [
+                  {
+                    "path": "./assets/fonts/Venus+/Venus+Cormier.otf"
+                  }
+                ]
+              },
+              {
+                "fontFamily": "Venus Martre",
+                "fontDefinitions": [
+                  {
+                    "path": "./assets/fonts/Venus+/Venus+Martre.otf"
+                  }
+                ]
+              },
+              {
+                "fontFamily": "Venus Plomb",
+                "fontDefinitions": [
+                  {
+                    "path": "./assets/fonts/Venus+/Venus+Plomb.otf"
+                  }
+                ]
+              },
+              {
+                "fontFamily": "Libertinage",
+                "fontDefinitions": [
+                  {
+                    "path": "./assets/fonts/libertinage/Libertinage.ttf",
+                    "fontWeight": 400
+                  },
+                  {
+                    "path": "./assets/fonts/libertinage/Libertinage-a.ttf"
+                  },
+                  {
+                    "path": "./assets/fonts/libertinage/Libertinage-b.ttf"
+                  },
+                  {
+                    "path": "./assets/fonts/libertinage/Libertinage-c.ttf"
+                  },
+                  {
+                    "path": "./assets/fonts/libertinage/Libertinage-d.ttf"
+                  },
+                  {
+                    "path": "./assets/fonts/libertinage/Libertinage-e.ttf"
+                  },
+                  {
+                    "path": "./assets/fonts/libertinage/Libertinage-f.ttf"
+                  },
+                  {
+                    "path": "./assets/fonts/libertinage/Libertinage-g.ttf"
+                  },
+                  {
+                    "path": "./assets/fonts/libertinage/Libertinage-h.ttf"
+                  },
+                  {
+                    "path": "./assets/fonts/libertinage/Libertinage-i.ttf"
+                  },
+                  {
+                    "path": "./assets/fonts/libertinage/Libertinage-j.ttf"
+                  },
+                  {
+                    "path": "./assets/fonts/libertinage/Libertinage-k.ttf"
+                  },
+                  {
+                    "path": "./assets/fonts/libertinage/Libertinage-l.ttf"
+                  },
+                  {
+                    "path": "./assets/fonts/libertinage/Libertinage-m.ttf"
+                  },
+                  {
+                    "path": "./assets/fonts/libertinage/Libertinage-n.ttf"
+                  },
+                  {
+                    "path": "./assets/fonts/libertinage/Libertinage-o.ttf"
+                  },
+                  {
+                    "path": "./assets/fonts/libertinage/Libertinage-p.ttf"
+                  },
+                  {
+                    "path": "./assets/fonts/libertinage/Libertinage-q.ttf"
+                  },
+                  {
+                    "path": "./assets/fonts/libertinage/Libertinage-r.ttf"
+                  },
+                  {
+                    "path": "./assets/fonts/libertinage/Libertinage-s.ttf"
+                  },
+                  {
+                    "path": "./assets/fonts/libertinage/Libertinage-t.ttf"
+                  },
+                  {
+                    "path": "./assets/fonts/libertinage/Libertinage-u.ttf"
+                  },
+                  {
+                    "path": "./assets/fonts/libertinage/Libertinage-v.ttf"
+                  },
+                  {
+                    "path": "./assets/fonts/libertinage/Libertinage-w.ttf"
+                  },
+                  {
+                    "path": "./assets/fonts/libertinage/Libertinage-x.ttf"
+                  },
+                  {
+                    "path": "./assets/fonts/libertinage/Libertinage-y.ttf"
+                  },
+                  {
+                    "path": "./assets/fonts/libertinage/Libertinage-z.ttf"
+                  }
+                ]
+              },
+              {
+                "fontFamily": "Sprat",
+                "fontDefinitions": [
+                  {
+                    "path": "./assets/fonts/sprat/Sprat-Regular.otf",
+                    "fontWeight": 400
+                  },
+                  {
+                    "path": "./assets/fonts/sprat/Sprat-Light.otf",
+                    "fontWeight": 300
+                  },
+                  {
+                    "path": "./assets/fonts/sprat/Sprat-Medium.otf",
+                    "fontWeight": 500
+                  },
+                  {
+                    "path": "./assets/fonts/sprat/Sprat-Bold.otf",
+                    "fontWeight": 700
+                  },
+                  {
+                    "path": "./assets/fonts/sprat/Sprat-Black.otf",
+                    "fontWeight": 900
+                  },
+                  {
+                    "path": "./assets/fonts/sprat/Sprat-Thin.otf",
+                    "fontWeight": 100
+                  },
+                  {
+                    "path": "./assets/fonts/sprat/Sprat-CondensedBlack.otf",
+                    "fontWeight": 900
+                  },
+                  {
+                    "path": "./assets/fonts/sprat/Sprat-CondensedBold.otf",
+                    "fontWeight": 700
+                  },
+                  {
+                    "path": "./assets/fonts/sprat/Sprat-CondensedLight.otf",
+                    "fontWeight": 300
+                  },
+                  {
+                    "path": "./assets/fonts/sprat/Sprat-CondensedMedium.otf",
+                    "fontWeight": 500
+                  },
+                  {
+                    "path": "./assets/fonts/sprat/Sprat-CondensedThin.otf",
+                    "fontWeight": 100
+                  },
+                  {
+                    "path": "./assets/fonts/sprat/Sprat-CondesedRegular.otf",
+                    "fontWeight": 400
+                  },
+                  {
+                    "path": "./assets/fonts/sprat/Sprat-ExtendedBlack.otf",
+                    "fontWeight": 900
+                  },
+                  {
+                    "path": "./assets/fonts/sprat/Sprat-ExtendedBold.otf",
+                    "fontWeight": 700
+                  },
+                  {
+                    "path": "./assets/fonts/sprat/Sprat-ExtendedLight.otf",
+                    "fontWeight": 300
+                  },
+                  {
+                    "path": "./assets/fonts/sprat/Sprat-ExtendedMedium.otf",
+                    "fontWeight": 500
+                  },
+                  {
+                    "path": "./assets/fonts/sprat/Sprat-ExtendedRegular.otf",
+                    "fontWeight": 400
+                  },
+                  {
+                    "path": "./assets/fonts/sprat/Sprat-ExtendedThin.otf",
+                    "fontWeight": 100
+                  },
+                  {
+                    "path": "./assets/fonts/sprat/SpratVF.ttf"
+                  }
+                ]
+              },
+              {
+                "fontFamily": "Zarathustra",
+                "fontDefinitions": [
+                  {
+                    "path": "./assets/fonts/zarathustra-v01.otf"
+                  }
+                ]
+              }
+            ]
+          },
+          "ios": [
+            "./assets/fonts/Peignot.ttf",
+            "./assets/fonts/source-sans-pro.light.ttf",
+            "./assets/fonts/source-sans-pro.light-italic.ttf",
+            "./assets/fonts/source-sans-pro.regular.ttf",
+            "./assets/fonts/source-sans-pro.semibold.ttf",
+            "./assets/fonts/source-sans-pro.bold.ttf",
+            "./assets/fonts/EastMarketNF.ttf",
+            "./assets/fonts/Metaloxcide.ttf",
+            "./assets/fonts/W95FA.otf",
+            "./assets/fonts/OpenDyslexic-Regular.otf",
+            "./assets/fonts/OpenDyslexic-Italic.otf",
+            "./assets/fonts/OpenDyslexic-Bold.otf",
+            "./assets/fonts/OpenDyslexic-Bold-Italic.otf",
+            "./assets/fonts/Amiamie/Amiamie-Black.ttf",
+            "./assets/fonts/Amiamie/Amiamie-BlackItalic.ttf",
+            "./assets/fonts/Amiamie/Amiamie-BlackItalicRound.ttf",
+            "./assets/fonts/Amiamie/Amiamie-BlackRound.ttf",
+            "./assets/fonts/Amiamie/Amiamie-Italic.ttf",
+            "./assets/fonts/Amiamie/Amiamie-ItalicRound.ttf",
+            "./assets/fonts/Amiamie/Amiamie-Light.ttf",
+            "./assets/fonts/Amiamie/Amiamie-LightItalic.ttf",
+            "./assets/fonts/Amiamie/Amiamie-Regular.ttf",
+            "./assets/fonts/Amiamie/Amiamie-RegularRound.ttf",
+            "./assets/fonts/Basalte/Basalte-Fond.otf",
+            "./assets/fonts/Basalte/Basalte-Multicolor.otf",
+            "./assets/fonts/Basalte/Basalte-Volume.otf",
+            "./assets/fonts/FT-88/FT88-Bold.ttf",
+            "./assets/fonts/FT-88/FT88-Expanded.ttf",
+            "./assets/fonts/FT-88/FT88-Gothique.ttf",
+            "./assets/fonts/FT-88/FT88-Italic.ttf",
+            "./assets/fonts/FT-88/FT88-Regular.ttf",
+            "./assets/fonts/FT-88/FT88-School.ttf",
+            "./assets/fonts/FT-88/FT88-Serif.ttf",
+            "./assets/fonts/Frick/Frick0.3-Condensed.otf",
+            "./assets/fonts/Frick/Frick0.3-Regular.otf",
+            "./assets/fonts/Garabosse/Garabosse-Gaillard·e.otf",
+            "./assets/fonts/Garabosse/Garabosse-Mignon·ne.otf",
+            "./assets/fonts/Garabosse/Garabosse-Nonpareil·le.otf",
+            "./assets/fonts/Garabosse/Garabosse-Parangon.otf",
+            "./assets/fonts/Garabosse/Garabosse-Perle.otf",
+            "./assets/fonts/Gloock-Regular.ttf",
+            "./assets/fonts/Gnomon-Foreground.ttf",
+            "./assets/fonts/Gnomon-Simple.ttf",
+            "./assets/fonts/GreatVibes-Regular.ttf",
+            "./assets/fonts/Latitude Equateur/Equateur-Regular.ttf",
+            "./assets/fonts/Latitude Equateur/Latitude-Regular.ttf",
+            "./assets/fonts/NationalPark-VariableVF.ttf",
+            "./assets/fonts/Saira/Saira-Black.ttf",
+            "./assets/fonts/Saira/Saira-BlackItalic.ttf",
+            "./assets/fonts/Saira/Saira-Bold.ttf",
+            "./assets/fonts/Saira/Saira-BoldItalic.ttf",
+            "./assets/fonts/Saira/Saira-ExtraBold.ttf",
+            "./assets/fonts/Saira/Saira-ExtraBoldItalic.ttf",
+            "./assets/fonts/Saira/Saira-ExtraLight.ttf",
+            "./assets/fonts/Saira/Saira-ExtraLightItalic.ttf",
+            "./assets/fonts/Saira/Saira-Italic.ttf",
+            "./assets/fonts/Saira/Saira-Light.ttf",
+            "./assets/fonts/Saira/Saira-LightItalic.ttf",
+            "./assets/fonts/Saira/Saira-Medium.ttf",
+            "./assets/fonts/Saira/Saira-MediumItalic.ttf",
+            "./assets/fonts/Saira/Saira-Regular.ttf",
+            "./assets/fonts/Saira/Saira-SemiBold.ttf",
+            "./assets/fonts/Saira/Saira-SemiBoldItalic.ttf",
+            "./assets/fonts/Saira/Saira-Thin.ttf",
+            "./assets/fonts/Saira/Saira-ThinItalic.ttf",
+            "./assets/fonts/Saira/SairaCondensed-Black.ttf",
+            "./assets/fonts/Saira/SairaCondensed-BlackItalic.ttf",
+            "./assets/fonts/Saira/SairaCondensed-Bold.ttf",
+            "./assets/fonts/Saira/SairaCondensed-BoldItalic.ttf",
+            "./assets/fonts/Saira/SairaCondensed-ExtraBold.ttf",
+            "./assets/fonts/Saira/SairaCondensed-ExtraBoldItalic.ttf",
+            "./assets/fonts/Saira/SairaCondensed-ExtraLight.ttf",
+            "./assets/fonts/Saira/SairaCondensed-ExtraLightItalic.ttf",
+            "./assets/fonts/Saira/SairaCondensed-Italic.ttf",
+            "./assets/fonts/Saira/SairaCondensed-Light.ttf",
+            "./assets/fonts/Saira/SairaCondensed-LightItalic.ttf",
+            "./assets/fonts/Saira/SairaCondensed-Medium.ttf",
+            "./assets/fonts/Saira/SairaCondensed-MediumItalic.ttf",
+            "./assets/fonts/Saira/SairaCondensed-Regular.ttf",
+            "./assets/fonts/Saira/SairaCondensed-SemiBold.ttf",
+            "./assets/fonts/Saira/SairaCondensed-SemiBoldItalic.ttf",
+            "./assets/fonts/Saira/SairaCondensed-Thin.ttf",
+            "./assets/fonts/Saira/SairaCondensed-ThinItalic.ttf",
+            "./assets/fonts/Saira/SairaExpanded-Black.ttf",
+            "./assets/fonts/Saira/SairaExpanded-BlackItalic.ttf",
+            "./assets/fonts/Saira/SairaExpanded-Bold.ttf",
+            "./assets/fonts/Saira/SairaExpanded-BoldItalic.ttf",
+            "./assets/fonts/Saira/SairaExpanded-ExtraBold.ttf",
+            "./assets/fonts/Saira/SairaExpanded-ExtraBoldItalic.ttf",
+            "./assets/fonts/Saira/SairaExpanded-ExtraLight.ttf",
+            "./assets/fonts/Saira/SairaExpanded-ExtraLightItalic.ttf",
+            "./assets/fonts/Saira/SairaExpanded-Italic.ttf",
+            "./assets/fonts/Saira/SairaExpanded-Light.ttf",
+            "./assets/fonts/Saira/SairaExpanded-LightItalic.ttf",
+            "./assets/fonts/Saira/SairaExpanded-Medium.ttf",
+            "./assets/fonts/Saira/SairaExpanded-MediumItalic.ttf",
+            "./assets/fonts/Saira/SairaExpanded-Regular.ttf",
+            "./assets/fonts/Saira/SairaExpanded-SemiBold.ttf",
+            "./assets/fonts/Saira/SairaExpanded-SemiBoldItalic.ttf",
+            "./assets/fonts/Saira/SairaExpanded-Thin.ttf",
+            "./assets/fonts/Saira/SairaExpanded-ThinItalic.ttf",
+            "./assets/fonts/Saira/SairaExtraCondensed-Black.ttf",
+            "./assets/fonts/Saira/SairaExtraCondensed-BlackItalic.ttf",
+            "./assets/fonts/Saira/SairaExtraCondensed-Bold.ttf",
+            "./assets/fonts/Saira/SairaExtraCondensed-BoldItalic.ttf",
+            "./assets/fonts/Saira/SairaExtraCondensed-ExtraBold.ttf",
+            "./assets/fonts/Saira/SairaExtraCondensed-ExtraBoldItalic.ttf",
+            "./assets/fonts/Saira/SairaExtraCondensed-ExtraLight.ttf",
+            "./assets/fonts/Saira/SairaExtraCondensed-ExtraLightItalic.ttf",
+            "./assets/fonts/Saira/SairaExtraCondensed-Italic.ttf",
+            "./assets/fonts/Saira/SairaExtraCondensed-Light.ttf",
+            "./assets/fonts/Saira/SairaExtraCondensed-LightItalic.ttf",
+            "./assets/fonts/Saira/SairaExtraCondensed-Medium.ttf",
+            "./assets/fonts/Saira/SairaExtraCondensed-MediumItalic.ttf",
+            "./assets/fonts/Saira/SairaExtraCondensed-Regular.ttf",
+            "./assets/fonts/Saira/SairaExtraCondensed-SemiBold.ttf",
+            "./assets/fonts/Saira/SairaExtraCondensed-SemiBoldItalic.ttf",
+            "./assets/fonts/Saira/SairaExtraCondensed-Thin.ttf",
+            "./assets/fonts/Saira/SairaExtraCondensed-ThinItalic.ttf",
+            "./assets/fonts/Saira/SairaSemiCondensed-Black.ttf",
+            "./assets/fonts/Saira/SairaSemiCondensed-BlackItalic.ttf",
+            "./assets/fonts/Saira/SairaSemiCondensed-Bold.ttf",
+            "./assets/fonts/Saira/SairaSemiCondensed-BoldItalic.ttf",
+            "./assets/fonts/Saira/SairaSemiCondensed-ExtraBold.ttf",
+            "./assets/fonts/Saira/SairaSemiCondensed-ExtraBoldItalic.ttf",
+            "./assets/fonts/Saira/SairaSemiCondensed-ExtraLight.ttf",
+            "./assets/fonts/Saira/SairaSemiCondensed-ExtraLightItalic.ttf",
+            "./assets/fonts/Saira/SairaSemiCondensed-Italic.ttf",
+            "./assets/fonts/Saira/SairaSemiCondensed-Light.ttf",
+            "./assets/fonts/Saira/SairaSemiCondensed-LightItalic.ttf",
+            "./assets/fonts/Saira/SairaSemiCondensed-Medium.ttf",
+            "./assets/fonts/Saira/SairaSemiCondensed-MediumItalic.ttf",
+            "./assets/fonts/Saira/SairaSemiCondensed-Regular.ttf",
+            "./assets/fonts/Saira/SairaSemiCondensed-SemiBold.ttf",
+            "./assets/fonts/Saira/SairaSemiCondensed-SemiBoldItalic.ttf",
+            "./assets/fonts/Saira/SairaSemiCondensed-Thin.ttf",
+            "./assets/fonts/Saira/SairaSemiCondensed-ThinItalic.ttf",
+            "./assets/fonts/Saira/SairaSemiExpanded-Black.ttf",
+            "./assets/fonts/Saira/SairaSemiExpanded-BlackItalic.ttf",
+            "./assets/fonts/Saira/SairaSemiExpanded-Bold.ttf",
+            "./assets/fonts/Saira/SairaSemiExpanded-BoldItalic.ttf",
+            "./assets/fonts/Saira/SairaSemiExpanded-ExtraBold.ttf",
+            "./assets/fonts/Saira/SairaSemiExpanded-ExtraBoldItalic.ttf",
+            "./assets/fonts/Saira/SairaSemiExpanded-ExtraLight.ttf",
+            "./assets/fonts/Saira/SairaSemiExpanded-ExtraLightItalic.ttf",
+            "./assets/fonts/Saira/SairaSemiExpanded-Italic.ttf",
+            "./assets/fonts/Saira/SairaSemiExpanded-Light.ttf",
+            "./assets/fonts/Saira/SairaSemiExpanded-LightItalic.ttf",
+            "./assets/fonts/Saira/SairaSemiExpanded-Medium.ttf",
+            "./assets/fonts/Saira/SairaSemiExpanded-MediumItalic.ttf",
+            "./assets/fonts/Saira/SairaSemiExpanded-Regular.ttf",
+            "./assets/fonts/Saira/SairaSemiExpanded-SemiBold.ttf",
+            "./assets/fonts/Saira/SairaSemiExpanded-SemiBoldItalic.ttf",
+            "./assets/fonts/Saira/SairaSemiExpanded-Thin.ttf",
+            "./assets/fonts/Saira/SairaSemiExpanded-ThinItalic.ttf",
+            "./assets/fonts/Saira/SairaUltraCondensed-Black.ttf",
+            "./assets/fonts/Saira/SairaUltraCondensed-BlackItalic.ttf",
+            "./assets/fonts/Saira/SairaUltraCondensed-Bold.ttf",
+            "./assets/fonts/Saira/SairaUltraCondensed-BoldItalic.ttf",
+            "./assets/fonts/Saira/SairaUltraCondensed-ExtraBold.ttf",
+            "./assets/fonts/Saira/SairaUltraCondensed-ExtraBoldItalic.ttf",
+            "./assets/fonts/Saira/SairaUltraCondensed-ExtraLight.ttf",
+            "./assets/fonts/Saira/SairaUltraCondensed-ExtraLightItalic.ttf",
+            "./assets/fonts/Saira/SairaUltraCondensed-Italic.ttf",
+            "./assets/fonts/Saira/SairaUltraCondensed-Light.ttf",
+            "./assets/fonts/Saira/SairaUltraCondensed-LightItalic.ttf",
+            "./assets/fonts/Saira/SairaUltraCondensed-Medium.ttf",
+            "./assets/fonts/Saira/SairaUltraCondensed-MediumItalic.ttf",
+            "./assets/fonts/Saira/SairaUltraCondensed-Regular.ttf",
+            "./assets/fonts/Saira/SairaUltraCondensed-SemiBold.ttf",
+            "./assets/fonts/Saira/SairaUltraCondensed-SemiBoldItalic.ttf",
+            "./assets/fonts/Saira/SairaUltraCondensed-Thin.ttf",
+            "./assets/fonts/Saira/SairaUltraCondensed-ThinItalic.ttf",
+            "./assets/fonts/Venus+/Venus+Acier.otf",
+            "./assets/fonts/Venus+/Venus+Carrare.otf",
+            "./assets/fonts/Venus+/Venus+Cormier.otf",
+            "./assets/fonts/Venus+/Venus+Martre.otf",
+            "./assets/fonts/Venus+/Venus+Plomb.otf",
+            "./assets/fonts/libertinage/Libertinage-a.ttf",
+            "./assets/fonts/libertinage/Libertinage-b.ttf",
+            "./assets/fonts/libertinage/Libertinage-c.ttf",
+            "./assets/fonts/libertinage/Libertinage-d.ttf",
+            "./assets/fonts/libertinage/Libertinage-e.ttf",
+            "./assets/fonts/libertinage/Libertinage-f.ttf",
+            "./assets/fonts/libertinage/Libertinage-g.ttf",
+            "./assets/fonts/libertinage/Libertinage-h.ttf",
+            "./assets/fonts/libertinage/Libertinage-i.ttf",
+            "./assets/fonts/libertinage/Libertinage-j.ttf",
+            "./assets/fonts/libertinage/Libertinage-k.ttf",
+            "./assets/fonts/libertinage/Libertinage-l.ttf",
+            "./assets/fonts/libertinage/Libertinage-m.ttf",
+            "./assets/fonts/libertinage/Libertinage-n.ttf",
+            "./assets/fonts/libertinage/Libertinage-o.ttf",
+            "./assets/fonts/libertinage/Libertinage-p.ttf",
+            "./assets/fonts/libertinage/Libertinage-q.ttf",
+            "./assets/fonts/libertinage/Libertinage-r.ttf",
+            "./assets/fonts/libertinage/Libertinage-s.ttf",
+            "./assets/fonts/libertinage/Libertinage-t.ttf",
+            "./assets/fonts/libertinage/Libertinage-u.ttf",
+            "./assets/fonts/libertinage/Libertinage-v.ttf",
+            "./assets/fonts/libertinage/Libertinage-w.ttf",
+            "./assets/fonts/libertinage/Libertinage-x.ttf",
+            "./assets/fonts/libertinage/Libertinage-y.ttf",
+            "./assets/fonts/libertinage/Libertinage-z.ttf",
+            "./assets/fonts/libertinage/Libertinage.ttf",
+            "./assets/fonts/sprat/Sprat-Regular.otf",
+            "./assets/fonts/sprat/Sprat-Light.otf",
+            "./assets/fonts/sprat/Sprat-Medium.otf",
+            "./assets/fonts/sprat/Sprat-Bold.otf",
+            "./assets/fonts/sprat/Sprat-Black.otf",
+            "./assets/fonts/sprat/Sprat-CondensedBlack.otf",
+            "./assets/fonts/sprat/Sprat-CondensedBold.otf",
+            "./assets/fonts/sprat/Sprat-CondensedLight.otf",
+            "./assets/fonts/sprat/Sprat-CondensedMedium.otf",
+            "./assets/fonts/sprat/Sprat-CondensedThin.otf",
+            "./assets/fonts/sprat/Sprat-CondesedRegular.otf",
+            "./assets/fonts/sprat/Sprat-ExtendedBlack.otf",
+            "./assets/fonts/sprat/Sprat-ExtendedBold.otf",
+            "./assets/fonts/sprat/Sprat-ExtendedLight.otf",
+            "./assets/fonts/sprat/Sprat-ExtendedMedium.otf",
+            "./assets/fonts/sprat/Sprat-ExtendedRegular.otf",
+            "./assets/fonts/sprat/Sprat-ExtendedThin.otf",
+            "./assets/fonts/sprat/Sprat-Thin.otf",
+            "./assets/fonts/sprat/SpratVF.ttf",
+            "./assets/fonts/zarathustra-v01.otf"
+          ]
+        }
+      ],
+      [
+        "./plugins/with-haricot-widgets",
+        {
+          "appGroup": "group.com.haricotappsyndicate.haricot.widgets"
+        }
+      ],
+      "expo-localization",
+      "expo-web-browser"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "33a0f11a-89e8-4396-af40-6c1b53c49adb"
+      }
+    },
+    "owner": "haricot-app-syndicate"
+  }
+}

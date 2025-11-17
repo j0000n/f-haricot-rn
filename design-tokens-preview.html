@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Haricot Design Token Preview</title>
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+    />
+    <style>
+      :root {
+        color-scheme: light;
+        --color-background: #f5f5f5;
+        --color-surface: #ffffff;
+        --color-overlay: #f8f8f8;
+        --color-text-primary: #000000;
+        --color-text-secondary: #666666;
+        --color-text-muted: #999999;
+        --color-border: #e0e0e0;
+        --color-accent: #000000;
+        --color-accent-on-primary: #ffffff;
+        --color-success: #4caf50;
+        --color-danger: #ff3b30;
+        --color-info: #007aff;
+        --space-xxs: 4px;
+        --space-xs: 8px;
+        --space-sm: 12px;
+        --space-md: 16px;
+        --space-lg: 20px;
+        --space-xl: 24px;
+        --space-xxl: 40px;
+        --radius-sm: 8px;
+        --radius-md: 12px;
+        --radius-lg: 28px;
+        --font-size-title: 32px;
+        --font-size-heading: 24px;
+        --font-size-subheading: 18px;
+        --font-size-body: 16px;
+        --font-size-small: 14px;
+        --font-size-tiny: 12px;
+        --font-family-display: "Peignot", "Georgia", serif;
+        --font-family-regular: "Source Sans Pro", "Segoe UI", sans-serif;
+        --font-family-italic: "Source Sans Pro", "Segoe UI", sans-serif;
+        --font-family-medium: "Source Sans Pro", "Segoe UI", sans-serif;
+        --font-family-semiBold: "Peignot", "Georgia", serif;
+        --font-family-bold: "Peignot", "Georgia", serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: var(--font-family-regular);
+        background: var(--color-background);
+        color: var(--color-text-primary);
+      }
+
+      .app {
+        display: flex;
+        min-height: 100vh;
+        max-height: 100vh;
+        overflow: hidden;
+      }
+
+      .control-panel {
+        width: 340px;
+        background: #111111;
+        color: #f2f2f2;
+        padding: var(--space-lg);
+        overflow-y: auto;
+        position: sticky;
+        top: 0;
+        height: 100vh;
+      }
+
+      .control-panel h1 {
+        font-size: 20px;
+        margin: 0 0 var(--space-lg) 0;
+        font-family: var(--font-family-bold);
+      }
+
+      .control-panel p {
+        font-size: var(--font-size-small);
+        margin: 0 0 var(--space-md) 0;
+        color: rgba(255, 255, 255, 0.7);
+        line-height: 1.5;
+      }
+
+      .control-section + .control-section {
+        margin-top: var(--space-xl);
+      }
+
+      .control-section h2 {
+        font-size: 14px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        margin: 0 0 var(--space-sm) 0;
+        color: rgba(255, 255, 255, 0.5);
+      }
+
+      .control {
+        display: grid;
+        gap: 6px;
+        margin-bottom: var(--space-md);
+      }
+
+      .control label {
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.6);
+      }
+
+      .control input[type="color"],
+      .control input[type="number"],
+      .control input[type="text"],
+      .control input[type="range"] {
+        width: 100%;
+        padding: 8px 10px;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.06);
+        color: inherit;
+        font-family: var(--font-family-regular);
+      }
+
+      .control input[type="color"] {
+        height: 42px;
+        padding: 0;
+        border: none;
+      }
+
+      .control .value-label {
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.6);
+      }
+
+      .control .inputs-inline {
+        display: grid;
+        grid-template-columns: 1fr 100px;
+        gap: 8px;
+      }
+
+      .preview {
+        flex: 1;
+        overflow-y: auto;
+        padding: calc(var(--space-xl) * 1.5);
+        background: var(--color-background);
+      }
+
+      .preview-inner {
+        max-width: 1024px;
+        margin: 0 auto;
+        display: grid;
+        gap: var(--space-xl);
+      }
+
+      .preview-header {
+        background: var(--color-surface);
+        padding: var(--space-xl);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--color-border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 18px 40px rgba(17, 24, 39, 0.08);
+      }
+
+      .preview-header h1 {
+        margin: 0 0 var(--space-xs) 0;
+        font-size: var(--font-size-title);
+        font-family: var(--font-family-bold);
+      }
+
+      .preview-header p {
+        margin: 0;
+        font-size: var(--font-size-small);
+        font-family: var(--font-family-regular);
+        color: var(--color-text-secondary);
+      }
+
+      .accent-button {
+        background: var(--color-accent);
+        color: var(--color-accent-on-primary);
+        border: none;
+        border-radius: var(--radius-md);
+        padding: var(--space-sm) var(--space-lg);
+        font-size: var(--font-size-body);
+        font-family: var(--font-family-semiBold);
+        cursor: pointer;
+        transition: transform 0.2s ease;
+      }
+
+      .accent-button:hover {
+        transform: translateY(-1px);
+      }
+
+      .preview-grid {
+        display: grid;
+        gap: var(--space-lg);
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      }
+
+      .preview-card {
+        background: var(--color-surface);
+        border-radius: var(--radius-md);
+        padding: var(--space-lg);
+        border: 1px solid var(--color-border);
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+        display: grid;
+        gap: var(--space-md);
+      }
+
+      .preview-card h3 {
+        margin: 0;
+        font-size: var(--font-size-heading);
+        font-family: var(--font-family-semiBold);
+      }
+
+      .preview-card p {
+        margin: 0;
+        font-size: var(--font-size-body);
+        font-family: var(--font-family-regular);
+        color: var(--color-text-secondary);
+        line-height: 1.6;
+      }
+
+      .preview-card .meta {
+        display: flex;
+        gap: var(--space-sm);
+        align-items: center;
+        font-size: var(--font-size-small);
+        color: var(--color-text-muted);
+        font-family: var(--font-family-medium);
+      }
+
+      .preview-card .meta .badge {
+        padding: 4px var(--space-sm);
+        border-radius: 999px;
+        background: var(--color-overlay);
+        border: 1px solid var(--color-border);
+      }
+
+      .preview-card .meta .badge.success {
+        color: var(--color-success);
+        border-color: rgba(76, 175, 80, 0.3);
+      }
+
+      .preview-card .meta .badge.info {
+        color: var(--color-info);
+        border-color: rgba(0, 122, 255, 0.3);
+      }
+
+      .preview-form {
+        background: var(--color-surface);
+        padding: var(--space-xl);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--color-border);
+        display: grid;
+        gap: var(--space-lg);
+        box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
+      }
+
+      .preview-form h2 {
+        margin: 0;
+        font-size: var(--font-size-heading);
+        font-family: var(--font-family-bold);
+      }
+
+      .field {
+        display: grid;
+        gap: var(--space-xs);
+      }
+
+      .field label {
+        font-size: var(--font-size-small);
+        font-family: var(--font-family-medium);
+        color: var(--color-text-secondary);
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+
+      .field input,
+      .field textarea,
+      .field select {
+        padding: var(--space-md);
+        border-radius: var(--radius-md);
+        border: 1px solid var(--color-border);
+        font-size: var(--font-size-body);
+        font-family: var(--font-family-regular);
+        background: var(--color-surface);
+        color: var(--color-text-primary);
+        resize: vertical;
+      }
+
+      .field textarea {
+        min-height: 140px;
+      }
+
+      .form-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: var(--space-sm);
+      }
+
+      .ghost-button {
+        background: transparent;
+        color: var(--color-text-secondary);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-sm);
+        padding: var(--space-sm) var(--space-lg);
+        font-size: var(--font-size-body);
+        font-family: var(--font-family-medium);
+        cursor: pointer;
+      }
+
+      .danger-button {
+        background: var(--color-danger);
+        color: var(--color-accent-on-primary);
+        border: none;
+        border-radius: var(--radius-sm);
+        padding: var(--space-sm) var(--space-lg);
+        font-size: var(--font-size-body);
+        font-family: var(--font-family-semiBold);
+        cursor: pointer;
+      }
+
+      .preview-footer {
+        text-align: center;
+        color: var(--color-text-muted);
+        font-size: var(--font-size-small);
+        padding-bottom: var(--space-xl);
+      }
+
+      code {
+        background: rgba(15, 23, 42, 0.08);
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-family: "SFMono-Regular", Menlo, Consolas, monospace;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <aside class="control-panel" id="control-panel">
+        <h1>Token Workbench</h1>
+        <p>
+          Tweak the values below to experiment with Haricot's colour, spacing,
+          typography, and radius scales. Copy the resulting numbers back to
+          <code>styles/tokens.ts</code> when you're happy with them.
+        </p>
+      </aside>
+      <main class="preview">
+        <div class="preview-inner">
+          <section class="preview-header">
+            <div>
+              <h1>Team Planning</h1>
+              <p>
+                Align upcoming work, track priorities, and spot blockers before
+                they surprise you.
+              </p>
+            </div>
+            <button class="accent-button">New task</button>
+          </section>
+
+          <section class="preview-grid">
+            <article class="preview-card">
+              <div class="meta">
+                <span class="badge info">Backlog</span>
+                <span>Updated 2 hours ago</span>
+              </div>
+              <h3>Design onboarding flow</h3>
+              <p>
+                Explore a friendlier new-user experience that highlights the
+                biggest wins in the first session.
+              </p>
+              <button class="accent-button">Open task</button>
+            </article>
+            <article class="preview-card">
+              <div class="meta">
+                <span class="badge success">Completed</span>
+                <span>Reviewed yesterday</span>
+              </div>
+              <h3>Metrics instrumentation</h3>
+              <p>
+                Capture usage across the critical funnel to unlock visibility
+                into activation and retention.
+              </p>
+              <div class="form-actions">
+                <button class="ghost-button">View notes</button>
+                <button class="danger-button">Archive</button>
+              </div>
+            </article>
+          </section>
+
+          <section class="preview-form">
+            <h2>Create task</h2>
+            <div class="field">
+              <label>Title</label>
+              <input type="text" placeholder="Ship the design tokens" />
+            </div>
+            <div class="field">
+              <label>Description</label>
+              <textarea placeholder="Capture the work in a short summary"></textarea>
+            </div>
+            <div class="field">
+              <label>Status</label>
+              <select>
+                <option>Backlog</option>
+                <option>In progress</option>
+                <option>Blocked</option>
+                <option>Complete</option>
+              </select>
+            </div>
+            <div class="form-actions">
+              <button class="ghost-button">Cancel</button>
+              <button class="accent-button">Save task</button>
+            </div>
+          </section>
+
+          <footer class="preview-footer">
+            Built for collaboration. Drop this file into a browser to iterate on
+            tokens with product and design teammates.
+          </footer>
+        </div>
+      </main>
+    </div>
+    <script>
+      const tokens = {
+        colors: {
+          background: "#f5f5f5",
+          surface: "#ffffff",
+          overlay: "#f8f8f8",
+          textPrimary: "#000000",
+          textSecondary: "#666666",
+          textMuted: "#999999",
+          border: "#e0e0e0",
+          accent: "#000000",
+          accentOnPrimary: "#ffffff",
+          success: "#4caf50",
+          danger: "#ff3b30",
+          info: "#007aff",
+        },
+        spacing: {
+          xxs: 4,
+          xs: 8,
+          sm: 12,
+          md: 16,
+          lg: 20,
+          xl: 24,
+          xxl: 40,
+        },
+        radii: {
+          sm: 8,
+          md: 12,
+          lg: 28,
+        },
+        typography: {
+          title: 32,
+          heading: 24,
+          subheading: 18,
+          body: 16,
+          small: 14,
+          tiny: 12,
+        },
+        fontFamilies: {
+          display: '"Peignot", "Georgia", serif',
+          regular: '"Source Sans Pro", "Segoe UI", sans-serif',
+          italic: '"Source Sans Pro", "Segoe UI", sans-serif',
+          medium: '"Source Sans Pro", "Segoe UI", sans-serif',
+          semiBold: '"Peignot", "Georgia", serif',
+          bold: '"Peignot", "Georgia", serif',
+        },
+      };
+
+      const tokenConfig = {
+        colors: {
+          background: { type: "color", label: "Background" },
+          surface: { type: "color", label: "Surface" },
+          overlay: { type: "color", label: "Overlay" },
+          textPrimary: { type: "color", label: "Text / Primary" },
+          textSecondary: { type: "color", label: "Text / Secondary" },
+          textMuted: { type: "color", label: "Text / Muted" },
+          border: { type: "color", label: "Border" },
+          accent: { type: "color", label: "Accent" },
+          accentOnPrimary: { type: "color", label: "Accent on Primary" },
+          success: { type: "color", label: "Success" },
+          danger: { type: "color", label: "Danger" },
+          info: { type: "color", label: "Info" },
+        },
+        spacing: {
+          xxs: { type: "number", label: "Spacing • xxs", min: 0, max: 32 },
+          xs: { type: "number", label: "Spacing • xs", min: 0, max: 48 },
+          sm: { type: "number", label: "Spacing • sm", min: 0, max: 64 },
+          md: { type: "number", label: "Spacing • md", min: 0, max: 64 },
+          lg: { type: "number", label: "Spacing • lg", min: 0, max: 96 },
+          xl: { type: "number", label: "Spacing • xl", min: 0, max: 128 },
+          xxl: { type: "number", label: "Spacing • xxl", min: 0, max: 160 },
+        },
+        radii: {
+          sm: { type: "number", label: "Radius • sm", min: 0, max: 32 },
+          md: { type: "number", label: "Radius • md", min: 0, max: 48 },
+          lg: { type: "number", label: "Radius • lg", min: 0, max: 72 },
+        },
+        typography: {
+          title: { type: "number", label: "Type • Title", min: 12, max: 64 },
+          heading: { type: "number", label: "Type • Heading", min: 12, max: 48 },
+          subheading: {
+            type: "number",
+            label: "Type • Subheading",
+            min: 12,
+            max: 40,
+          },
+          body: { type: "number", label: "Type • Body", min: 10, max: 32 },
+          small: { type: "number", label: "Type • Small", min: 8, max: 28 },
+          tiny: { type: "number", label: "Type • Tiny", min: 8, max: 24 },
+        },
+        fontFamilies: {
+          display: {
+            type: "text",
+            label: "Font stack • Display",
+            placeholder: '"Peignot", "Georgia", serif',
+          },
+          regular: {
+            type: "text",
+            label: "Font stack • Regular",
+            placeholder: '"Source Sans Pro", "Segoe UI", sans-serif',
+          },
+          italic: {
+            type: "text",
+            label: "Font stack • Italic",
+            placeholder: '"Source Sans Pro", "Segoe UI", sans-serif',
+          },
+          medium: {
+            type: "text",
+            label: "Font stack • Medium",
+            placeholder: '"Source Sans Pro", "Segoe UI", sans-serif',
+          },
+          semiBold: {
+            type: "text",
+            label: "Font stack • SemiBold",
+            placeholder: '"Peignot", "Georgia", serif',
+          },
+          bold: {
+            type: "text",
+            label: "Font stack • Bold",
+            placeholder: '"Peignot", "Georgia", serif',
+          },
+        },
+      };
+
+      const cssPrefixes = {
+        colors: "--color-",
+        spacing: "--space-",
+        radii: "--radius-",
+        typography: "--font-size-",
+        fontFamilies: "--font-family-",
+      };
+
+      const controlPanel = document.getElementById("control-panel");
+
+      function toKebabCase(value) {
+        return value.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase();
+      }
+
+      function applyTokens() {
+        for (const [group, values] of Object.entries(tokens)) {
+          const prefix = cssPrefixes[group];
+          for (const [key, value] of Object.entries(values)) {
+            let cssValue = value;
+            if (group === "spacing" || group === "radii" || group === "typography") {
+              cssValue = `${value}px`;
+            }
+            document.documentElement.style.setProperty(
+              `${prefix}${toKebabCase(key)}`,
+              cssValue
+            );
+          }
+        }
+      }
+
+      function createNumberControl(group, key, config) {
+        const wrapper = document.createElement("div");
+        wrapper.className = "control";
+
+        const label = document.createElement("label");
+        label.textContent = config.label || key;
+        wrapper.appendChild(label);
+
+        const valueLabel = document.createElement("span");
+        valueLabel.className = "value-label";
+        valueLabel.textContent = `${tokens[group][key]}px`;
+
+        const inputRow = document.createElement("div");
+        inputRow.className = "inputs-inline";
+
+        const rangeInput = document.createElement("input");
+        rangeInput.type = "range";
+        rangeInput.min = config.min ?? 0;
+        rangeInput.max = config.max ?? 100;
+        rangeInput.step = config.step ?? 1;
+        rangeInput.value = tokens[group][key];
+
+        const numberInput = document.createElement("input");
+        numberInput.type = "number";
+        numberInput.min = config.min ?? 0;
+        numberInput.max = config.max ?? 100;
+        numberInput.step = config.step ?? 1;
+        numberInput.value = tokens[group][key];
+
+        function updateValue(raw) {
+          const nextValue = Number(raw);
+          if (Number.isNaN(nextValue)) {
+            return;
+          }
+          tokens[group][key] = nextValue;
+          rangeInput.value = String(nextValue);
+          numberInput.value = String(nextValue);
+          valueLabel.textContent = `${nextValue}px`;
+          applyTokens();
+        }
+
+        rangeInput.addEventListener("input", (event) => {
+          updateValue(event.target.value);
+        });
+
+        numberInput.addEventListener("change", (event) => {
+          updateValue(event.target.value);
+        });
+
+        inputRow.appendChild(rangeInput);
+        inputRow.appendChild(numberInput);
+        wrapper.appendChild(inputRow);
+        wrapper.appendChild(valueLabel);
+        return wrapper;
+      }
+
+      function createColorControl(group, key, config) {
+        const wrapper = document.createElement("div");
+        wrapper.className = "control";
+
+        const label = document.createElement("label");
+        label.textContent = config.label || key;
+        wrapper.appendChild(label);
+
+        const colorInput = document.createElement("input");
+        colorInput.type = "color";
+        colorInput.value = tokens[group][key];
+
+        const textInput = document.createElement("input");
+        textInput.type = "text";
+        textInput.value = tokens[group][key];
+
+        const valueLabel = document.createElement("span");
+        valueLabel.className = "value-label";
+        valueLabel.textContent = tokens[group][key].toUpperCase();
+
+        function updateValue(raw) {
+          const nextValue = raw.trim();
+          if (!nextValue) return;
+          tokens[group][key] = nextValue;
+          colorInput.value = nextValue;
+          textInput.value = nextValue;
+          valueLabel.textContent = nextValue.toUpperCase();
+          applyTokens();
+        }
+
+        colorInput.addEventListener("input", (event) => {
+          updateValue(event.target.value);
+        });
+
+        textInput.addEventListener("change", (event) => {
+          updateValue(event.target.value);
+        });
+
+        wrapper.appendChild(colorInput);
+        wrapper.appendChild(textInput);
+        wrapper.appendChild(valueLabel);
+        return wrapper;
+      }
+
+      function createTextControl(group, key, config) {
+        const wrapper = document.createElement("div");
+        wrapper.className = "control";
+
+        const label = document.createElement("label");
+        label.textContent = config.label || key;
+        wrapper.appendChild(label);
+
+        const textInput = document.createElement("input");
+        textInput.type = "text";
+        textInput.placeholder = config.placeholder || "";
+        textInput.value = tokens[group][key];
+
+        const valueLabel = document.createElement("span");
+        valueLabel.className = "value-label";
+        valueLabel.textContent = tokens[group][key];
+
+        textInput.addEventListener("change", (event) => {
+          const nextValue = event.target.value || config.placeholder || "";
+          tokens[group][key] = nextValue;
+          valueLabel.textContent = nextValue;
+          applyTokens();
+        });
+
+        wrapper.appendChild(textInput);
+        wrapper.appendChild(valueLabel);
+        return wrapper;
+      }
+
+      function renderControls() {
+        for (const [group, groupConfig] of Object.entries(tokenConfig)) {
+          const section = document.createElement("section");
+          section.className = "control-section";
+
+          const heading = document.createElement("h2");
+          heading.textContent = group;
+          section.appendChild(heading);
+
+          for (const [key, config] of Object.entries(groupConfig)) {
+            let control;
+            if (config.type === "color") {
+              control = createColorControl(group, key, config);
+            } else if (config.type === "number") {
+              control = createNumberControl(group, key, config);
+            } else {
+              control = createTextControl(group, key, config);
+            }
+            section.appendChild(control);
+          }
+
+          controlPanel.appendChild(section);
+        }
+      }
+
+      renderControls();
+      applyTokens();
+    </script>
+  </body>
+</html>

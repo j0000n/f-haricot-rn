@@ -1,0 +1,577 @@
+import SignIn from "@/app/SignIn";
+import { api } from "@/convex/_generated/api";
+import "@/i18n/config";
+import { TranslationProvider, changeLanguage, useTranslation } from "@/i18n/useTranslation";
+import { RecipeListsProvider } from "@/hooks/useRecipeLists";
+import createLayoutStyles from "@/styles/layoutStyles";
+import type {
+  AccessibilityPreferences,
+  ThemeName,
+} from "@/styles/tokens";
+import {
+  ThemeProvider,
+  defaultThemeName,
+  getThemeDefinition,
+  isThemeName,
+  useThemedStyles,
+} from "@/styles/tokens";
+import { ConvexAuthProvider } from "@convex-dev/auth/react";
+import { ConvexReactClient, useConvexAuth, useMutation, useQuery } from "convex/react";
+import { useFonts } from "expo-font";
+import { Stack, useRouter, useSegments } from "expo-router";
+import * as SecureStore from "expo-secure-store";
+import { useCallback, useEffect, useState } from "react";
+import { ActivityIndicator, Platform, View } from "react-native";
+
+const FONT_SOURCES = {
+  "Peignot": require("../assets/fonts/Peignot.ttf"),
+  "Source Sans Pro": require("../assets/fonts/source-sans-pro.regular.ttf"),
+  "Source Sans Pro Light": require("../assets/fonts/source-sans-pro.light.ttf"),
+  "Source Sans Pro Light Italic": require(
+    "../assets/fonts/source-sans-pro.light-italic.ttf"
+  ),
+  "Source Sans Pro SemiBold": require(
+    "../assets/fonts/source-sans-pro.semibold.ttf"
+  ),
+  "Source Sans Pro Bold": require("../assets/fonts/source-sans-pro.bold.ttf"),
+  "East Market NF": require("../assets/fonts/EastMarketNF.ttf"),
+  Metaloxcide: require("../assets/fonts/Metaloxcide.ttf"),
+  "OpenDyslexic-Regular": require("../assets/fonts/OpenDyslexic-Regular.otf"),
+  "OpenDyslexic-Italic": require("../assets/fonts/OpenDyslexic-Italic.otf"),
+  "OpenDyslexic-Bold": require("../assets/fonts/OpenDyslexic-Bold.otf"),
+  "OpenDyslexic-Bold-Italic": require(
+    "../assets/fonts/OpenDyslexic-Bold-Italic.otf"
+  ),
+  "W95FA": require("../assets/fonts/W95FA.otf"),
+  "Sprat-Regular": require("../assets/fonts/sprat/Sprat-Regular.otf"),
+  "Sprat-Light": require("../assets/fonts/sprat/Sprat-Light.otf"),
+  "Sprat-Medium": require("../assets/fonts/sprat/Sprat-Medium.otf"),
+  "Sprat-Bold": require("../assets/fonts/sprat/Sprat-Bold.otf"),
+  "Sprat-Black": require("../assets/fonts/sprat/Sprat-Black.otf"),
+  "Sprat-Thin": require("../assets/fonts/sprat/Sprat-Thin.otf"),
+  "Sprat-CondensedBlack": require("../assets/fonts/sprat/Sprat-CondensedBlack.otf"),
+  "Sprat-CondensedBold": require("../assets/fonts/sprat/Sprat-CondensedBold.otf"),
+  "Sprat-CondensedLight": require("../assets/fonts/sprat/Sprat-CondensedLight.otf"),
+  "Sprat-CondensedMedium": require("../assets/fonts/sprat/Sprat-CondensedMedium.otf"),
+  "Sprat-CondensedThin": require("../assets/fonts/sprat/Sprat-CondensedThin.otf"),
+  "Sprat-CondesedRegular": require("../assets/fonts/sprat/Sprat-CondesedRegular.otf"),
+  "Sprat-ExtendedBlack": require("../assets/fonts/sprat/Sprat-ExtendedBlack.otf"),
+  "Sprat-ExtendedBold": require("../assets/fonts/sprat/Sprat-ExtendedBold.otf"),
+  "Sprat-ExtendedLight": require("../assets/fonts/sprat/Sprat-ExtendedLight.otf"),
+  "Sprat-ExtendedMedium": require("../assets/fonts/sprat/Sprat-ExtendedMedium.otf"),
+  "Sprat-ExtendedRegular": require("../assets/fonts/sprat/Sprat-ExtendedRegular.otf"),
+  "Sprat-ExtendedThin": require("../assets/fonts/sprat/Sprat-ExtendedThin.otf"),
+  "SpratVF": require("../assets/fonts/sprat/SpratVF.ttf"),
+  "Gloock-Regular": require("../assets/fonts/Gloock-Regular.ttf"),
+  "Gnomon-Foreground": require("../assets/fonts/Gnomon-Foreground.ttf"),
+  "Gnomon-Simple": require("../assets/fonts/Gnomon-Simple.ttf"),
+  "GreatVibes-Regular": require("../assets/fonts/GreatVibes-Regular.ttf"),
+  "NationalPark-VariableVF": require("../assets/fonts/NationalPark-VariableVF.ttf"),
+  "Amiamie-Regular": require("../assets/fonts/Amiamie/Amiamie-Regular.ttf"),
+  "Amiamie-Light": require("../assets/fonts/Amiamie/Amiamie-Light.ttf"),
+  "Amiamie-Black": require("../assets/fonts/Amiamie/Amiamie-Black.ttf"),
+  "Amiamie-Italic": require("../assets/fonts/Amiamie/Amiamie-Italic.ttf"),
+  "Amiamie-LightItalic": require("../assets/fonts/Amiamie/Amiamie-LightItalic.ttf"),
+  "Amiamie-BlackItalic": require("../assets/fonts/Amiamie/Amiamie-BlackItalic.ttf"),
+  "Amiamie-RegularRound": require("../assets/fonts/Amiamie/Amiamie-RegularRound.ttf"),
+  "Amiamie-ItalicRound": require("../assets/fonts/Amiamie/Amiamie-ItalicRound.ttf"),
+  "Amiamie-BlackRound": require("../assets/fonts/Amiamie/Amiamie-BlackRound.ttf"),
+  "Amiamie-BlackItalicRound": require("../assets/fonts/Amiamie/Amiamie-BlackItalicRound.ttf"),
+  "Basalte-Fond": require("../assets/fonts/Basalte/Basalte-Fond.otf"),
+  "Basalte-Multicolor": require("../assets/fonts/Basalte/Basalte-Multicolor.otf"),
+  "Basalte-Volume": require("../assets/fonts/Basalte/Basalte-Volume.otf"),
+  "Frick0.3-Regular": require("../assets/fonts/Frick/Frick0.3-Regular.otf"),
+  "Frick0.3-Condensed": require("../assets/fonts/Frick/Frick0.3-Condensed.otf"),
+  "FT88-Regular": require("../assets/fonts/FT-88/FT88-Regular.ttf"),
+  "FT88-Bold": require("../assets/fonts/FT-88/FT88-Bold.ttf"),
+  "FT88-Italic": require("../assets/fonts/FT-88/FT88-Italic.ttf"),
+  "FT88-School": require("../assets/fonts/FT-88/FT88-School.ttf"),
+  "FT88-Serif": require("../assets/fonts/FT-88/FT88-Serif.ttf"),
+  "FT88-Expanded": require("../assets/fonts/FT-88/FT88-Expanded.ttf"),
+  "FT88-Gothique": require("../assets/fonts/FT-88/FT88-Gothique.ttf"),
+  // Note: Garabosse fonts with special characters (·) cause CTFontManagerError on iOS
+  // They are still available via app.json for native builds, but not loaded via useFonts
+  // "Garabosse-Gaillard·e": require("../assets/fonts/Garabosse/Garabosse-Gaillard·e.otf"),
+  // "Garabosse-Mignon·ne": require("../assets/fonts/Garabosse/Garabosse-Mignon·ne.otf"),
+  // "Garabosse-Nonpareil·le": require("../assets/fonts/Garabosse/Garabosse-Nonpareil·le.otf"),
+  "Garabosse-Parangon": require("../assets/fonts/Garabosse/Garabosse-Parangon.otf"),
+  "Garabosse-Perle": require("../assets/fonts/Garabosse/Garabosse-Perle.otf"),
+  "Equateur-Regular": require("../assets/fonts/Latitude Equateur/Equateur-Regular.ttf"),
+  "Latitude-Regular": require("../assets/fonts/Latitude Equateur/Latitude-Regular.ttf"),
+  "Libertinage": require("../assets/fonts/libertinage/Libertinage.ttf"),
+  "Libertinage-a": require("../assets/fonts/libertinage/Libertinage-a.ttf"),
+  "Libertinage-b": require("../assets/fonts/libertinage/Libertinage-b.ttf"),
+  "Libertinage-c": require("../assets/fonts/libertinage/Libertinage-c.ttf"),
+  "Libertinage-d": require("../assets/fonts/libertinage/Libertinage-d.ttf"),
+  "Libertinage-e": require("../assets/fonts/libertinage/Libertinage-e.ttf"),
+  "Libertinage-f": require("../assets/fonts/libertinage/Libertinage-f.ttf"),
+  "Libertinage-g": require("../assets/fonts/libertinage/Libertinage-g.ttf"),
+  "Libertinage-h": require("../assets/fonts/libertinage/Libertinage-h.ttf"),
+  "Libertinage-i": require("../assets/fonts/libertinage/Libertinage-i.ttf"),
+  "Libertinage-j": require("../assets/fonts/libertinage/Libertinage-j.ttf"),
+  "Libertinage-k": require("../assets/fonts/libertinage/Libertinage-k.ttf"),
+  "Libertinage-l": require("../assets/fonts/libertinage/Libertinage-l.ttf"),
+  "Libertinage-m": require("../assets/fonts/libertinage/Libertinage-m.ttf"),
+  "Libertinage-n": require("../assets/fonts/libertinage/Libertinage-n.ttf"),
+  "Libertinage-o": require("../assets/fonts/libertinage/Libertinage-o.ttf"),
+  "Libertinage-p": require("../assets/fonts/libertinage/Libertinage-p.ttf"),
+  "Libertinage-q": require("../assets/fonts/libertinage/Libertinage-q.ttf"),
+  "Libertinage-r": require("../assets/fonts/libertinage/Libertinage-r.ttf"),
+  "Libertinage-s": require("../assets/fonts/libertinage/Libertinage-s.ttf"),
+  "Libertinage-t": require("../assets/fonts/libertinage/Libertinage-t.ttf"),
+  "Libertinage-u": require("../assets/fonts/libertinage/Libertinage-u.ttf"),
+  "Libertinage-v": require("../assets/fonts/libertinage/Libertinage-v.ttf"),
+  "Libertinage-w": require("../assets/fonts/libertinage/Libertinage-w.ttf"),
+  "Libertinage-x": require("../assets/fonts/libertinage/Libertinage-x.ttf"),
+  "Libertinage-y": require("../assets/fonts/libertinage/Libertinage-y.ttf"),
+  "Libertinage-z": require("../assets/fonts/libertinage/Libertinage-z.ttf"),
+  // Note: Venus+ fonts with + character cause CTFontManagerError on iOS
+  // They are still available via app.json for native builds, but not loaded via useFonts
+  // "Venus+Acier": require("../assets/fonts/Venus+/Venus+Acier.otf"),
+  // "Venus+Carrare": require("../assets/fonts/Venus+/Venus+Carrare.otf"),
+  // "Venus+Cormier": require("../assets/fonts/Venus+/Venus+Cormier.otf"),
+  // "Venus+Martre": require("../assets/fonts/Venus+/Venus+Martre.otf"),
+  // "Venus+Plomb": require("../assets/fonts/Venus+/Venus+Plomb.otf"),
+  "zarathustra-v01": require("../assets/fonts/zarathustra-v01.otf"),
+  // Saira fonts
+  "Saira-Thin": require("../assets/fonts/Saira/Saira-Thin.ttf"),
+  "Saira-ThinItalic": require("../assets/fonts/Saira/Saira-ThinItalic.ttf"),
+  "Saira-ExtraLight": require("../assets/fonts/Saira/Saira-ExtraLight.ttf"),
+  "Saira-ExtraLightItalic": require("../assets/fonts/Saira/Saira-ExtraLightItalic.ttf"),
+  "Saira-Light": require("../assets/fonts/Saira/Saira-Light.ttf"),
+  "Saira-LightItalic": require("../assets/fonts/Saira/Saira-LightItalic.ttf"),
+  "Saira-Regular": require("../assets/fonts/Saira/Saira-Regular.ttf"),
+  "Saira-Italic": require("../assets/fonts/Saira/Saira-Italic.ttf"),
+  "Saira-Medium": require("../assets/fonts/Saira/Saira-Medium.ttf"),
+  "Saira-MediumItalic": require("../assets/fonts/Saira/Saira-MediumItalic.ttf"),
+  "Saira-SemiBold": require("../assets/fonts/Saira/Saira-SemiBold.ttf"),
+  "Saira-SemiBoldItalic": require("../assets/fonts/Saira/Saira-SemiBoldItalic.ttf"),
+  "Saira-Bold": require("../assets/fonts/Saira/Saira-Bold.ttf"),
+  "Saira-BoldItalic": require("../assets/fonts/Saira/Saira-BoldItalic.ttf"),
+  "Saira-ExtraBold": require("../assets/fonts/Saira/Saira-ExtraBold.ttf"),
+  "Saira-ExtraBoldItalic": require("../assets/fonts/Saira/Saira-ExtraBoldItalic.ttf"),
+  "Saira-Black": require("../assets/fonts/Saira/Saira-Black.ttf"),
+  "Saira-BlackItalic": require("../assets/fonts/Saira/Saira-BlackItalic.ttf"),
+  // Saira Condensed
+  "SairaCondensed-Thin": require("../assets/fonts/Saira/SairaCondensed-Thin.ttf"),
+  "SairaCondensed-ThinItalic": require("../assets/fonts/Saira/SairaCondensed-ThinItalic.ttf"),
+  "SairaCondensed-ExtraLight": require("../assets/fonts/Saira/SairaCondensed-ExtraLight.ttf"),
+  "SairaCondensed-ExtraLightItalic": require("../assets/fonts/Saira/SairaCondensed-ExtraLightItalic.ttf"),
+  "SairaCondensed-Light": require("../assets/fonts/Saira/SairaCondensed-Light.ttf"),
+  "SairaCondensed-LightItalic": require("../assets/fonts/Saira/SairaCondensed-LightItalic.ttf"),
+  "SairaCondensed-Regular": require("../assets/fonts/Saira/SairaCondensed-Regular.ttf"),
+  "SairaCondensed-Italic": require("../assets/fonts/Saira/SairaCondensed-Italic.ttf"),
+  "SairaCondensed-Medium": require("../assets/fonts/Saira/SairaCondensed-Medium.ttf"),
+  "SairaCondensed-MediumItalic": require("../assets/fonts/Saira/SairaCondensed-MediumItalic.ttf"),
+  "SairaCondensed-SemiBold": require("../assets/fonts/Saira/SairaCondensed-SemiBold.ttf"),
+  "SairaCondensed-SemiBoldItalic": require("../assets/fonts/Saira/SairaCondensed-SemiBoldItalic.ttf"),
+  "SairaCondensed-Bold": require("../assets/fonts/Saira/SairaCondensed-Bold.ttf"),
+  "SairaCondensed-BoldItalic": require("../assets/fonts/Saira/SairaCondensed-BoldItalic.ttf"),
+  "SairaCondensed-ExtraBold": require("../assets/fonts/Saira/SairaCondensed-ExtraBold.ttf"),
+  "SairaCondensed-ExtraBoldItalic": require("../assets/fonts/Saira/SairaCondensed-ExtraBoldItalic.ttf"),
+  "SairaCondensed-Black": require("../assets/fonts/Saira/SairaCondensed-Black.ttf"),
+  "SairaCondensed-BlackItalic": require("../assets/fonts/Saira/SairaCondensed-BlackItalic.ttf"),
+  // Saira Expanded
+  "SairaExpanded-Thin": require("../assets/fonts/Saira/SairaExpanded-Thin.ttf"),
+  "SairaExpanded-ThinItalic": require("../assets/fonts/Saira/SairaExpanded-ThinItalic.ttf"),
+  "SairaExpanded-ExtraLight": require("../assets/fonts/Saira/SairaExpanded-ExtraLight.ttf"),
+  "SairaExpanded-ExtraLightItalic": require("../assets/fonts/Saira/SairaExpanded-ExtraLightItalic.ttf"),
+  "SairaExpanded-Light": require("../assets/fonts/Saira/SairaExpanded-Light.ttf"),
+  "SairaExpanded-LightItalic": require("../assets/fonts/Saira/SairaExpanded-LightItalic.ttf"),
+  "SairaExpanded-Regular": require("../assets/fonts/Saira/SairaExpanded-Regular.ttf"),
+  "SairaExpanded-Italic": require("../assets/fonts/Saira/SairaExpanded-Italic.ttf"),
+  "SairaExpanded-Medium": require("../assets/fonts/Saira/SairaExpanded-Medium.ttf"),
+  "SairaExpanded-MediumItalic": require("../assets/fonts/Saira/SairaExpanded-MediumItalic.ttf"),
+  "SairaExpanded-SemiBold": require("../assets/fonts/Saira/SairaExpanded-SemiBold.ttf"),
+  "SairaExpanded-SemiBoldItalic": require("../assets/fonts/Saira/SairaExpanded-SemiBoldItalic.ttf"),
+  "SairaExpanded-Bold": require("../assets/fonts/Saira/SairaExpanded-Bold.ttf"),
+  "SairaExpanded-BoldItalic": require("../assets/fonts/Saira/SairaExpanded-BoldItalic.ttf"),
+  "SairaExpanded-ExtraBold": require("../assets/fonts/Saira/SairaExpanded-ExtraBold.ttf"),
+  "SairaExpanded-ExtraBoldItalic": require("../assets/fonts/Saira/SairaExpanded-ExtraBoldItalic.ttf"),
+  "SairaExpanded-Black": require("../assets/fonts/Saira/SairaExpanded-Black.ttf"),
+  "SairaExpanded-BlackItalic": require("../assets/fonts/Saira/SairaExpanded-BlackItalic.ttf"),
+  // Saira Extra Condensed
+  "SairaExtraCondensed-Thin": require("../assets/fonts/Saira/SairaExtraCondensed-Thin.ttf"),
+  "SairaExtraCondensed-ThinItalic": require("../assets/fonts/Saira/SairaExtraCondensed-ThinItalic.ttf"),
+  "SairaExtraCondensed-ExtraLight": require("../assets/fonts/Saira/SairaExtraCondensed-ExtraLight.ttf"),
+  "SairaExtraCondensed-ExtraLightItalic": require("../assets/fonts/Saira/SairaExtraCondensed-ExtraLightItalic.ttf"),
+  "SairaExtraCondensed-Light": require("../assets/fonts/Saira/SairaExtraCondensed-Light.ttf"),
+  "SairaExtraCondensed-LightItalic": require("../assets/fonts/Saira/SairaExtraCondensed-LightItalic.ttf"),
+  "SairaExtraCondensed-Regular": require("../assets/fonts/Saira/SairaExtraCondensed-Regular.ttf"),
+  "SairaExtraCondensed-Italic": require("../assets/fonts/Saira/SairaExtraCondensed-Italic.ttf"),
+  "SairaExtraCondensed-Medium": require("../assets/fonts/Saira/SairaExtraCondensed-Medium.ttf"),
+  "SairaExtraCondensed-MediumItalic": require("../assets/fonts/Saira/SairaExtraCondensed-MediumItalic.ttf"),
+  "SairaExtraCondensed-SemiBold": require("../assets/fonts/Saira/SairaExtraCondensed-SemiBold.ttf"),
+  "SairaExtraCondensed-SemiBoldItalic": require("../assets/fonts/Saira/SairaExtraCondensed-SemiBoldItalic.ttf"),
+  "SairaExtraCondensed-Bold": require("../assets/fonts/Saira/SairaExtraCondensed-Bold.ttf"),
+  "SairaExtraCondensed-BoldItalic": require("../assets/fonts/Saira/SairaExtraCondensed-BoldItalic.ttf"),
+  "SairaExtraCondensed-ExtraBold": require("../assets/fonts/Saira/SairaExtraCondensed-ExtraBold.ttf"),
+  "SairaExtraCondensed-ExtraBoldItalic": require("../assets/fonts/Saira/SairaExtraCondensed-ExtraBoldItalic.ttf"),
+  "SairaExtraCondensed-Black": require("../assets/fonts/Saira/SairaExtraCondensed-Black.ttf"),
+  "SairaExtraCondensed-BlackItalic": require("../assets/fonts/Saira/SairaExtraCondensed-BlackItalic.ttf"),
+  // Saira Semi Condensed
+  "SairaSemiCondensed-Thin": require("../assets/fonts/Saira/SairaSemiCondensed-Thin.ttf"),
+  "SairaSemiCondensed-ThinItalic": require("../assets/fonts/Saira/SairaSemiCondensed-ThinItalic.ttf"),
+  "SairaSemiCondensed-ExtraLight": require("../assets/fonts/Saira/SairaSemiCondensed-ExtraLight.ttf"),
+  "SairaSemiCondensed-ExtraLightItalic": require("../assets/fonts/Saira/SairaSemiCondensed-ExtraLightItalic.ttf"),
+  "SairaSemiCondensed-Light": require("../assets/fonts/Saira/SairaSemiCondensed-Light.ttf"),
+  "SairaSemiCondensed-LightItalic": require("../assets/fonts/Saira/SairaSemiCondensed-LightItalic.ttf"),
+  "SairaSemiCondensed-Regular": require("../assets/fonts/Saira/SairaSemiCondensed-Regular.ttf"),
+  "SairaSemiCondensed-Italic": require("../assets/fonts/Saira/SairaSemiCondensed-Italic.ttf"),
+  "SairaSemiCondensed-Medium": require("../assets/fonts/Saira/SairaSemiCondensed-Medium.ttf"),
+  "SairaSemiCondensed-MediumItalic": require("../assets/fonts/Saira/SairaSemiCondensed-MediumItalic.ttf"),
+  "SairaSemiCondensed-SemiBold": require("../assets/fonts/Saira/SairaSemiCondensed-SemiBold.ttf"),
+  "SairaSemiCondensed-SemiBoldItalic": require("../assets/fonts/Saira/SairaSemiCondensed-SemiBoldItalic.ttf"),
+  "SairaSemiCondensed-Bold": require("../assets/fonts/Saira/SairaSemiCondensed-Bold.ttf"),
+  "SairaSemiCondensed-BoldItalic": require("../assets/fonts/Saira/SairaSemiCondensed-BoldItalic.ttf"),
+  "SairaSemiCondensed-ExtraBold": require("../assets/fonts/Saira/SairaSemiCondensed-ExtraBold.ttf"),
+  "SairaSemiCondensed-ExtraBoldItalic": require("../assets/fonts/Saira/SairaSemiCondensed-ExtraBoldItalic.ttf"),
+  "SairaSemiCondensed-Black": require("../assets/fonts/Saira/SairaSemiCondensed-Black.ttf"),
+  "SairaSemiCondensed-BlackItalic": require("../assets/fonts/Saira/SairaSemiCondensed-BlackItalic.ttf"),
+  // Saira Semi Expanded
+  "SairaSemiExpanded-Thin": require("../assets/fonts/Saira/SairaSemiExpanded-Thin.ttf"),
+  "SairaSemiExpanded-ThinItalic": require("../assets/fonts/Saira/SairaSemiExpanded-ThinItalic.ttf"),
+  "SairaSemiExpanded-ExtraLight": require("../assets/fonts/Saira/SairaSemiExpanded-ExtraLight.ttf"),
+  "SairaSemiExpanded-ExtraLightItalic": require("../assets/fonts/Saira/SairaSemiExpanded-ExtraLightItalic.ttf"),
+  "SairaSemiExpanded-Light": require("../assets/fonts/Saira/SairaSemiExpanded-Light.ttf"),
+  "SairaSemiExpanded-LightItalic": require("../assets/fonts/Saira/SairaSemiExpanded-LightItalic.ttf"),
+  "SairaSemiExpanded-Regular": require("../assets/fonts/Saira/SairaSemiExpanded-Regular.ttf"),
+  "SairaSemiExpanded-Italic": require("../assets/fonts/Saira/SairaSemiExpanded-Italic.ttf"),
+  "SairaSemiExpanded-Medium": require("../assets/fonts/Saira/SairaSemiExpanded-Medium.ttf"),
+  "SairaSemiExpanded-MediumItalic": require("../assets/fonts/Saira/SairaSemiExpanded-MediumItalic.ttf"),
+  "SairaSemiExpanded-SemiBold": require("../assets/fonts/Saira/SairaSemiExpanded-SemiBold.ttf"),
+  "SairaSemiExpanded-SemiBoldItalic": require("../assets/fonts/Saira/SairaSemiExpanded-SemiBoldItalic.ttf"),
+  "SairaSemiExpanded-Bold": require("../assets/fonts/Saira/SairaSemiExpanded-Bold.ttf"),
+  "SairaSemiExpanded-BoldItalic": require("../assets/fonts/Saira/SairaSemiExpanded-BoldItalic.ttf"),
+  "SairaSemiExpanded-ExtraBold": require("../assets/fonts/Saira/SairaSemiExpanded-ExtraBold.ttf"),
+  "SairaSemiExpanded-ExtraBoldItalic": require("../assets/fonts/Saira/SairaSemiExpanded-ExtraBoldItalic.ttf"),
+  "SairaSemiExpanded-Black": require("../assets/fonts/Saira/SairaSemiExpanded-Black.ttf"),
+  "SairaSemiExpanded-BlackItalic": require("../assets/fonts/Saira/SairaSemiExpanded-BlackItalic.ttf"),
+  // Saira Ultra Condensed
+  "SairaUltraCondensed-Thin": require("../assets/fonts/Saira/SairaUltraCondensed-Thin.ttf"),
+  "SairaUltraCondensed-ThinItalic": require("../assets/fonts/Saira/SairaUltraCondensed-ThinItalic.ttf"),
+  "SairaUltraCondensed-ExtraLight": require("../assets/fonts/Saira/SairaUltraCondensed-ExtraLight.ttf"),
+  "SairaUltraCondensed-ExtraLightItalic": require("../assets/fonts/Saira/SairaUltraCondensed-ExtraLightItalic.ttf"),
+  "SairaUltraCondensed-Light": require("../assets/fonts/Saira/SairaUltraCondensed-Light.ttf"),
+  "SairaUltraCondensed-LightItalic": require("../assets/fonts/Saira/SairaUltraCondensed-LightItalic.ttf"),
+  "SairaUltraCondensed-Regular": require("../assets/fonts/Saira/SairaUltraCondensed-Regular.ttf"),
+  "SairaUltraCondensed-Italic": require("../assets/fonts/Saira/SairaUltraCondensed-Italic.ttf"),
+  "SairaUltraCondensed-Medium": require("../assets/fonts/Saira/SairaUltraCondensed-Medium.ttf"),
+  "SairaUltraCondensed-MediumItalic": require("../assets/fonts/Saira/SairaUltraCondensed-MediumItalic.ttf"),
+  "SairaUltraCondensed-SemiBold": require("../assets/fonts/Saira/SairaUltraCondensed-SemiBold.ttf"),
+  "SairaUltraCondensed-SemiBoldItalic": require("../assets/fonts/Saira/SairaUltraCondensed-SemiBoldItalic.ttf"),
+  "SairaUltraCondensed-Bold": require("../assets/fonts/Saira/SairaUltraCondensed-Bold.ttf"),
+  "SairaUltraCondensed-BoldItalic": require("../assets/fonts/Saira/SairaUltraCondensed-BoldItalic.ttf"),
+  "SairaUltraCondensed-ExtraBold": require("../assets/fonts/Saira/SairaUltraCondensed-ExtraBold.ttf"),
+  "SairaUltraCondensed-ExtraBoldItalic": require("../assets/fonts/Saira/SairaUltraCondensed-ExtraBoldItalic.ttf"),
+  "SairaUltraCondensed-Black": require("../assets/fonts/Saira/SairaUltraCondensed-Black.ttf"),
+  "SairaUltraCondensed-BlackItalic": require("../assets/fonts/Saira/SairaUltraCondensed-BlackItalic.ttf"),
+};
+
+const convex = new ConvexReactClient(process.env.EXPO_PUBLIC_CONVEX_URL!, {
+  unsavedChangesWarning: false,
+});
+
+const secureStorage = {
+  getItem: SecureStore.getItemAsync,
+  setItem: SecureStore.setItemAsync,
+  removeItem: SecureStore.deleteItemAsync,
+};
+
+const defaultTokens = getThemeDefinition(defaultThemeName).tokens;
+
+const DEFAULT_ACCESSIBILITY: AccessibilityPreferences = {
+  baseTextSize: "base",
+  dyslexiaEnabled: false,
+  highContrastMode: "off",
+  motionPreference: "system",
+};
+
+const isBaseTextSize = (value: unknown): value is AccessibilityPreferences["baseTextSize"] =>
+  value === "extraSmall" || value === "base" || value === "large" || value === "extraLarge";
+
+const isMotionPreference = (
+  value: unknown
+): value is AccessibilityPreferences["motionPreference"] =>
+  value === "system" || value === "reduce" || value === "standard";
+
+function AuthenticatedApp() {
+  const { isAuthenticated, isLoading } = useConvexAuth();
+  const user = useQuery(api.users.getCurrentUser);
+  const updateProfile = useMutation(api.users.updateProfile);
+  const [preferredTheme, setPreferredTheme] = useState<string | null>(defaultThemeName);
+  const [customThemeShareCode, setCustomThemeShareCode] = useState<string | null>(null);
+  const [accessibilityPreferences, setAccessibilityPreferences] =
+    useState<AccessibilityPreferences>(DEFAULT_ACCESSIBILITY);
+
+  useEffect(() => {
+    if (user === undefined) {
+      return;
+    }
+
+    const userData = user as { 
+      preferredTheme?: string | null;
+      customThemeShareCode?: string | null;
+    } | null;
+
+    // Check preferredTheme first - if it's a built-in theme, use that (even if customThemeShareCode exists)
+    const candidate = userData?.preferredTheme;
+    if (candidate && isThemeName(candidate)) {
+      // User has selected a built-in theme, so clear custom theme
+      setPreferredTheme(candidate);
+      setCustomThemeShareCode(null);
+      return;
+    }
+
+    // If customThemeShareCode exists, prioritize it (user wants custom theme)
+    if (userData?.customThemeShareCode) {
+      setCustomThemeShareCode(userData.customThemeShareCode);
+      setPreferredTheme(null); // Don't set a built-in theme - ThemeProvider will load custom theme
+      return;
+    }
+
+    // Default fallback - only if neither is set
+    setPreferredTheme(defaultThemeName);
+    setCustomThemeShareCode(null);
+  }, [user]);
+
+  useEffect(() => {
+    if (user === undefined) {
+      return;
+    }
+
+    const profile =
+      (user as {
+        preferredTextSize?: string | null;
+        dyslexiaMode?: boolean | null;
+        highContrastMode?: string | boolean | null;
+        motionPreference?: string | null;
+      } | null) ?? null;
+
+    const baseTextSize = profile?.preferredTextSize;
+    const dyslexiaMode = profile?.dyslexiaMode ?? false;
+    const highContrastModeValue = profile?.highContrastMode;
+    const resolvedHighContrastMode: AccessibilityPreferences["highContrastMode"] =
+      highContrastModeValue === "light" || highContrastModeValue === "dark"
+        ? highContrastModeValue
+        : highContrastModeValue === "off"
+        ? "off"
+        : highContrastModeValue === true
+        ? "dark"
+        : DEFAULT_ACCESSIBILITY.highContrastMode;
+    const motionPreference = profile?.motionPreference;
+
+    setAccessibilityPreferences({
+      baseTextSize: isBaseTextSize(baseTextSize)
+        ? baseTextSize
+        : DEFAULT_ACCESSIBILITY.baseTextSize,
+      dyslexiaEnabled: Boolean(dyslexiaMode),
+      highContrastMode: resolvedHighContrastMode,
+      motionPreference: isMotionPreference(motionPreference)
+        ? motionPreference
+        : DEFAULT_ACCESSIBILITY.motionPreference,
+    });
+  }, [user]);
+
+  useEffect(() => {
+    if (user === undefined) {
+      return;
+    }
+
+    const profile = (user as { preferredLanguage?: string | null } | null) ?? null;
+    const preferredLanguage = profile?.preferredLanguage;
+
+    if (preferredLanguage) {
+      void changeLanguage(preferredLanguage);
+    }
+  }, [user]);
+
+  const persistThemePreference = useCallback(
+    async (nextTheme: ThemeName) => {
+      setPreferredTheme(nextTheme);
+
+      if (!isAuthenticated) {
+        return;
+      }
+
+      try {
+        // When switching to a built-in theme, clear custom theme share code
+        // (custom themes are handled separately via ThemeSwitcher)
+        await updateProfile({ 
+          preferredTheme: nextTheme,
+          customThemeShareCode: null, // Explicitly clear custom theme
+        });
+        // Clear local state if switching away from custom theme
+        if (customThemeShareCode) {
+          setCustomThemeShareCode(null);
+        }
+      } catch (error) {
+        console.error("Failed to persist theme preference", error);
+      }
+    },
+    [isAuthenticated, updateProfile, customThemeShareCode]
+  );
+
+  const persistAccessibilityPreferences = useCallback(
+    async (nextPreferences: AccessibilityPreferences) => {
+      setAccessibilityPreferences(nextPreferences);
+
+      if (!isAuthenticated) {
+        return;
+      }
+
+      try {
+        await updateProfile({
+          preferredTextSize: nextPreferences.baseTextSize,
+          dyslexiaMode: nextPreferences.dyslexiaEnabled,
+          highContrastMode: nextPreferences.highContrastMode,
+          motionPreference: nextPreferences.motionPreference,
+        });
+      } catch (error) {
+        console.error("Failed to persist accessibility preferences", error);
+      }
+    },
+    [isAuthenticated, updateProfile]
+  );
+
+  return (
+    <TranslationProvider>
+      <RecipeListsProvider>
+        <ThemeProvider
+          initialThemeName={preferredTheme}
+          initialCustomThemeShareCode={customThemeShareCode}
+          onPersistTheme={persistThemePreference}
+          initialAccessibilityPreferences={accessibilityPreferences}
+          onPersistAccessibility={persistAccessibilityPreferences}
+        >
+          <AuthenticatedAppShell
+            isAuthenticated={isAuthenticated}
+            isLoading={isLoading}
+            user={user}
+          />
+        </ThemeProvider>
+      </RecipeListsProvider>
+    </TranslationProvider>
+  );
+}
+
+type AuthenticatedAppShellProps = {
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  user: unknown;
+};
+
+function AuthenticatedAppShell({ isAuthenticated, isLoading, user }: AuthenticatedAppShellProps) {
+  const router = useRouter();
+  const segments = useSegments();
+  const styles = useThemedStyles(createLayoutStyles) as ReturnType<typeof createLayoutStyles>;
+  const { tokens } = useThemedStyles((t) => ({ tokens: t })) as { tokens: typeof defaultTokens };
+  const { t } = useTranslation();
+
+  useEffect(() => {
+    if (!isAuthenticated || user === undefined) {
+      return;
+    }
+
+    const inOnboarding = segments[0] === "onboarding";
+    const onboardingComplete = Boolean((user as { onboardingCompleted?: boolean } | null)?.onboardingCompleted);
+
+    if (!onboardingComplete && !inOnboarding) {
+      router.replace("/onboarding/accessibility");
+    }
+
+    if (onboardingComplete && inOnboarding) {
+      router.replace("/");
+    }
+  }, [isAuthenticated, router, segments, user]);
+
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <SignIn />;
+  }
+
+  if (user === undefined) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.rootContainer}>
+      <Stack
+        screenOptions={{
+          headerStyle: {
+            backgroundColor: tokens.colors.surface,
+          },
+          headerTintColor: tokens.colors.textPrimary,
+          headerTitleStyle: {
+            fontFamily: tokens.fontFamilies.display,
+            fontSize: tokens.typography.title,
+          },
+          headerBackTitleStyle: {
+            fontFamily: tokens.fontFamilies.regular,
+            fontSize: tokens.typography.body,
+          },
+          headerBackTitle: t("navigation.back"),
+          headerShadowVisible: true,
+          contentStyle: {
+            backgroundColor: tokens.colors.background,
+          },
+        }}
+      >
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="add-task" options={{ presentation: "modal" }} />
+        <Stack.Screen name="tasks/[id]" />
+        <Stack.Screen name="profile" options={{ title: t("profile.title").toUpperCase() }} />
+        <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+      </Stack>
+    </View>
+  );
+}
+
+export default function RootLayout() {
+  const [fontsLoaded, fontError] = useFonts(FONT_SOURCES);
+
+  useEffect(() => {
+    if (fontError) {
+      console.error("Failed to load fonts", fontError);
+    }
+  }, [fontError]);
+
+  if (!fontsLoaded && !fontError) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: defaultTokens.colors.surface,
+        }}
+      >
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+
+  return (
+    <ConvexAuthProvider
+      client={convex}
+      storage={
+        Platform.OS === "android" || Platform.OS === "ios"
+          ? secureStorage
+          : undefined
+      }
+    >
+      <AuthenticatedApp />
+    </ConvexAuthProvider>
+  );
+}

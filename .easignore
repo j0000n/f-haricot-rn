@@ -1,0 +1,48 @@
+# Exclude unnecessary files from EAS builds to reduce size
+
+# Example and backup directories
+app-example/
+recipes-backup/
+recipes-backup.zip
+data-node-proj/
+
+# Website directory (not needed for mobile builds)
+website/
+
+# Documentation
+docs/
+*.md
+AGENTS.md
+CLAUDE.md
+November3Plan.md
+plan/
+
+# Build artifacts
+*.ipa
+build-*.ipa
+ios/build/
+android/build/
+android/app/build/
+.expo/
+
+# Development files
+.vscode/
+.idea/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Test files
+**/__tests__/
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Design tokens preview
+design-tokens-preview.html
+

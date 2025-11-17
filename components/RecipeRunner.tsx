@@ -1,0 +1,324 @@
+import React, { useEffect, useMemo, useState } from "react";
+import { Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
+import type { TFunction } from "i18next";
+
+import { useTranslation } from "@/i18n/useTranslation";
+import type { Recipe } from "@/types/recipe";
+import type { ThemeTokens } from "@/styles/themes/types";
+import { useThemedStyles } from "@/styles/tokens";
+
+interface RecipeRunnerProps {
+  recipe: Recipe;
+  language: keyof Recipe["recipeName"];
+  onExit: () => void;
+}
+
+type Styles = ReturnType<typeof createStyles>;
+
+type TimerState = {
+  secondsRemaining: number;
+  isRunning: boolean;
+};
+
+const createStyles = (tokens: ThemeTokens) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: tokens.colors.background,
+      padding: tokens.padding.screen,
+      gap: tokens.spacing.md,
+    },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    exitButton: {
+      paddingHorizontal: tokens.spacing.sm,
+      paddingVertical: tokens.spacing.xs,
+      borderRadius: tokens.radii.sm,
+      backgroundColor: tokens.colors.surface,
+    },
+    exitButtonText: {
+      fontFamily: tokens.fontFamilies.semiBold,
+      fontSize: tokens.typography.small,
+      color: tokens.colors.accent,
+    },
+    progress: {
+      fontFamily: tokens.fontFamilies.medium,
+      fontSize: tokens.typography.small,
+      color: tokens.colors.textSecondary,
+    },
+    progressBar: {
+      height: tokens.spacing.xxs,
+      backgroundColor: tokens.colors.overlay,
+      borderRadius: tokens.radii.sm,
+      overflow: "hidden",
+    },
+    progressFill: {
+      height: "100%",
+      backgroundColor: tokens.colors.accent,
+    },
+    stepContainer: {
+      flex: 1,
+      gap: tokens.spacing.sm,
+    },
+    stepNumber: {
+      fontFamily: tokens.fontFamilies.semiBold,
+      fontSize: tokens.typography.subheading,
+      color: tokens.colors.textPrimary,
+    },
+    instruction: {
+      fontFamily: tokens.fontFamilies.regular,
+      fontSize: tokens.typography.body,
+      color: tokens.colors.textPrimary,
+      lineHeight: tokens.typography.body * tokens.lineHeights.relaxed,
+    },
+    temperature: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: tokens.spacing.xs,
+      backgroundColor: tokens.colors.surface,
+      borderRadius: tokens.radii.sm,
+      paddingHorizontal: tokens.spacing.sm,
+      paddingVertical: tokens.spacing.xs,
+      borderWidth: tokens.borderWidths.thin,
+      borderColor: tokens.colors.border,
+    },
+    temperatureText: {
+      fontFamily: tokens.fontFamilies.medium,
+      fontSize: tokens.typography.small,
+      color: tokens.colors.textPrimary,
+    },
+    navigation: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      gap: tokens.spacing.sm,
+    },
+    navButton: {
+      flex: 1,
+      borderRadius: tokens.radii.sm,
+      paddingVertical: tokens.spacing.sm,
+      backgroundColor: tokens.colors.surface,
+      alignItems: "center",
+      borderWidth: tokens.borderWidths.thin,
+      borderColor: tokens.colors.border,
+    },
+    navButtonDisabled: {
+      opacity: tokens.opacity.disabled,
+    },
+    navButtonText: {
+      fontFamily: tokens.fontFamilies.medium,
+      fontSize: tokens.typography.body,
+      color: tokens.colors.textPrimary,
+    },
+    primaryButton: {
+      backgroundColor: tokens.colors.accent,
+      borderColor: tokens.colors.accent,
+    },
+    primaryButtonText: {
+      fontFamily: tokens.fontFamilies.semiBold,
+      fontSize: tokens.typography.body,
+      color: tokens.colors.accentOnPrimary,
+    },
+    completeButton: {
+      backgroundColor: tokens.colors.success,
+      borderColor: tokens.colors.success,
+    },
+    timer: {
+      gap: tokens.spacing.xs,
+      backgroundColor: tokens.colors.surface,
+      borderRadius: tokens.radii.sm,
+      padding: tokens.spacing.sm,
+      borderWidth: tokens.borderWidths.thin,
+      borderColor: tokens.colors.border,
+    },
+    timerLabel: {
+      fontFamily: tokens.fontFamilies.regular,
+      fontSize: tokens.typography.small,
+      color: tokens.colors.textSecondary,
+    },
+    timerValue: {
+      fontFamily: tokens.fontFamilies.bold,
+      fontSize: tokens.typography.heading,
+      color: tokens.colors.textPrimary,
+    },
+    timerControls: {
+      flexDirection: "row",
+      gap: tokens.spacing.xs,
+    },
+    timerButton: {
+      flex: 1,
+      alignItems: "center",
+      paddingVertical: tokens.spacing.xs,
+      borderRadius: tokens.radii.sm,
+      backgroundColor: tokens.colors.overlay,
+    },
+    timerButtonText: {
+      fontFamily: tokens.fontFamilies.semiBold,
+      fontSize: tokens.typography.tiny,
+      color: tokens.colors.textPrimary,
+    },
+  });
+
+export const RecipeRunner: React.FC<RecipeRunnerProps> = ({ recipe, language, onExit }) => {
+  const styles = useThemedStyles<Styles>(createStyles);
+  const { t } = useTranslation();
+  const [currentStep, setCurrentStep] = useState(0);
+
+  const step = recipe.steps[currentStep];
+  const isLastStep = currentStep === recipe.steps.length - 1;
+
+  const progress = useMemo(
+    () => `${Math.round(((currentStep + 1) / recipe.steps.length) * 100)}%`,
+    [currentStep, recipe.steps.length],
+  );
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <Pressable style={styles.exitButton} onPress={onExit} accessibilityRole="button">
+          <Text style={styles.exitButtonText}>{t("common.exit")}</Text>
+        </Pressable>
+        <Text style={styles.progress}>
+          {currentStep + 1} / {recipe.steps.length} ({progress})
+        </Text>
+      </View>
+
+      <View style={styles.progressBar}>
+        <View
+          style={[
+            styles.progressFill,
+            { width: `${((currentStep + 1) / recipe.steps.length) * 100}%` },
+          ]}
+        />
+      </View>
+
+      <View style={styles.stepContainer}>
+        <Text style={styles.stepNumber}>
+          {t("recipe.step")} {step.stepNumber}
+        </Text>
+        <Text style={styles.instruction}>
+          {step.instructions[language] || step.instructions.en}
+        </Text>
+
+        {step.timeInMinutes ? (
+          <TimerComponent
+            key={step.stepNumber}
+            minutes={step.timeInMinutes}
+            styles={styles}
+            t={t}
+          />
+        ) : null}
+
+        {step.temperature ? (
+          <View style={styles.temperature}>
+            <Text style={styles.temperatureText}>
+              🌡️ {step.temperature.value}°{step.temperature.unit}
+            </Text>
+          </View>
+        ) : null}
+      </View>
+
+      <View style={styles.navigation}>
+        <Pressable
+          style={[styles.navButton, currentStep === 0 && styles.navButtonDisabled]}
+          onPress={() => setCurrentStep((prev) => Math.max(0, prev - 1))}
+          disabled={currentStep === 0}
+        >
+          <Text style={styles.navButtonText}>⬅️ {t("recipe.previous")}</Text>
+        </Pressable>
+
+        <Pressable
+          style={[styles.navButton, styles.primaryButton, isLastStep && styles.completeButton]}
+          onPress={() => {
+            if (isLastStep) {
+              onExit();
+            } else {
+              setCurrentStep((prev) => Math.min(recipe.steps.length - 1, prev + 1));
+            }
+          }}
+        >
+          <Text style={styles.primaryButtonText}>
+            {isLastStep ? `✅ ${t("recipe.complete")}` : `${t("recipe.next")} ➡️`}
+          </Text>
+        </Pressable>
+      </View>
+    </SafeAreaView>
+  );
+};
+
+interface TimerComponentProps {
+  minutes: number;
+  styles: Styles;
+  t: TFunction;
+}
+
+const TimerComponent: React.FC<TimerComponentProps> = ({ minutes, styles, t }) => {
+  const [state, setState] = useState<TimerState>({
+    secondsRemaining: minutes * 60,
+    isRunning: false,
+  });
+
+  useEffect(() => {
+    setState({ secondsRemaining: minutes * 60, isRunning: false });
+  }, [minutes]);
+
+  useEffect(() => {
+    if (!state.isRunning) {
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setState((prev) => {
+        if (prev.secondsRemaining <= 1) {
+          clearInterval(interval);
+          return { secondsRemaining: 0, isRunning: false };
+        }
+
+        return {
+          ...prev,
+          secondsRemaining: prev.secondsRemaining - 1,
+        };
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [state.isRunning]);
+
+  const minutesRemaining = Math.floor(state.secondsRemaining / 60)
+    .toString()
+    .padStart(2, "0");
+  const secondsRemaining = (state.secondsRemaining % 60).toString().padStart(2, "0");
+
+  return (
+    <View style={styles.timer}>
+      <Text style={styles.timerLabel}>{t("recipe.timerLabel", { minutes })}</Text>
+      <Text style={styles.timerValue}>
+        {minutesRemaining}:{secondsRemaining}
+      </Text>
+      <View style={styles.timerControls}>
+        <Pressable
+          style={styles.timerButton}
+          onPress={() =>
+            setState((prev) => ({
+              ...prev,
+              isRunning: !prev.isRunning,
+            }))
+          }
+        >
+          <Text style={styles.timerButtonText}>
+            {state.isRunning ? t("recipe.timerPause") : t("recipe.timerStart")}
+          </Text>
+        </Pressable>
+        <Pressable
+          style={styles.timerButton}
+          onPress={() => setState({ secondsRemaining: minutes * 60, isRunning: false })}
+        >
+          <Text style={styles.timerButtonText}>{t("recipe.timerReset")}</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+};
