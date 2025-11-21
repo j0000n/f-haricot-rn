@@ -322,7 +322,8 @@
                 "fontFamily": "East Market NF",
                 "fontDefinitions": [
                   {
-                    "path": "./assets/fonts/EastMarketNF.ttf"
+                    "path": "./assets/fonts/EastMarketNF.ttf",
+                    "fontWeight": 400
                   }
                 ]
               },
@@ -455,13 +456,16 @@
                 "fontFamily": "Basalte",
                 "fontDefinitions": [
                   {
-                    "path": "./assets/fonts/Basalte/Basalte-Fond.otf"
+                    "path": "./assets/fonts/Basalte/Basalte-Fond.otf",
+                    "fontWeight": 400
                   },
                   {
-                    "path": "./assets/fonts/Basalte/Basalte-Multicolor.otf"
+                    "path": "./assets/fonts/Basalte/Basalte-Multicolor.otf",
+                    "fontWeight": 400
                   },
                   {
-                    "path": "./assets/fonts/Basalte/Basalte-Volume.otf"
+                    "path": "./assets/fonts/Basalte/Basalte-Volume.otf",
+                    "fontWeight": 400
                   }
                 ]
               },
