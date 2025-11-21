@@ -7,4 +7,4 @@
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen"
     android:previewImage="@android:drawable/ic_menu_view"
-    android:description="Haricot inventory and recipe overview" />
+    android:description="@string/widget_description" />

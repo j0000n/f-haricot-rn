@@ -47,6 +47,7 @@ const withAndroidWidgetFiles = (config, { packageName }) =>
     const javaSource = path.join(sourceRoot, "java");
     const layoutsSource = path.join(sourceRoot, "res", "layout");
     const xmlSource = path.join(sourceRoot, "res", "xml");
+    const valuesSource = path.join(sourceRoot, "res", "values");
 
     const packagePath = packageName.split(".").join(path.sep);
     const javaDestination = path.join(
@@ -80,9 +81,20 @@ const withAndroidWidgetFiles = (config, { packageName }) =>
       "xml",
     );
 
+    const valuesDestination = path.join(
+      projectRoot,
+      "android",
+      "app",
+      "src",
+      "main",
+      "res",
+      "values",
+    );
+
     await copyDirectory(javaSource, javaDestination);
     await copyDirectory(layoutsSource, layoutDestination);
     await copyDirectory(xmlSource, xmlDestination);
+    await copyDirectory(valuesSource, valuesDestination);
 
     return config;
   }]);
@@ -96,16 +108,14 @@ const withAndroidWidgetProvider = (config, { packageName }) =>
     }
 
     const providerName = `${packageName}.widgets.HaricotWidgetProvider`;
-    const authorities = `${packageName}.widgets.provider`;
-    const existing = app.provider?.find((item) => item.$["android:name"] === providerName);
+    const existing = app.receiver?.find((item) => item.$["android:name"] === providerName);
 
     if (!existing) {
-      app.provider = app.provider ?? [];
-      app.provider.push({
+      app.receiver = app.receiver ?? [];
+      app.receiver.push({
         $: {
           "android:name": providerName,
-          "android:authorities": authorities,
-          "android:exported": "false",
+          "android:exported": "true",
         },
         "intent-filter": [
           {
