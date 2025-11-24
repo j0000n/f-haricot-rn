@@ -89,6 +89,8 @@ export default function HomeScreen() {
 
   const handleItemPress = (itemId: string, item: InventoryDisplayItem) => {
     console.log("Item pressed:", itemId, item.displayName);
+    router.push(`/ingredient/${encodeURIComponent(itemId)}`);
+    console.log("Navigating to:", `/ingredient/${encodeURIComponent(itemId)}`);
     // Navigate to item detail screen when implemented
   };
 
