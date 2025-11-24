@@ -8,5 +8,8 @@ expo-env.d.ts
 
 /ios
 /android
+
+node_modules/
 node_modules
+/node_modules
 .expo/
