@@ -90,7 +90,11 @@ export const LinkPreviewCard: React.FC<LinkPreviewCardProps> = ({ preview, onPre
       accessibilityLabel={preview.title}
     >
       {preview.image ? (
-        <Image source={{ uri: preview.image }} style={styles.image} resizeMode="cover" />
+        <Image
+          source={{ uri: preview.image }}
+          style={styles.image}
+          resizeMode="cover"
+        />
       ) : (
         <View style={[styles.image, styles.placeholder]}>
           <Text style={styles.placeholderText}>{domain}</Text>

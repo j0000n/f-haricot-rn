@@ -2,18 +2,31 @@ import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
-  SafeAreaView,
   StyleSheet,
   Text,
   View,
   Platform,
 } from "react-native";
-import { WebView } from "react-native-webview";
+import { SafeAreaView } from "react-native-safe-area-context";
+import * as WebBrowser from "expo-web-browser";
 
 import { useTranslation } from "@/i18n/useTranslation";
 import { useThemedStyles, useTokens } from "@/styles/tokens";
 import type { ThemeTokens } from "@/styles/themes/types";
 import { useLocalSearchParams, useRouter } from "expo-router";
+
+// Conditionally import WebView - it requires native code and won't work in Expo Go
+let WebView: typeof import("react-native-webview").WebView | null = null;
+try {
+  if (Platform.OS !== "web") {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const WebViewModule = require("react-native-webview");
+    WebView = WebViewModule.WebView;
+  }
+} catch (error) {
+  // WebView not available (e.g., in Expo Go or if native module not linked)
+  console.warn("react-native-webview not available:", error);
+}
 
 const createStyles = (tokens: ThemeTokens) =>
   StyleSheet.create({
@@ -86,6 +99,13 @@ const WebViewScreen = () => {
     setLoadError(false);
   }, [decodedUrl]);
 
+  // Fallback to external browser if WebView is not available
+  const handleOpenInBrowser = async () => {
+    if (decodedUrl) {
+      await WebBrowser.openBrowserAsync(decodedUrl);
+    }
+  };
+
   if (!decodedUrl) {
     return (
       <SafeAreaView style={styles.container}>
@@ -130,15 +150,55 @@ const WebViewScreen = () => {
             }}
           />
         </View>
-      ) : (
+      ) : WebView ? (
         <WebView
           source={{ uri: decodedUrl }}
           style={styles.webView}
           startInLoadingState
+          javaScriptEnabled
+          domStorageEnabled
+          allowsInlineMediaPlayback
+          mediaPlaybackRequiresUserAction={false}
+          allowsFullscreenVideo
+          mixedContentMode="always"
           onLoadEnd={() => setIsLoading(false)}
-          onError={() => setLoadError(true)}
-          onLoadProgress={({ nativeEvent }) => setPageTitle(nativeEvent.title || decodedUrl)}
+          onError={(syntheticEvent) => {
+            const { nativeEvent } = syntheticEvent;
+            console.warn("WebView error: ", nativeEvent);
+            setLoadError(true);
+            setIsLoading(false);
+          }}
+          onLoadProgress={({ nativeEvent }) => {
+            if (nativeEvent.title) {
+              setPageTitle(nativeEvent.title);
+            }
+          }}
+          onHttpError={(syntheticEvent) => {
+            const { nativeEvent } = syntheticEvent;
+            console.warn("WebView HTTP error: ", nativeEvent);
+            // Don't treat HTTP errors as fatal - some sites return 403/404 but still render
+          }}
         />
+      ) : (
+        <View style={styles.loadingContainer}>
+          <Text style={[styles.backText, { marginTop: tokens.spacing.sm, textAlign: "center" }]}>
+            {t("home.webPreviewUnavailable")}
+          </Text>
+          <Pressable
+            onPress={handleOpenInBrowser}
+            style={{
+              marginTop: tokens.spacing.md,
+              paddingHorizontal: tokens.spacing.lg,
+              paddingVertical: tokens.spacing.sm,
+              backgroundColor: tokens.colors.accent,
+              borderRadius: tokens.radii.md,
+            }}
+          >
+            <Text style={[styles.backText, { color: tokens.colors.surface }]}>
+              Open in Browser
+            </Text>
+          </Pressable>
+        </View>
       )}
 
       {(isLoading || loadError) ? (

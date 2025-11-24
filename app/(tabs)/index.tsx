@@ -282,12 +282,18 @@ export default function HomeScreen() {
         image: createFallbackImage(new URL(url).hostname.replace(/^www\\./, "")),
       };
 
-      if (Platform.OS === "web") {
-        return { url, ...fallback };
-      }
-
       try {
-        const response = await fetch(url);
+        // Try fetching on all platforms, including web
+        // On web, browsers handle CORS automatically
+        const response = await fetch(url, {
+          mode: "cors",
+          credentials: "omit",
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        
         const html = await response.text();
 
         const title =
@@ -306,6 +312,8 @@ export default function HomeScreen() {
           image,
         };
       } catch (error) {
+        // If fetch fails (CORS or network error), return fallback
+        console.warn(`Failed to fetch preview for ${url}:`, error);
         return { url, ...fallback };
       }
     };
