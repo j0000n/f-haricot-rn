@@ -157,7 +157,11 @@
     "searchPlaceholder": "ابحث بالاسم أو المكوّن",
     "searchLoading": "جارٍ تحميل النتائج…",
     "searchNoResults": "لم يتم العثور على وصفات",
-    "searchViewAll": "عرض كل النتائج"
+    "searchViewAll": "عرض كل النتائج",
+    "webPreviewHeader": "من الويب",
+    "webPreviewSubheader": "اضغط لاستكشاف إلهام الوصفات من الويب.",
+    "webPreviewLoading": "جاري تحميل المعاينة…",
+    "webPreviewUnavailable": "المعاينة غير متاحة"
   },
   "kitchen": {
     "title": "المطبخ",
@@ -283,7 +287,10 @@
     "ok": "حسناً",
     "loading": "جاري التحميل...",
     "exit": "خروج",
-    "servings": "حصص"
+    "servings": "حصص",
+    "cancel": "إلغاء",
+    "create": "إنشاء",
+    "back": "رجوع"
   },
   "recipe": {
     "startCooking": "ابدأ الطبخ",

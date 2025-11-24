@@ -157,7 +157,11 @@
     "searchPlaceholder": "Maghanap ayon sa pangalan o sangkap",
     "searchLoading": "Naglo-load ng mga resulta…",
     "searchNoResults": "Walang nakitang mga resipe",
-    "searchViewAll": "Tingnan lahat ng resulta"
+    "searchViewAll": "Tingnan lahat ng resulta",
+    "webPreviewHeader": "Mula sa web",
+    "webPreviewSubheader": "Pindutin upang tuklasin ang inspirasyon sa mga resipe sa web.",
+    "webPreviewLoading": "Naglo-load ng preview…",
+    "webPreviewUnavailable": "Hindi magagamit ang preview"
   },
   "kitchen": {
     "title": "Kusina",
@@ -283,7 +287,10 @@
     "ok": "OK",
     "loading": "Naglo-load...",
     "exit": "Lumabas",
-    "servings": "servings"
+    "servings": "servings",
+    "cancel": "Kanselahin",
+    "create": "Lumikha",
+    "back": "Bumalik"
   },
   "recipe": {
     "startCooking": "Simulan ang pagluluto",

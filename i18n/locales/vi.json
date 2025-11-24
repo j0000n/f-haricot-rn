@@ -157,7 +157,11 @@
     "searchPlaceholder": "Tìm theo tên hoặc nguyên liệu",
     "searchLoading": "Đang tải kết quả…",
     "searchNoResults": "Không tìm thấy công thức",
-    "searchViewAll": "Xem tất cả kết quả"
+    "searchViewAll": "Xem tất cả kết quả",
+    "webPreviewHeader": "Từ web",
+    "webPreviewSubheader": "Nhấn để khám phá cảm hứng công thức từ web.",
+    "webPreviewLoading": "Đang tải xem trước…",
+    "webPreviewUnavailable": "Không có sẵn xem trước"
   },
   "kitchen": {
     "title": "Nhà bếp",
@@ -283,7 +287,10 @@
     "ok": "OK",
     "loading": "Đang tải...",
     "exit": "Thoát",
-    "servings": "khẩu phần"
+    "servings": "khẩu phần",
+    "cancel": "Hủy",
+    "create": "Tạo",
+    "back": "Quay lại"
   },
   "recipe": {
     "startCooking": "Bắt đầu nấu",

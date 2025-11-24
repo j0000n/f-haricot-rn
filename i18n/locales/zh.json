@@ -157,7 +157,11 @@
     "searchPlaceholder": "按名称或食材搜索",
     "searchLoading": "正在加载结果…",
     "searchNoResults": "未找到食谱",
-    "searchViewAll": "查看全部结果"
+    "searchViewAll": "查看全部结果",
+    "webPreviewHeader": "来自网络",
+    "webPreviewSubheader": "点击浏览来自网络的菜谱灵感。",
+    "webPreviewLoading": "正在加载预览…",
+    "webPreviewUnavailable": "预览不可用"
   },
   "kitchen": {
     "title": "厨房",
@@ -283,7 +287,10 @@
     "ok": "确定",
     "loading": "加载中...",
     "exit": "退出",
-    "servings": "份"
+    "servings": "份",
+    "cancel": "取消",
+    "create": "创建",
+    "back": "返回"
   },
   "recipe": {
     "startCooking": "开始烹饪",

@@ -236,7 +236,11 @@
     "searchPlaceholder": "Busca por nombre o ingrediente",
     "searchLoading": "Cargando resultados…",
     "searchNoResults": "No se encontraron recetas",
-    "searchViewAll": "Ver todos los resultados"
+    "searchViewAll": "Ver todos los resultados",
+    "webPreviewHeader": "Desde la web",
+    "webPreviewSubheader": "Toca para explorar inspiración de recetas en la web.",
+    "webPreviewLoading": "Cargando vista previa…",
+    "webPreviewUnavailable": "Vista previa no disponible"
   },
   "kitchen": {
     "title": "Cocina",
@@ -362,7 +366,10 @@
     "ok": "Aceptar",
     "loading": "Cargando...",
     "exit": "Salir",
-    "servings": "porciones"
+    "servings": "porciones",
+    "cancel": "Cancelar",
+    "create": "Crear",
+    "back": "Atrás"
   },
   "recipe": {
     "startCooking": "Comenzar a cocinar",

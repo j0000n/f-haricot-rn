@@ -14,10 +14,20 @@ import type { InventoryDisplayItem } from "@/types/food";
 import type { Recipe } from "@/types/recipe";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { Link, useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { LinkPreviewRail } from "@/components/LinkPreviewRail";
+import type { LinkPreviewData } from "@/components/cards/LinkPreviewCard";
 
 const SEARCH_PREVIEW_LIMIT = 5;
+const LINK_PREVIEW_URLS = [
+  "https://intentionalhospitality.com/cranberry-chutney/",
+  "https://wellnesstrickle.com/chocolate-chip-baked-oats/",
+  "https://www.foodtasticmom.com/tortellini-pasta-salad/",
+  "https://projectmealplan.com/white-bean-lemon-chicken-soup/",
+  "https://simplesidedishes.com/candied-orange-pecans/",
+  "https://shakanranch.com/2024/03/16/roasted-garlic-rosemary-and-kalamata-olive-sourdough-bread/",
+];
 
 export default function HomeScreen() {
   const tasks = useQuery(api.tasks.get);
@@ -40,6 +50,8 @@ export default function HomeScreen() {
     useInventoryDisplay();
   const recipes = useQuery(api.recipes.listFeatured, { limit: 10 });
   const [searchTerm, setSearchTerm] = useState("");
+  const [linkPreviews, setLinkPreviews] = useState<LinkPreviewData[]>([]);
+  const [isLoadingLinkPreviews, setIsLoadingLinkPreviews] = useState(false);
   const trimmedSearchTerm = searchTerm.trim();
   const searchPreview = useQuery(
     api.recipes.search,
@@ -121,6 +133,10 @@ export default function HomeScreen() {
     // Navigate to recipe collection when implemented
   };
 
+  const handleLinkPreviewPress = (url: string) => {
+    router.push(`/webview/${encodeURIComponent(url)}`);
+  };
+
   const handleSeedInventory = async () => {
     if (isSeedingInventory) {
       return;
@@ -182,6 +198,95 @@ export default function HomeScreen() {
     language,
     enabled: !isInventoryLoading && recipes !== undefined,
   });
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    const normalizeImageUrl = (imageUrl?: string | null, baseUrl?: string) => {
+      if (!imageUrl) {
+        return null;
+      }
+
+      try {
+        return new URL(imageUrl, baseUrl).href;
+      } catch (error) {
+        return imageUrl;
+      }
+    };
+
+    const extractMetaContent = (html: string, key: string) => {
+      const propertyMatch = new RegExp(
+        `<meta[^>]*property=["']${key}["'][^>]*content=["']([^"']+)["'][^>]*>`,
+        "i",
+      ).exec(html);
+
+      if (propertyMatch?.[1]) {
+        return propertyMatch[1];
+      }
+
+      const nameMatch = new RegExp(
+        `<meta[^>]*name=["']${key}["'][^>]*content=["']([^"']+)["'][^>]*>`,
+        "i",
+      ).exec(html);
+
+      return nameMatch?.[1];
+    };
+
+    const getTitleFromHtml = (html: string) => {
+      const titleMatch = /<title>([^<]*)<\/title>/i.exec(html);
+      return titleMatch?.[1]?.trim();
+    };
+
+    const fetchPreviewForUrl = async (url: string): Promise<LinkPreviewData> => {
+      try {
+        const response = await fetch(url);
+        const html = await response.text();
+
+        const title =
+          extractMetaContent(html, "og:title") || extractMetaContent(html, "twitter:title") || getTitleFromHtml(html);
+        const description =
+          extractMetaContent(html, "og:description") ||
+          extractMetaContent(html, "description") ||
+          extractMetaContent(html, "twitter:description") ||
+          "";
+        const image = normalizeImageUrl(extractMetaContent(html, "og:image"), url);
+
+        return {
+          url,
+          title: title || url,
+          description,
+          image,
+        };
+      } catch (error) {
+        return {
+          url,
+          title: url,
+          description: "",
+          image: null,
+        };
+      }
+    };
+
+    const loadPreviews = async () => {
+      setIsLoadingLinkPreviews(true);
+      try {
+        const results = await Promise.all(LINK_PREVIEW_URLS.map((url) => fetchPreviewForUrl(url)));
+        if (!isCancelled) {
+          setLinkPreviews(results);
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsLoadingLinkPreviews(false);
+        }
+      }
+    };
+
+    loadPreviews();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -287,16 +392,23 @@ export default function HomeScreen() {
             </Text>
           </Pressable>
 
-          <Pressable
-            onPress={handleSeedLists}
-            style={[styles.seedButton, isSeedingLists && styles.seedButtonDisabled]}
-            disabled={isSeedingLists}
-          >
-            <Text style={styles.seedButtonText}>
-              {isSeedingLists ? t("home.seedingLists") : t("home.seedLists")}
-            </Text>
-          </Pressable>
+        <Pressable
+          onPress={handleSeedLists}
+          style={[styles.seedButton, isSeedingLists && styles.seedButtonDisabled]}
+          disabled={isSeedingLists}
+        >
+          <Text style={styles.seedButtonText}>
+            {isSeedingLists ? t("home.seedingLists") : t("home.seedLists")}
+          </Text>
+        </Pressable>
         </View>
+        <LinkPreviewRail
+          header={t("home.webPreviewHeader")}
+          subheader={t("home.webPreviewSubheader")}
+          links={linkPreviews}
+          isLoading={isLoadingLinkPreviews}
+          onLinkPress={handleLinkPreviewPress}
+        />
         {recipeList.length > 0 ? (
           <RecipeRail
             header={t("home.featuredRecipes")}
