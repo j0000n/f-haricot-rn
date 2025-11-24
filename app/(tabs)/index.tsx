@@ -14,10 +14,58 @@ import type { InventoryDisplayItem } from "@/types/food";
 import type { Recipe } from "@/types/recipe";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { Link, useRouter } from "expo-router";
-import { useMemo, useState } from "react";
-import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { useEffect, useMemo, useState } from "react";
+import { Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { LinkPreviewRail } from "@/components/LinkPreviewRail";
+import type { LinkPreviewData } from "@/components/cards/LinkPreviewCard";
 
 const SEARCH_PREVIEW_LIMIT = 5;
+const LINK_PREVIEW_URLS = [
+  "https://intentionalhospitality.com/cranberry-chutney/",
+  "https://wellnesstrickle.com/chocolate-chip-baked-oats/",
+  "https://www.foodtasticmom.com/tortellini-pasta-salad/",
+  "https://projectmealplan.com/white-bean-lemon-chicken-soup/",
+  "https://simplesidedishes.com/candied-orange-pecans/",
+  "https://shakanranch.com/2024/03/16/roasted-garlic-rosemary-and-kalamata-olive-sourdough-bread/",
+];
+
+const createFallbackImage = (label: string) =>
+  `data:image/svg+xml;utf8,${encodeURIComponent(
+    `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 420'><defs><linearGradient id='g' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' stop-color='%23f6d365'/><stop offset='100%' stop-color='%23fda085'/></linearGradient></defs><rect width='800' height='420' rx='32' fill='url(#g)'/><text x='400' y='210' font-family='Arial, Helvetica, sans-serif' font-size='42' text-anchor='middle' fill='%23ffffff' font-weight='700'>${label}</text></svg>`,
+  )}`;
+
+const LINK_PREVIEW_FALLBACKS: Record<string, Omit<LinkPreviewData, "url">> = {
+  "https://intentionalhospitality.com/cranberry-chutney/": {
+    title: "Cranberry Chutney",
+    description: "A bright and tangy cranberry chutney perfect for the holidays.",
+    image: createFallbackImage("Cranberry Chutney"),
+  },
+  "https://wellnesstrickle.com/chocolate-chip-baked-oats/": {
+    title: "Chocolate Chip Baked Oats",
+    description: "Soft, cake-like baked oats dotted with rich chocolate chips.",
+    image: createFallbackImage("Baked Oats"),
+  },
+  "https://www.foodtasticmom.com/tortellini-pasta-salad/": {
+    title: "Tortellini Pasta Salad",
+    description: "Cheesy tortellini tossed with veggies for an easy pasta salad.",
+    image: createFallbackImage("Tortellini Salad"),
+  },
+  "https://projectmealplan.com/white-bean-lemon-chicken-soup/": {
+    title: "White Bean Lemon Chicken Soup",
+    description: "Comforting chicken soup with creamy white beans and lemon.",
+    image: createFallbackImage("Chicken Soup"),
+  },
+  "https://simplesidedishes.com/candied-orange-pecans/": {
+    title: "Candied Orange Pecans",
+    description: "Sweet citrusy candied pecans for snacking or gifting.",
+    image: createFallbackImage("Orange Pecans"),
+  },
+  "https://shakanranch.com/2024/03/16/roasted-garlic-rosemary-and-kalamata-olive-sourdough-bread/": {
+    title: "Garlic Rosemary Olive Sourdough",
+    description: "Artisan sourdough with roasted garlic, rosemary, and olives.",
+    image: createFallbackImage("Sourdough"),
+  },
+};
 
 export default function HomeScreen() {
   const tasks = useQuery(api.tasks.get);
@@ -40,6 +88,8 @@ export default function HomeScreen() {
     useInventoryDisplay();
   const recipes = useQuery(api.recipes.listFeatured, { limit: 10 });
   const [searchTerm, setSearchTerm] = useState("");
+  const [linkPreviews, setLinkPreviews] = useState<LinkPreviewData[]>([]);
+  const [isLoadingLinkPreviews, setIsLoadingLinkPreviews] = useState(false);
   const trimmedSearchTerm = searchTerm.trim();
   const searchPreview = useQuery(
     api.recipes.search,
@@ -121,6 +171,10 @@ export default function HomeScreen() {
     // Navigate to recipe collection when implemented
   };
 
+  const handleLinkPreviewPress = (url: string) => {
+    router.push(`/webview/${encodeURIComponent(url)}`);
+  };
+
   const handleSeedInventory = async () => {
     if (isSeedingInventory) {
       return;
@@ -182,6 +236,108 @@ export default function HomeScreen() {
     language,
     enabled: !isInventoryLoading && recipes !== undefined,
   });
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    const normalizeImageUrl = (imageUrl?: string | null, baseUrl?: string) => {
+      if (!imageUrl) {
+        return null;
+      }
+
+      try {
+        return new URL(imageUrl, baseUrl).href;
+      } catch (error) {
+        return imageUrl;
+      }
+    };
+
+    const extractMetaContent = (html: string, key: string) => {
+      const propertyMatch = new RegExp(
+        `<meta[^>]*property=["']${key}["'][^>]*content=["']([^"']+)["'][^>]*>`,
+        "i",
+      ).exec(html);
+
+      if (propertyMatch?.[1]) {
+        return propertyMatch[1];
+      }
+
+      const nameMatch = new RegExp(
+        `<meta[^>]*name=["']${key}["'][^>]*content=["']([^"']+)["'][^>]*>`,
+        "i",
+      ).exec(html);
+
+      return nameMatch?.[1];
+    };
+
+    const getTitleFromHtml = (html: string) => {
+      const titleMatch = /<title>([^<]*)<\/title>/i.exec(html);
+      return titleMatch?.[1]?.trim();
+    };
+
+    const fetchPreviewForUrl = async (url: string): Promise<LinkPreviewData> => {
+      const fallback = LINK_PREVIEW_FALLBACKS[url] || {
+        title: url,
+        description: "",
+        image: createFallbackImage(new URL(url).hostname.replace(/^www\\./, "")),
+      };
+
+      try {
+        // Try fetching on all platforms, including web
+        // On web, browsers handle CORS automatically
+        const response = await fetch(url, {
+          mode: "cors",
+          credentials: "omit",
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        
+        const html = await response.text();
+
+        const title =
+          extractMetaContent(html, "og:title") || extractMetaContent(html, "twitter:title") || getTitleFromHtml(html);
+        const description =
+          extractMetaContent(html, "og:description") ||
+          extractMetaContent(html, "description") ||
+          extractMetaContent(html, "twitter:description") ||
+          fallback.description;
+        const image = normalizeImageUrl(extractMetaContent(html, "og:image"), url) || fallback.image;
+
+        return {
+          url,
+          title: title || fallback.title,
+          description,
+          image,
+        };
+      } catch (error) {
+        // If fetch fails (CORS or network error), return fallback
+        console.warn(`Failed to fetch preview for ${url}:`, error);
+        return { url, ...fallback };
+      }
+    };
+
+    const loadPreviews = async () => {
+      setIsLoadingLinkPreviews(true);
+      try {
+        const results = await Promise.all(LINK_PREVIEW_URLS.map((url) => fetchPreviewForUrl(url)));
+        if (!isCancelled) {
+          setLinkPreviews(results);
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsLoadingLinkPreviews(false);
+        }
+      }
+    };
+
+    loadPreviews();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -287,16 +443,23 @@ export default function HomeScreen() {
             </Text>
           </Pressable>
 
-          <Pressable
-            onPress={handleSeedLists}
-            style={[styles.seedButton, isSeedingLists && styles.seedButtonDisabled]}
-            disabled={isSeedingLists}
-          >
-            <Text style={styles.seedButtonText}>
-              {isSeedingLists ? t("home.seedingLists") : t("home.seedLists")}
-            </Text>
-          </Pressable>
+        <Pressable
+          onPress={handleSeedLists}
+          style={[styles.seedButton, isSeedingLists && styles.seedButtonDisabled]}
+          disabled={isSeedingLists}
+        >
+          <Text style={styles.seedButtonText}>
+            {isSeedingLists ? t("home.seedingLists") : t("home.seedLists")}
+          </Text>
+        </Pressable>
         </View>
+        <LinkPreviewRail
+          header={t("home.webPreviewHeader")}
+          subheader={t("home.webPreviewSubheader")}
+          links={linkPreviews}
+          isLoading={isLoadingLinkPreviews}
+          onLinkPress={handleLinkPreviewPress}
+        />
         {recipeList.length > 0 ? (
           <RecipeRail
             header={t("home.featuredRecipes")}
