@@ -389,6 +389,24 @@
     "timerReset": "Reiniciar",
     "notFound": "Receta no encontrada"
   },
+  "ingredient": {
+    "notFound": "Ingredient not found",
+    "code": "Code: {{code}}",
+    "namespace": "Namespace: {{namespace}}",
+    "storageGuidance": "Storage guidance",
+    "shelfLife": "Shelf life",
+    "days": "{{count}} days",
+    "storageLocation": "Storage location",
+    "storage": {
+      "pantry": "Pantry",
+      "fridge": "Fridge",
+      "freezer": "Freezer",
+      "spicecabinet": "Spice cabinet"
+    },
+    "translations": "Translations",
+    "varieties": "Varieties",
+    "varietyCode": "Variety code: {{code}}"
+  },
   "search": {
     "title": "Buscar",
     "resultsTitle": "Resultados de la búsqueda",

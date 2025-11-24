@@ -310,6 +310,24 @@
     "timerReset": "Đặt lại",
     "notFound": "Không tìm thấy công thức"
   },
+  "ingredient": {
+    "notFound": "Ingredient not found",
+    "code": "Code: {{code}}",
+    "namespace": "Namespace: {{namespace}}",
+    "storageGuidance": "Storage guidance",
+    "shelfLife": "Shelf life",
+    "days": "{{count}} days",
+    "storageLocation": "Storage location",
+    "storage": {
+      "pantry": "Pantry",
+      "fridge": "Fridge",
+      "freezer": "Freezer",
+      "spicecabinet": "Spice cabinet"
+    },
+    "translations": "Translations",
+    "varieties": "Varieties",
+    "varietyCode": "Variety code: {{code}}"
+  },
   "search": {
     "title": "Tìm kiếm",
     "resultsTitle": "Kết quả tìm kiếm",
