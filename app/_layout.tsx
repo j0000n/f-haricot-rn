@@ -18,6 +18,7 @@ import {
 import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import { ConvexReactClient, useConvexAuth, useMutation, useQuery } from "convex/react";
 import { useFonts } from "expo-font";
+import { StatusBar } from "expo-status-bar";
 import { Stack, useRouter, useSegments } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { useCallback, useEffect, useState } from "react";
@@ -507,6 +508,7 @@ function AuthenticatedAppShell({ isAuthenticated, isLoading, user }: Authenticat
 
   return (
     <View style={styles.rootContainer}>
+      <StatusBar backgroundColor={tokens.colors.background} style="auto" />
       <Stack
         screenOptions={{
           headerStyle: {
