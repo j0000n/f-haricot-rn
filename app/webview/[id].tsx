@@ -1,5 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, SafeAreaView, StyleSheet, Text, View, Pressable } from "react-native";
+import {
+  ActivityIndicator,
+  Pressable,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  View,
+  Platform,
+} from "react-native";
 import { WebView } from "react-native-webview";
 
 import { useTranslation } from "@/i18n/useTranslation";
@@ -57,15 +65,25 @@ const createStyles = (tokens: ThemeTokens) =>
 const WebViewScreen = () => {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const decodedUrl = useMemo(() => (typeof id === "string" ? decodeURIComponent(id) : ""), [id]);
+  const fallbackTitle = useMemo(() => {
+    try {
+      return new URL(decodedUrl).hostname.replace(/^www\./, "");
+    } catch (error) {
+      return decodedUrl;
+    }
+  }, [decodedUrl]);
   const [isLoading, setIsLoading] = useState(true);
   const [pageTitle, setPageTitle] = useState("");
+  const [loadError, setLoadError] = useState(false);
   const router = useRouter();
   const styles = useThemedStyles(createStyles);
   const tokens = useTokens();
   const { t } = useTranslation();
+  const isWeb = Platform.OS === "web";
 
   useEffect(() => {
     setIsLoading(true);
+    setLoadError(false);
   }, [decodedUrl]);
 
   if (!decodedUrl) {
@@ -95,22 +113,46 @@ const WebViewScreen = () => {
           <Text style={styles.backText}>{t("common.back")}</Text>
         </Pressable>
         <Text style={styles.title} numberOfLines={1}>
-          {pageTitle || decodedUrl}
+          {pageTitle || fallbackTitle}
         </Text>
       </View>
 
-      <WebView
-        source={{ uri: decodedUrl }}
-        style={styles.webView}
-        startInLoadingState
-        onLoadEnd={() => setIsLoading(false)}
-        onLoadProgress={({ nativeEvent }) => setPageTitle(nativeEvent.title || decodedUrl)}
-      />
+      {isWeb ? (
+        <View style={styles.webView}>
+          <iframe
+            title={decodedUrl}
+            src={decodedUrl}
+            style={{ border: "none", width: "100%", height: "100%" }}
+            onLoad={() => setIsLoading(false)}
+            onError={() => {
+              setIsLoading(false);
+              setLoadError(true);
+            }}
+          />
+        </View>
+      ) : (
+        <WebView
+          source={{ uri: decodedUrl }}
+          style={styles.webView}
+          startInLoadingState
+          onLoadEnd={() => setIsLoading(false)}
+          onError={() => setLoadError(true)}
+          onLoadProgress={({ nativeEvent }) => setPageTitle(nativeEvent.title || decodedUrl)}
+        />
+      )}
 
-      {isLoading ? (
+      {(isLoading || loadError) ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator color={tokens.colors.accent} />
-          <Text style={[styles.backText, { marginTop: tokens.spacing.sm }]}>{t("home.webPreviewLoading")}</Text>
+          {!loadError ? (
+            <>
+              <ActivityIndicator color={tokens.colors.accent} />
+              <Text style={[styles.backText, { marginTop: tokens.spacing.sm }]}>{t("home.webPreviewLoading")}</Text>
+            </>
+          ) : (
+            <Text style={[styles.backText, { marginTop: tokens.spacing.sm }]}>
+              {t("home.webPreviewUnavailable")}
+            </Text>
+          )}
         </View>
       ) : null}
     </SafeAreaView>
