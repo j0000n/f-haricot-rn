@@ -2,6 +2,7 @@ import { BrandLogo } from "@/components/BrandLogo";
 import { PageHeader } from "@/components/PageHeader";
 import { Rail } from "@/components/Rail";
 import { RecipeRail } from "@/components/RecipeRail";
+import { RecipeRailCompact } from "@/components/RecipeRailCompact";
 
 import { api } from "@/convex/_generated/api";
 import { useInventoryDisplay } from "@/hooks/useInventoryDisplay";
@@ -267,30 +268,30 @@ export default function HomeScreen() {
         contentContainerStyle={styles.scrollContent}
       >
         <View style={styles.searchSection}>
-          
-        {generateRecipeImagePrompt && (
-          <Pressable
-          style={styles.searchViewAllButton}
-            onPress={async () => {
-              const result = await generateRecipeImagePrompt({ subject: "Pad Thai", vessel: "Ceramic Plate" });
-              alert(JSON.stringify(result));
-            }}
-          >
-            <Text>show prompt result</Text>
-          </Pressable>
-        )}
 
-        {doSomething && (
-          <Pressable
-          style={styles.searchViewAllButton}
-            onPress={async () => {
-              const result = await doSomething();
-              alert(JSON.stringify(result));
-            }}
-          >
-            <Text>Show doSomething result</Text>
-          </Pressable>
-        )}
+          {generateRecipeImagePrompt && (
+            <Pressable
+              style={styles.searchViewAllButton}
+              onPress={async () => {
+                const result = await generateRecipeImagePrompt({ subject: "Pad Thai", vessel: "Ceramic Plate" });
+                alert(JSON.stringify(result));
+              }}
+            >
+              <Text>show prompt result</Text>
+            </Pressable>
+          )}
+
+          {doSomething && (
+            <Pressable
+              style={styles.searchViewAllButton}
+              onPress={async () => {
+                const result = await doSomething();
+                alert(JSON.stringify(result));
+              }}
+            >
+              <Text>Show doSomething result</Text>
+            </Pressable>
+          )}
           <Text style={styles.searchLabel}>{t("home.searchAllRecipes")}</Text>
           <TextInput
             value={searchTerm}
@@ -353,15 +354,15 @@ export default function HomeScreen() {
             </Text>
           </Pressable>
 
-        <Pressable
-          onPress={handleSeedLists}
-          style={[styles.seedButton, isSeedingLists && styles.seedButtonDisabled]}
-          disabled={isSeedingLists}
-        >
-          <Text style={styles.seedButtonText}>
-            {isSeedingLists ? t("home.seedingLists") : t("home.seedLists")}
-          </Text>
-        </Pressable>
+          <Pressable
+            onPress={handleSeedLists}
+            style={[styles.seedButton, isSeedingLists && styles.seedButtonDisabled]}
+            disabled={isSeedingLists}
+          >
+            <Text style={styles.seedButtonText}>
+              {isSeedingLists ? t("home.seedingLists") : t("home.seedLists")}
+            </Text>
+          </Pressable>
         </View>
         <LinkPreviewRail
           header={t("home.webPreviewHeader")}
@@ -376,6 +377,17 @@ export default function HomeScreen() {
             subheader={t("home.featuredRecipesDesc")}
             recipes={recipeList}
             variant="detailed"
+            onSeeAll={handleRecipeSeeAll}
+            onRecipePress={handleRecipePress}
+            userInventory={userInventoryCodes}
+          />
+        ) : null}
+
+        {recipeList.length > 0 ? (
+          <RecipeRailCompact
+            header="Compact Recipes"
+            subheader="A more compact view of recipes"
+            recipes={recipeList}
             onSeeAll={handleRecipeSeeAll}
             onRecipePress={handleRecipePress}
             userInventory={userInventoryCodes}
@@ -415,7 +427,7 @@ export default function HomeScreen() {
           />
         ) : null}
 
-     
+
 
         <View style={styles.section}>
           <Text style={styles.taskTitle}>{t("home.onboardingButtonPlaceholder")}</Text>

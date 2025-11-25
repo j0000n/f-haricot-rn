@@ -28,6 +28,12 @@ const createStyles = (tokens: ThemeTokens) =>
       height: 240,
       borderRadius: tokens.radii.md,
     },
+    title: {
+      fontFamily: tokens.fontFamilies.bold,
+      fontSize: tokens.typography.heading,
+      color: tokens.colors.textPrimary,
+      textAlign: "center",
+    },
     infoBar: {
       flexDirection: "row",
       justifyContent: "space-between",
@@ -114,6 +120,10 @@ export const RecipeHeader: React.FC<RecipeHeaderProps> = ({
         resizeMode="cover"
         accessibilityLabel={recipe.recipeName[language] || recipe.recipeName.en}
       />
+
+      <Text style={styles.title}>
+        {recipe.recipeName[language] || recipe.recipeName.en}
+      </Text>
 
       <View style={styles.infoBar}>
         <InfoItem

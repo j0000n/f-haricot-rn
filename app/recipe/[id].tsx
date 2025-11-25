@@ -140,14 +140,14 @@ export default function RecipeDetailScreen() {
   const inventoryCodes = Array.isArray(userInventory) ? userInventory : [];
 
   const headerOptions = {
-    title: recipe.recipeName[language] || recipe.recipeName.en,
+    title: "",
     headerRight: isRunnerMode
       ? undefined
       : () => (
-          <Pressable onPress={() => setIsRunnerMode(true)} accessibilityRole="button">
-            <Text style={styles.headerActionText}>👨‍🍳 {t("recipe.startCooking")}</Text>
-          </Pressable>
-        ),
+        <Pressable onPress={() => setIsRunnerMode(true)} accessibilityRole="button">
+          <Text style={styles.headerActionText}>👨‍🍳 {t("recipe.startCooking")}</Text>
+        </Pressable>
+      ),
   };
 
   if (isRunnerMode) {
