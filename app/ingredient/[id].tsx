@@ -7,40 +7,9 @@ import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { useTranslation } from "@/i18n/useTranslation";
-import type { SupportedLanguage } from "@/types/food";
 import type { ThemeTokens } from "@/styles/themes/types";
 import { useThemedStyles } from "@/styles/tokens";
-
-type FoodLanguage = SupportedLanguage | "ja" | "vi" | "tl";
-
-const SUPPORTED_LANGUAGES: FoodLanguage[] = ["en", "es", "zh", "fr", "ar", "ja", "vi", "tl"];
-
-type TranslationValue = string | { singular?: string; plural?: string };
-
-const normalizeLanguage = (language?: string): FoodLanguage => {
-  if (language && SUPPORTED_LANGUAGES.includes(language as FoodLanguage)) {
-    return language as FoodLanguage;
-  }
-
-  return "en";
-};
-
-const resolveTranslation = (
-  translations: Record<string, TranslationValue>,
-  language: FoodLanguage,
-): string => {
-  const translation = translations?.[language] ?? translations?.en ?? Object.values(translations ?? {})[0];
-
-  if (typeof translation === "string") {
-    return translation;
-  }
-
-  if (translation && typeof translation === "object" && "singular" in translation) {
-    return translation.singular ?? translation.plural ?? "";
-  }
-
-  return "";
-};
+import { normalizeLanguage, resolveTranslation } from "@/utils/translation";
 
 const createStyles = (tokens: ThemeTokens) =>
   StyleSheet.create({

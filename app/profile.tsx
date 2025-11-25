@@ -21,6 +21,7 @@ import { BrandLogo } from "@/components/BrandLogo";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { useTranslation } from "@/i18n/useTranslation";
+import { createDisplayEntries, formatLabel, formatValue } from "@/utils/formatting";
 
 const TEXT_SIZE_OPTIONS: {
   value: BaseTextSize;
@@ -71,11 +72,6 @@ const MOTION_OPTIONS: {
   },
 ];
 
-type DisplayEntry = {
-  label: string;
-  value: string;
-};
-
 type HouseholdMessage = {
   tone: "info" | "success" | "error";
   text: string;
@@ -84,48 +80,6 @@ type HouseholdMessage = {
 const HIDDEN_USER_FIELDS = new Set(["householdId", "pendingHouseholdId"]);
 
 const sanitizeAllergy = (value: string) => value.trim();
-
-const formatLabel = (key: string) =>
-  key
-    .replace(/_/g, " ")
-    .replace(/([a-z])([A-Z])/g, "$1 $2")
-    .replace(/\b\w/g, (char) => char.toUpperCase());
-
-const formatValue = (value: unknown) => {
-  if (value === null || value === undefined) {
-    return "—";
-  }
-
-  if (typeof value === "number" && Number.isFinite(value) && value > 1e10) {
-    const date = new Date(value);
-    if (!Number.isNaN(date.getTime())) {
-      return date.toLocaleString();
-    }
-  }
-
-  if (Array.isArray(value) || typeof value === "object") {
-    try {
-      return JSON.stringify(value, null, 2);
-    } catch {
-      return String(value);
-    }
-  }
-
-  return String(value);
-};
-
-const createEntries = (user: Record<string, unknown> | null | undefined) => {
-  if (!user) {
-    return [] as DisplayEntry[];
-  }
-
-  return Object.entries(user)
-    .filter(([key]) => !HIDDEN_USER_FIELDS.has(key))
-    .map(([key, value]) => ({
-      label: formatLabel(key),
-      value: formatValue(value),
-    }));
-};
 
 export default function ProfileScreen() {
   const user = useQuery(api.users.getCurrentUser);
@@ -146,7 +100,10 @@ export default function ProfileScreen() {
   );
   const updateProfile = useMutation(api.users.updateProfile);
   const { signOut } = useAuthActions();
-  const entries = createEntries(user as Record<string, unknown> | null | undefined);
+  const entries = createDisplayEntries(
+    user as Record<string, unknown> | null | undefined,
+    HIDDEN_USER_FIELDS,
+  );
   const styles = useThemedStyles(createProfileStyles);
   const { t } = useTranslation();
   const {

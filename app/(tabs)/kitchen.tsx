@@ -4,13 +4,19 @@ import { useTranslation } from "@/i18n/useTranslation";
 import createKitchenStyles from "@/styles/kitchenStyles";
 import { useThemedStyles } from "@/styles/tokens";
 import type { InventoryDisplayItem } from "@/types/food";
+import {
+  LOCATION_ORDER,
+  getLocationIndex,
+  sortByLocation,
+  sortByQuantity,
+  sortByPurchaseDate,
+} from "@/utils/kitchen";
+import { formatShortDate, calculateDaysOld } from "@/utils/date";
 import { useCallback, useMemo, useState } from "react";
 import { Image, Pressable, ScrollView, Text, View } from "react-native";
 
 type ViewMode = "list" | "grid";
 type SortOption = "location" | "quantity" | "purchaseDate";
-
-const LOCATION_ORDER = ["fridge", "freezer", "pantry", "spicecabinet"] as const;
 
 const LOCATION_LABEL_KEYS: Record<(typeof LOCATION_ORDER)[number], string> = {
   fridge: "kitchen.locationFridge",
@@ -25,13 +31,6 @@ const SORT_OPTION_KEYS: Record<SortOption, string> = {
   purchaseDate: "kitchen.sortPurchaseDate",
 };
 
-const MS_IN_DAY = 86_400_000;
-
-const getLocationIndex = (value: string) => {
-  const index = LOCATION_ORDER.indexOf(value as (typeof LOCATION_ORDER)[number]);
-  return index === -1 ? LOCATION_ORDER.length : index;
-};
-
 type DecoratedInventoryItem = InventoryDisplayItem & {
   daysOld: number;
 };
@@ -44,16 +43,9 @@ export default function KitchenScreen() {
   const [showSortMenu, setShowSortMenu] = useState(false);
   const { t, i18n } = useTranslation();
   const { inventoryItems, isLoading } = useInventoryDisplay();
-  const formatShortDate = useCallback(
-    (timestamp: number) => {
-      const date = new Date(timestamp * 1000);
-      return date.toLocaleDateString(i18n.language || undefined, {
-        month: "numeric",
-        day: "numeric",
-        year: "2-digit",
-      });
-    },
-    [i18n.language]
+  const formatDate = useCallback(
+    (timestamp: number) => formatShortDate(timestamp, i18n.language),
+    [i18n.language],
   );
 
   const getLocationLabel = useCallback(
@@ -66,58 +58,33 @@ export default function KitchenScreen() {
   );
 
   const inventory = useMemo<DecoratedInventoryItem[]>(() => {
-    const now = Date.now();
-
     return inventoryItems
-      .map((item) => {
-        const purchaseMs = item.purchaseDate * 1000;
-        const ageInDays = Math.max(0, Math.floor((now - purchaseMs) / MS_IN_DAY));
-
-        return {
-          ...item,
-          daysOld: ageInDays,
-        };
-      })
+      .map((item) => ({
+        ...item,
+        daysOld: calculateDaysOld(item.purchaseDate),
+      }))
       .sort((a, b) => a.displayName.localeCompare(b.displayName));
   }, [inventoryItems]);
+
   const filteredInventory = useMemo(() => {
     const items =
       locationFilter === "all"
         ? inventory
         : inventory.filter((item) => item.storageLocation === locationFilter);
 
-    const sortedItems = [...items];
+    if (sortOption === "location") {
+      return sortByLocation(items);
+    }
 
-    sortedItems.sort((a, b) => {
-      if (sortOption === "location") {
-        const locationDelta =
-          getLocationIndex(a.storageLocation) - getLocationIndex(b.storageLocation);
-        if (locationDelta !== 0) {
-          return locationDelta;
-        }
-        return a.displayName.localeCompare(b.displayName);
-      }
+    if (sortOption === "quantity") {
+      return sortByQuantity(items);
+    }
 
-      if (sortOption === "quantity") {
-        const quantityDelta = b.quantity - a.quantity;
-        if (quantityDelta !== 0) {
-          return quantityDelta;
-        }
-        return getLocationIndex(a.storageLocation) - getLocationIndex(b.storageLocation);
-      }
+    if (sortOption === "purchaseDate") {
+      return sortByPurchaseDate(items);
+    }
 
-      if (sortOption === "purchaseDate") {
-        const purchaseDelta = b.purchaseDate - a.purchaseDate;
-        if (purchaseDelta !== 0) {
-          return purchaseDelta;
-        }
-        return getLocationIndex(a.storageLocation) - getLocationIndex(b.storageLocation);
-      }
-
-      return 0;
-    });
-
-    return sortedItems;
+    return items;
   }, [inventory, locationFilter, sortOption]);
 
   const sortOptions = useMemo(
@@ -287,7 +254,7 @@ export default function KitchenScreen() {
                   </Text>
                 </View>
                 <View style={[styles.listCell, styles.listCellDate]}>
-                  <Text style={styles.listItemDate}>{formatShortDate(item.purchaseDate)}</Text>
+                  <Text style={styles.listItemDate}>{formatDate(item.purchaseDate)}</Text>
                   <Text style={styles.listItemMeta}>
                     {t("kitchen.dayAge", { count: item.daysOld })}
                   </Text>
@@ -300,7 +267,7 @@ export default function KitchenScreen() {
             {filteredInventory.map((item, index) => (
               <View key={`${item.itemCode}-${index}`} style={styles.gridItem}>
               <View style={styles.gridMetaBar}>
-                <Text style={styles.gridMetaBarLabel}>{formatShortDate(item.purchaseDate)}</Text>
+                <Text style={styles.gridMetaBarLabel}>{formatDate(item.purchaseDate)}</Text>
                 <View style={styles.gridQuantityPill}>
                   <Text style={styles.gridQuantityPillLabel}>
                     {t("kitchen.itemCount", { count: item.quantity })}

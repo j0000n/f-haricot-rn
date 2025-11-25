@@ -8,6 +8,12 @@ import createListsStyles from "@/styles/listsStyles";
 import { useThemedStyles, useTokens } from "@/styles/tokens";
 import type { Recipe } from "@/types/recipe";
 import { calculateIngredientMatch } from "@/utils/inventory";
+import {
+  buildRecipeIds,
+  decorateRecipesWithMatches,
+  sortRecipesByReadiness,
+  type DecoratedRecipe,
+} from "@/utils/recipeLists";
 import { useQuery } from "convex/react";
 import { useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
@@ -18,11 +24,6 @@ type ViewMode = "list" | "detailed";
 type SortOption = "name" | "recipes" | "ready" | "match" | "updated";
 
 type FilterOption = "all" | "cookAsap" | "standard" | "ready";
-
-type DecoratedRecipe = {
-  recipe: Recipe;
-  matchPercentage: number;
-};
 
 type DecoratedList = {
   list: RecipeList;
@@ -35,14 +36,6 @@ type DecoratedList = {
 };
 
 const EMPTY_CODES: string[] = [];
-
-const buildRecipeIds = (list: RecipeList): Recipe["_id"][] => {
-  if (list.type === "cook-asap") {
-    return list.entries.map((entry) => entry.recipeId);
-  }
-
-  return list.recipeIds;
-};
 
 export default function ListsScreen() {
   const styles = useThemedStyles(createListsStyles);
@@ -90,13 +83,12 @@ export default function ListsScreen() {
 
   const decoratedLists = useMemo<DecoratedList[]>(() => {
     return allLists.map((list) => {
-      const decoratedRecipes: DecoratedRecipe[] = buildRecipeIds(list)
+      const recipeIds = buildRecipeIds(list);
+      const listRecipes = recipeIds
         .map((id) => recipeMap.get(id))
-        .filter((recipe): recipe is Recipe => Boolean(recipe))
-        .map((recipe) => ({
-          recipe,
-          matchPercentage: calculateIngredientMatch(recipe.ingredients, inventoryCodes).matchPercentage,
-        }));
+        .filter((recipe): recipe is Recipe => Boolean(recipe));
+
+      const decoratedRecipes = decorateRecipesWithMatches(listRecipes, inventoryCodes);
 
       const readyCount = decoratedRecipes.filter((entry) => entry.matchPercentage === 100).length;
       const totalRecipes = decoratedRecipes.length;
@@ -107,27 +99,7 @@ export default function ListsScreen() {
               decoratedRecipes.reduce((sum, entry) => sum + entry.matchPercentage, 0) /
                 totalRecipes,
             );
-      const sortedRecipes = decoratedRecipes
-        .slice()
-        .sort((a, b) => {
-          const readyDelta = Number(b.matchPercentage === 100) - Number(a.matchPercentage === 100);
-          if (readyDelta !== 0) {
-            return readyDelta;
-          }
-
-          const matchDelta = b.matchPercentage - a.matchPercentage;
-          if (matchDelta !== 0) {
-            return matchDelta;
-          }
-
-          const nameA =
-            (a.recipe.recipeName[language] ?? a.recipe.recipeName.en ?? "").toLowerCase();
-          const nameB =
-            (b.recipe.recipeName[language] ?? b.recipe.recipeName.en ?? "").toLowerCase();
-
-          return nameA.localeCompare(nameB);
-        })
-        .map((entry) => entry.recipe);
+      const sortedRecipes = sortRecipesByReadiness(decoratedRecipes, language);
 
       return {
         list,

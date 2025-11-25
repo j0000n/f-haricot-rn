@@ -17,7 +17,13 @@ import { Link, useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { LinkPreviewRail } from "@/components/LinkPreviewRail";
-import type { LinkPreviewData } from "@/components/cards/LinkPreviewCard";
+import { useLinkPreviews, createFallbackImage } from "@/hooks/useLinkPreviews";
+import type { LinkPreviewData } from "@/utils/linkPreview";
+import {
+  getFreshProduceItems,
+  getPantryItems,
+  getProteinItems,
+} from "@/utils/inventoryCategories";
 
 const SEARCH_PREVIEW_LIMIT = 5;
 const LINK_PREVIEW_URLS = [
@@ -28,11 +34,6 @@ const LINK_PREVIEW_URLS = [
   "https://simplesidedishes.com/candied-orange-pecans/",
   "https://shakanranch.com/2024/03/16/roasted-garlic-rosemary-and-kalamata-olive-sourdough-bread/",
 ];
-
-const createFallbackImage = (label: string) =>
-  `data:image/svg+xml;utf8,${encodeURIComponent(
-    `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 420'><defs><linearGradient id='g' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' stop-color='%23f6d365'/><stop offset='100%' stop-color='%23fda085'/></linearGradient></defs><rect width='800' height='420' rx='32' fill='url(#g)'/><text x='400' y='210' font-family='Arial, Helvetica, sans-serif' font-size='42' text-anchor='middle' fill='%23ffffff' font-weight='700'>${label}</text></svg>`,
-  )}`;
 
 const LINK_PREVIEW_FALLBACKS: Record<string, Omit<LinkPreviewData, "url">> = {
   "https://intentionalhospitality.com/cranberry-chutney/": {
@@ -71,7 +72,7 @@ export default function HomeScreen() {
   const tasks = useQuery(api.tasks.get);
   const updateProfile = useMutation(api.users.updateProfile);
   const doSomething = useAction(api.testFunction.doSomething);
-  const generateRecipeImagePrompt = useAction(api.generateRecipeImagePrompt.generateRecipeImagePrompt);
+  const generateRecipeImagePrompt = useAction(api.promptGenerators.generateRecipeImagePrompt);
   const doSomethingNode = useAction(api.testFunctionNode.doSomethingNode);
   const ensureHousehold = useMutation(api.households.ensureHousehold);
   const seedInventory = useMutation(api.users.seedInventory);
@@ -88,9 +89,11 @@ export default function HomeScreen() {
     useInventoryDisplay();
   const recipes = useQuery(api.recipes.listFeatured, { limit: 10 });
   const [searchTerm, setSearchTerm] = useState("");
-  const [linkPreviews, setLinkPreviews] = useState<LinkPreviewData[]>([]);
-  const [isLoadingLinkPreviews, setIsLoadingLinkPreviews] = useState(false);
   const trimmedSearchTerm = searchTerm.trim();
+  const { previews: linkPreviews, isLoading: isLoadingLinkPreviews } = useLinkPreviews(
+    LINK_PREVIEW_URLS,
+    LINK_PREVIEW_FALLBACKS,
+  );
   const searchPreview = useQuery(
     api.recipes.search,
     trimmedSearchTerm.length > 0
@@ -127,14 +130,22 @@ export default function HomeScreen() {
     [inventoryItems],
   );
 
-  const freshProduceItems = decoratedInventoryItems.filter(({ data }) =>
-    ["Tree Fruits", "Berries"].includes(data.category),
+  const freshProduceItems = useMemo(
+    () =>
+      decoratedInventoryItems.filter(({ data }) =>
+        getFreshProduceItems([data]).length > 0,
+      ),
+    [decoratedInventoryItems],
   );
-  const pantryItems = decoratedInventoryItems.filter(({ data }) =>
-    ["Rice", "Pasta", "Bread", "Oils"].includes(data.category),
+  const pantryItems = useMemo(
+    () =>
+      decoratedInventoryItems.filter(({ data }) => getPantryItems([data]).length > 0),
+    [decoratedInventoryItems],
   );
-  const proteinItems = decoratedInventoryItems.filter(({ data }) =>
-    ["Poultry", "Beef", "Pork"].includes(data.category),
+  const proteinItems = useMemo(
+    () =>
+      decoratedInventoryItems.filter(({ data }) => getProteinItems([data]).length > 0),
+    [decoratedInventoryItems],
   );
 
   const handleItemPress = (itemId: string, item: InventoryDisplayItem) => {
@@ -237,107 +248,6 @@ export default function HomeScreen() {
     enabled: !isInventoryLoading && recipes !== undefined,
   });
 
-  useEffect(() => {
-    let isCancelled = false;
-
-    const normalizeImageUrl = (imageUrl?: string | null, baseUrl?: string) => {
-      if (!imageUrl) {
-        return null;
-      }
-
-      try {
-        return new URL(imageUrl, baseUrl).href;
-      } catch (error) {
-        return imageUrl;
-      }
-    };
-
-    const extractMetaContent = (html: string, key: string) => {
-      const propertyMatch = new RegExp(
-        `<meta[^>]*property=["']${key}["'][^>]*content=["']([^"']+)["'][^>]*>`,
-        "i",
-      ).exec(html);
-
-      if (propertyMatch?.[1]) {
-        return propertyMatch[1];
-      }
-
-      const nameMatch = new RegExp(
-        `<meta[^>]*name=["']${key}["'][^>]*content=["']([^"']+)["'][^>]*>`,
-        "i",
-      ).exec(html);
-
-      return nameMatch?.[1];
-    };
-
-    const getTitleFromHtml = (html: string) => {
-      const titleMatch = /<title>([^<]*)<\/title>/i.exec(html);
-      return titleMatch?.[1]?.trim();
-    };
-
-    const fetchPreviewForUrl = async (url: string): Promise<LinkPreviewData> => {
-      const fallback = LINK_PREVIEW_FALLBACKS[url] || {
-        title: url,
-        description: "",
-        image: createFallbackImage(new URL(url).hostname.replace(/^www\\./, "")),
-      };
-
-      try {
-        // Try fetching on all platforms, including web
-        // On web, browsers handle CORS automatically
-        const response = await fetch(url, {
-          mode: "cors",
-          credentials: "omit",
-        });
-        
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
-        }
-        
-        const html = await response.text();
-
-        const title =
-          extractMetaContent(html, "og:title") || extractMetaContent(html, "twitter:title") || getTitleFromHtml(html);
-        const description =
-          extractMetaContent(html, "og:description") ||
-          extractMetaContent(html, "description") ||
-          extractMetaContent(html, "twitter:description") ||
-          fallback.description;
-        const image = normalizeImageUrl(extractMetaContent(html, "og:image"), url) || fallback.image;
-
-        return {
-          url,
-          title: title || fallback.title,
-          description,
-          image,
-        };
-      } catch (error) {
-        // If fetch fails (CORS or network error), return fallback
-        console.warn(`Failed to fetch preview for ${url}:`, error);
-        return { url, ...fallback };
-      }
-    };
-
-    const loadPreviews = async () => {
-      setIsLoadingLinkPreviews(true);
-      try {
-        const results = await Promise.all(LINK_PREVIEW_URLS.map((url) => fetchPreviewForUrl(url)));
-        if (!isCancelled) {
-          setLinkPreviews(results);
-        }
-      } finally {
-        if (!isCancelled) {
-          setIsLoadingLinkPreviews(false);
-        }
-      }
-    };
-
-    loadPreviews();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, []);
 
   return (
     <View style={styles.container}>

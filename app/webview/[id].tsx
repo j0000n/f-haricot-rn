@@ -13,6 +13,7 @@ import * as WebBrowser from "expo-web-browser";
 import { useTranslation } from "@/i18n/useTranslation";
 import { useThemedStyles, useTokens } from "@/styles/tokens";
 import type { ThemeTokens } from "@/styles/themes/types";
+import { decodeUrl, getHostname } from "@/utils/url";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
 // Conditionally import WebView - it requires native code and won't work in Expo Go
@@ -77,14 +78,8 @@ const createStyles = (tokens: ThemeTokens) =>
 
 const WebViewScreen = () => {
   const { id } = useLocalSearchParams<{ id?: string }>();
-  const decodedUrl = useMemo(() => (typeof id === "string" ? decodeURIComponent(id) : ""), [id]);
-  const fallbackTitle = useMemo(() => {
-    try {
-      return new URL(decodedUrl).hostname.replace(/^www\./, "");
-    } catch (error) {
-      return decodedUrl;
-    }
-  }, [decodedUrl]);
+  const decodedUrl = useMemo(() => decodeUrl(id), [id]);
+  const fallbackTitle = useMemo(() => getHostname(decodedUrl), [decodedUrl]);
   const [isLoading, setIsLoading] = useState(true);
   const [pageTitle, setPageTitle] = useState("");
   const [loadError, setLoadError] = useState(false);

@@ -12,18 +12,12 @@ import type { Recipe } from "@/types/recipe";
 
 const SEARCH_RESULTS_LIMIT = 50;
 
+import { decodeUrl } from "@/utils/url";
+
 export default function SearchResultsScreen() {
   const { query } = useLocalSearchParams<{ query: string }>();
   const router = useRouter();
-  const rawSearch = useMemo(() => (Array.isArray(query) ? query[0] : query) ?? "", [query]);
-  const searchTerm = useMemo(() => {
-    try {
-      return decodeURIComponent(rawSearch);
-    } catch (error) {
-      console.warn("Failed to decode search query", error);
-      return rawSearch;
-    }
-  }, [rawSearch]);
+  const searchTerm = useMemo(() => decodeUrl(query), [query]);
   const trimmedSearchTerm = searchTerm.trim();
   const styles = useThemedStyles<SearchStyles>(createSearchStyles);
   const { t, i18n } = useTranslation();

@@ -17,6 +17,7 @@ import createListDetailStyles from "@/styles/listDetailStyles";
 import { useThemedStyles } from "@/styles/tokens";
 import { getMissingIngredients, formatIngredientQuantity } from "@/utils/inventory";
 import { getIngredientDisplayName } from "@/utils/recipes";
+import { buildRecipeIds } from "@/utils/recipeLists";
 
 type ViewMode = "list" | "grid";
 
@@ -24,14 +25,6 @@ type DecoratedRecipe = {
   recipe: Recipe;
   missingCount: number;
   missingLabels: string[];
-};
-
-const buildRecipeOrder = (list: RecipeList) => {
-  if (list.type === "cook-asap") {
-    return list.entries.map((entry) => entry.recipeId);
-  }
-
-  return list.recipeIds;
 };
 
 const EMPTY_CODES: string[] = [];
@@ -48,10 +41,7 @@ export default function ListDetailScreen() {
   const [selectedEmoji, setSelectedEmoji] = useState<string>("all");
   const { foodLibrary } = useInventoryDisplay();
   const inventoryCodesQuery = useQuery(api.users.getCurrentInventory, {});
-  const orderedRecipeIds = useMemo(
-    () => (list ? buildRecipeOrder(list) : []),
-    [list],
-  );
+  const orderedRecipeIds = useMemo(() => (list ? buildRecipeIds(list) : []), [list]);
   const recipesResult = useQuery(
     api.recipes.getMany,
     orderedRecipeIds.length > 0 ? { ids: orderedRecipeIds } : "skip",
