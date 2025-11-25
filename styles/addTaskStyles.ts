@@ -32,7 +32,6 @@ const createAddTaskStyles = (tokens: ThemeTokens) =>
       fontFamily: tokens.fontFamilies.regular,
       fontSize: tokens.typography.small,
       color: tokens.colors.textSecondary,
-      lineHeight: tokens.lineHeights.normal,
     },
     label: {
       fontSize: tokens.typography.small,
@@ -66,7 +65,7 @@ const createAddTaskStyles = (tokens: ThemeTokens) =>
     modeIconBadge: {
       height: 32,
       width: 32,
-      borderRadius: tokens.radii.full,
+      borderRadius: tokens.radii.lg,
       backgroundColor: tokens.colors.overlay,
       alignItems: "center",
       justifyContent: "center",
@@ -81,9 +80,8 @@ const createAddTaskStyles = (tokens: ThemeTokens) =>
     },
     modeDescription: {
       fontFamily: tokens.fontFamilies.regular,
-      fontSize: tokens.typography.extraSmall,
+      fontSize: tokens.typography.small,
       color: tokens.colors.textSecondary,
-      lineHeight: tokens.lineHeights.tight,
     },
     micButton: {
       paddingVertical: tokens.spacing.lg,
