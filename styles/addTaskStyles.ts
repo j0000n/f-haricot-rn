@@ -15,6 +15,14 @@ const createAddTaskStyles = (tokens: ThemeTokens) =>
       marginBottom: tokens.spacing.xl,
       gap: tokens.spacing.md,
     },
+    sectionCard: {
+      backgroundColor: tokens.colors.surface,
+      borderRadius: tokens.radii.lg,
+      borderWidth: tokens.borderWidths.regular,
+      borderColor: tokens.colors.border,
+      padding: tokens.spacing.lg,
+      gap: tokens.spacing.md,
+    },
     heading: {
       fontFamily: tokens.fontFamilies.semiBold,
       fontSize: tokens.typography.heading,
@@ -30,6 +38,52 @@ const createAddTaskStyles = (tokens: ThemeTokens) =>
       fontSize: tokens.typography.small,
       fontFamily: tokens.fontFamilies.medium,
       color: tokens.colors.textSecondary,
+    },
+    modeSwitcher: {
+      flexDirection: "row",
+      gap: tokens.spacing.md,
+      flexWrap: "wrap",
+    },
+    modeOption: {
+      flex: 1,
+      minWidth: 140,
+      gap: tokens.spacing.xs,
+      backgroundColor: tokens.colors.surface,
+      borderWidth: tokens.borderWidths.regular,
+      borderColor: tokens.colors.border,
+      borderRadius: tokens.radii.md,
+      padding: tokens.spacing.md,
+    },
+    modeOptionActive: {
+      borderColor: tokens.colors.accent,
+      backgroundColor: tokens.colors.overlay,
+    },
+    modeHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: tokens.spacing.sm,
+    },
+    modeIconBadge: {
+      height: 32,
+      width: 32,
+      borderRadius: tokens.radii.full,
+      backgroundColor: tokens.colors.overlay,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    modeLabel: {
+      fontFamily: tokens.fontFamilies.semiBold,
+      fontSize: tokens.typography.small,
+      color: tokens.colors.textSecondary,
+    },
+    modeLabelActive: {
+      color: tokens.colors.textPrimary,
+    },
+    modeDescription: {
+      fontFamily: tokens.fontFamilies.regular,
+      fontSize: tokens.typography.extraSmall,
+      color: tokens.colors.textSecondary,
+      lineHeight: tokens.lineHeights.tight,
     },
     micButton: {
       paddingVertical: tokens.spacing.lg,
@@ -76,6 +130,13 @@ const createAddTaskStyles = (tokens: ThemeTokens) =>
       minHeight: tokens.componentSizes.textAreaMinHeight,
       justifyContent: "center",
     },
+    transcriptTitle: {
+      fontFamily: tokens.fontFamilies.medium,
+      fontSize: tokens.typography.extraSmall,
+      color: tokens.colors.textSecondary,
+      textTransform: "uppercase",
+      letterSpacing: 0.3,
+    },
     transcriptText: {
       fontFamily: tokens.fontFamilies.regular,
       fontSize: tokens.typography.body,
@@ -85,6 +146,36 @@ const createAddTaskStyles = (tokens: ThemeTokens) =>
       fontFamily: tokens.fontFamilies.regular,
       fontSize: tokens.typography.small,
       color: tokens.colors.textMuted,
+    },
+    textArea: {
+      backgroundColor: tokens.colors.surface,
+      borderRadius: tokens.radii.md,
+      borderWidth: tokens.borderWidths.regular,
+      borderColor: tokens.colors.border,
+      padding: tokens.spacing.md,
+      minHeight: tokens.componentSizes.textAreaMinHeight,
+      fontFamily: tokens.fontFamilies.regular,
+      fontSize: tokens.typography.body,
+      color: tokens.colors.textPrimary,
+    },
+    gallery: {
+      gap: tokens.spacing.sm,
+    },
+    galleryRow: {
+      gap: tokens.spacing.md,
+    },
+    imageFrame: {
+      width: 120,
+      height: 140,
+      borderRadius: tokens.radii.md,
+      overflow: "hidden",
+      backgroundColor: tokens.colors.overlay,
+      borderWidth: tokens.borderWidths.thin,
+      borderColor: tokens.colors.border,
+    },
+    capturedImage: {
+      width: "100%",
+      height: "100%",
     },
     warningText: {
       fontFamily: tokens.fontFamilies.medium,
