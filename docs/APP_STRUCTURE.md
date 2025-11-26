@@ -253,3 +253,4 @@ The app uses Expo Router for file-based routing. Routes are defined by the file 
 6. **Centralize constants**: Constants are defined in utility files or constants files
 
 
+
