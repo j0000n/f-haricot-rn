@@ -1,6 +1,13 @@
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import {
+  Image as RNImage,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import { Image } from "expo-image";
-import { Asset } from "expo-asset";
 import { SvgUri } from "react-native-svg";
 import { useThemedStyles, useTokens } from "@/styles/tokens";
 import type { ThemeTokens } from "@/styles/tokens";
@@ -96,8 +103,7 @@ export function LogoPicker({
           const isSvg = logo.path.endsWith(".svg");
           // Use SvgLogo for haricot-logo.svg (the only one with SVG data), otherwise use Image with tintColor
           const useSvgLogo = logo.path === "@/assets/images/haricot-logo.svg";
-          const asset = Asset.fromModule(logo.source);
-          const assetUri = asset.uri || asset.localUri || undefined;
+          const assetUri = RNImage.resolveAssetSource(logo.source as any)?.uri;
 
           return (
             <Pressable
