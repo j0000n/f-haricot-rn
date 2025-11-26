@@ -261,8 +261,16 @@ export function ThemeProvider({
       return;
     }
 
+    // If initialThemeName is explicitly null, user wants to clear custom theme
+    // This is handled by the useEffect that watches initialCustomThemeShareCode
+    if (initialThemeName === null) {
+      return;
+    }
+
     // Don't override custom theme if one is set - custom themes take priority
-    if (themeName === "custom" && customTheme) {
+    // Also check if we're in the process of setting a custom theme (themeName is "custom")
+    if (themeName === "custom" || customTheme) {
+      // Custom theme takes priority over initialThemeName
       return;
     }
 
@@ -360,6 +368,8 @@ export function ThemeProvider({
   );
 
   const definition = useMemo(() => {
+    console.log("definition useMemo running - themeName:", themeName, "customTheme:", customTheme ? `${customTheme.name} (${customTheme.shareCode})` : "null");
+    
     if (accessibilityPreferences.highContrastMode === "light") {
       return getThemeDefinition("highContrastLight");
     }
@@ -369,6 +379,7 @@ export function ThemeProvider({
     }
 
     if (themeName === "custom" && customTheme) {
+      console.log("Using custom theme definition:", customTheme.name, customTheme.shareCode);
       // Return a custom theme definition
       // Ensure logoFill and imageBackgroundColor have default values if missing
       const colorsWithDefaults = {
@@ -526,15 +537,20 @@ export function ThemeProvider({
 
   const setCustomThemeHandler = useCallback(
     (theme: CustomThemeData | null) => {
-      setCustomTheme(theme);
+      console.log("setCustomThemeHandler called with theme:", theme ? `${theme.name} (${theme.shareCode})` : "null");
+      
+      // Use React's automatic batching - both updates will be batched together
+      // This ensures the useMemo sees both values updated in the same render
       if (theme) {
-        // Set theme to custom and ensure it persists
+        // Set both states together - React will batch these updates
+        setCustomTheme(theme);
         setThemeName("custom");
-        // Clear any initialThemeName override by setting it to null temporarily
-        // This prevents the useEffect from overriding the custom theme
+        console.log("Set customTheme and themeName to 'custom'");
       } else {
         // When clearing custom theme, revert to default or user's preferred theme
         const resolved = resolveThemeName(initialThemeName);
+        console.log("Clearing custom theme, reverting to:", resolved);
+        setCustomTheme(null);
         setThemeName(resolved);
       }
     },

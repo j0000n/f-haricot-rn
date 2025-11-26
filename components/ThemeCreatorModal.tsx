@@ -6,6 +6,7 @@ import { Feather } from "@expo/vector-icons";
 import { useMutation } from "convex/react";
 import * as Clipboard from "expo-clipboard";
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "@/i18n/useTranslation";
 // @ts-ignore - react-native exports are runtime values
 import {
   Alert,
@@ -440,6 +441,7 @@ export function ThemeCreatorModal({
 }: ThemeCreatorModalProps) {
   const styles = useThemedStyles(createStyles);
   const { tokens, definition, assets } = useTheme();
+  const { t } = useTranslation();
   const createTheme = useMutation(api.customThemes.createCustomTheme);
 
   const [mode, setMode] = useState<EditorMode>("edit");
@@ -781,8 +783,10 @@ export function ThemeCreatorModal({
   };
 
   const generateRandomThemeName = () => {
-    const adjectives = ["Cool", "Fresh", "Bold", "Smooth", "Vibrant", "Elegant", "Modern", "Classic", "Dynamic", "Stylish"];
-    const nouns = ["Theme", "Palette", "Style", "Design", "Look", "Vibe", "Aesthetic", "Scheme"];
+    const adjectives = t("themeCreator.randomName.adjectives", {
+      returnObjects: true,
+    }) as string[];
+    const nouns = t("themeCreator.randomName.nouns", { returnObjects: true }) as string[];
     const randomAdj = adjectives[Math.floor(Math.random() * adjectives.length)];
     const randomNoun = nouns[Math.floor(Math.random() * nouns.length)];
     const randomNum = Math.floor(Math.random() * 1000);
@@ -846,29 +850,34 @@ export function ThemeCreatorModal({
         onThemeCreated(result.shareCode);
       }
       
+      onClose();
+
       Alert.alert(
-        "Theme created!",
-        `Your theme has been saved and applied. Share code: ${result.shareCode}`,
+        t("themeCreator.alerts.successTitle"),
+        t("themeCreator.alerts.successMessage", { shareCode: result.shareCode }),
         [
           {
-            text: "Copy Code",
+            text: t("themeCreator.alerts.copyCode"),
             onPress: async () => {
               await Clipboard.setStringAsync(result.shareCode);
-              Alert.alert("Copied!", `Share code ${result.shareCode} copied to clipboard.`);
-              onClose();
+              Alert.alert(
+                t("themeCreator.alerts.copiedTitle"),
+                t("themeCreator.alerts.copiedMessage", { shareCode: result.shareCode })
+              );
             },
           },
           {
-            text: "OK",
-            onPress: () => {
-              onClose();
-            },
+            text: t("themeCreator.alerts.dismiss"),
+            style: "cancel",
           },
         ]
       );
     } catch (error) {
       console.error("Failed to create theme:", error);
-      Alert.alert("Error", "Failed to save theme. Please try again.");
+      Alert.alert(
+        t("themeCreator.alerts.errorTitle"),
+        t("themeCreator.alerts.errorMessage")
+      );
     } finally {
       setIsSaving(false);
     }
@@ -892,7 +901,9 @@ export function ThemeCreatorModal({
         <View style={[styles.header, { backgroundColor: tokens.colors.surface }]}>
           <View style={styles.headerTop}>
             <Text style={[styles.headerTitle, { color: tokens.colors.textPrimary }]}>
-              {mode === "edit" ? "Create Theme" : "Preview Theme"}
+              {mode === "edit"
+                ? t("themeCreator.header.create")
+                : t("themeCreator.header.preview")}
             </Text>
             <Pressable onPress={onClose} style={styles.closeButton}>
               <Feather name="x" size={24} color={tokens.colors.textPrimary} />
@@ -915,7 +926,7 @@ export function ThemeCreatorModal({
                   { color: mode === "edit" ? colors.accentOnPrimary : colors.textSecondary },
                 ]}
               >
-                Edit
+                {t("themeCreator.header.editMode")}
               </Text>
             </Pressable>
             <Pressable
@@ -934,7 +945,7 @@ export function ThemeCreatorModal({
                   { color: mode === "preview" ? colors.accentOnPrimary : colors.textSecondary },
                 ]}
               >
-                Preview
+                {t("themeCreator.header.previewMode")}
               </Text>
             </Pressable>
           </View>
@@ -945,10 +956,12 @@ export function ThemeCreatorModal({
             <>
               <View style={[styles.section, { backgroundColor: colors.surface }]}>
                 <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
-                  Theme Info
+                  {t("themeCreator.themeInfo.title")}
                 </Text>
                 <View style={styles.inputGroup}>
-                  <Text style={[styles.label, { color: colors.textPrimary }]}>Theme Name</Text>
+                  <Text style={[styles.label, { color: colors.textPrimary }]}>
+                    {t("themeCreator.themeInfo.nameLabel")}
+                  </Text>
                   <TextInput
                     style={[
                       styles.input,
@@ -960,16 +973,18 @@ export function ThemeCreatorModal({
                     ]}
                     value={themeName}
                     onChangeText={setThemeName}
-                    placeholder="My Awesome Theme"
+                    placeholder={t("themeCreator.themeInfo.placeholder")}
                     placeholderTextColor={colors.textMuted}
                   />
                 </View>
               </View>
 
               <View style={[styles.section, { backgroundColor: colors.surface }]}>
-                <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Logo</Text>
-                <LogoPicker 
-                  selectedLogoPath={selectedLogoPath} 
+                <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
+                  {t("themeCreator.logo.title")}
+                </Text>
+                <LogoPicker
+                  selectedLogoPath={selectedLogoPath}
                   onSelectLogo={handleSelectLogo}
                   logoFillColor={colors.logoFill}
                   onLogoFillColorChange={(color) => updateColor("logoFill", color)}
@@ -979,11 +994,15 @@ export function ThemeCreatorModal({
               </View>
 
               <View style={[styles.section, { backgroundColor: colors.surface }]}>
-                <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Colors</Text>
-                
+                <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
+                  {t("themeCreator.colors.title")}
+                </Text>
+
                 {/* Background Colors */}
                 <View style={[styles.colorSubsection, { borderTopWidth: 0, paddingTop: 0 }]}>
-                  <Text style={[styles.subsectionTitle, { color: colors.textPrimary }]}>Background Colors</Text>
+                  <Text style={[styles.subsectionTitle, { color: colors.textPrimary }]}>
+                    {t("themeCreator.colors.backgroundSection")}
+                  </Text>
                   {Object.entries(colors)
                     .filter(([key]) => ["background", "surface", "overlay"].includes(key))
                     .map(([key, value]) => (
@@ -993,9 +1012,9 @@ export function ThemeCreatorModal({
                             {key.replace(/([A-Z])/g, " $1").trim()}
                           </Text>
                           <Text style={[styles.description, { color: colors.textSecondary }]}>
-                            {key === "background" && "Main app background color"}
-                            {key === "surface" && "Card and container backgrounds"}
-                            {key === "overlay" && "Overlay backgrounds for modals and popups"}
+                            {key === "background" && t("themeCreator.colors.backgroundDescription")}
+                            {key === "surface" && t("themeCreator.colors.surfaceDescription")}
+                            {key === "overlay" && t("themeCreator.colors.overlayDescription")}
                           </Text>
                         </View>
                         <View style={styles.colorInputRow}>
@@ -1030,7 +1049,9 @@ export function ThemeCreatorModal({
 
                 {/* Text Colors */}
                 <View style={styles.colorSubsection}>
-                  <Text style={[styles.subsectionTitle, { color: colors.textPrimary }]}>Text Colors</Text>
+                  <Text style={[styles.subsectionTitle, { color: colors.textPrimary }]}>
+                    {t("themeCreator.colors.textSection")}
+                  </Text>
                   
                   {/* Text Colors Preview */}
                   <View
@@ -1045,13 +1066,13 @@ export function ThemeCreatorModal({
                     }}
                   >
                     <Text style={{ fontSize: tokens.typography.heading, color: colors.textPrimary, fontFamily: tokens.fontFamilies.bold }}>
-                      Heading Text
+                      {t("themeCreator.colors.textPreview.heading")}
                     </Text>
                     <Text style={{ fontSize: tokens.typography.body, color: colors.textSecondary, fontFamily: tokens.fontFamilies.regular }}>
-                      This is secondary text that appears below headings and in descriptions.
+                      {t("themeCreator.colors.textPreview.body")}
                     </Text>
                     <Text style={{ fontSize: tokens.typography.small, color: colors.textMuted, fontFamily: tokens.fontFamilies.regular }}>
-                      Muted text for placeholders and hints
+                      {t("themeCreator.colors.textPreview.muted")}
                     </Text>
                   </View>
 
@@ -1101,7 +1122,9 @@ export function ThemeCreatorModal({
 
                 {/* Interactive Colors */}
                 <View style={styles.colorSubsection}>
-                  <Text style={[styles.subsectionTitle, { color: colors.textPrimary }]}>Interactive Colors</Text>
+                  <Text style={[styles.subsectionTitle, { color: colors.textPrimary }]}>
+                    {t("themeCreator.colors.interactiveSection")}
+                  </Text>
                   
                   {/* Interactive Colors Preview */}
                   <View
@@ -1125,7 +1148,7 @@ export function ThemeCreatorModal({
                       }}
                     >
                       <Text style={{ color: colors.accentOnPrimary, fontSize: tokens.typography.body, fontFamily: tokens.fontFamilies.semiBold }}>
-                        Accent Button
+                        {t("themeCreator.colors.interactivePreview.button")}
                       </Text>
                     </View>
                     <View
@@ -1139,7 +1162,7 @@ export function ThemeCreatorModal({
                       }}
                     >
                       <Text style={{ color: colors.textPrimary, fontSize: tokens.typography.body, fontFamily: tokens.fontFamilies.regular }}>
-                        Bordered Element
+                        {t("themeCreator.colors.interactivePreview.bordered")}
                       </Text>
                     </View>
                   </View>
@@ -1153,9 +1176,9 @@ export function ThemeCreatorModal({
                             {key.replace(/([A-Z])/g, " $1").trim()}
                           </Text>
                           <Text style={[styles.description, { color: colors.textSecondary }]}>
-                            {key === "accent" && "Primary accent color for buttons and highlights"}
-                            {key === "accentOnPrimary" && "Text color on accent backgrounds"}
-                            {key === "border" && "Border color for dividers and outlines"}
+                            {key === "accent" && t("themeCreator.colors.accentDescription")}
+                            {key === "accentOnPrimary" && t("themeCreator.colors.accentOnPrimaryDescription")}
+                            {key === "border" && t("themeCreator.colors.borderDescription")}
                           </Text>
                         </View>
                         <View style={styles.colorInputRow}>
@@ -1190,7 +1213,9 @@ export function ThemeCreatorModal({
 
                 {/* Status Colors */}
                 <View style={styles.colorSubsection}>
-                  <Text style={[styles.subsectionTitle, { color: colors.textPrimary }]}>Status Colors</Text>
+                  <Text style={[styles.subsectionTitle, { color: colors.textPrimary }]}>
+                    {t("themeCreator.colors.statusSection")}
+                  </Text>
                   
                   {/* Status Colors Preview */}
                   <View
@@ -1215,7 +1240,7 @@ export function ThemeCreatorModal({
                       }}
                     >
                       <Text style={{ color: colors.textPrimary, fontSize: tokens.typography.small, fontFamily: tokens.fontFamilies.semiBold }}>
-                        Success
+                        {t("themeCreator.colors.statusPreview.success")}
                       </Text>
                     </View>
                     <View
@@ -1227,7 +1252,7 @@ export function ThemeCreatorModal({
                       }}
                     >
                       <Text style={{ color: colors.textPrimary, fontSize: tokens.typography.small, fontFamily: tokens.fontFamilies.semiBold }}>
-                        Danger
+                        {t("themeCreator.colors.statusPreview.danger")}
                       </Text>
                     </View>
                     <View
@@ -1239,7 +1264,7 @@ export function ThemeCreatorModal({
                       }}
                     >
                       <Text style={{ color: colors.textPrimary, fontSize: tokens.typography.small, fontFamily: tokens.fontFamilies.semiBold }}>
-                        Info
+                        {t("themeCreator.colors.statusPreview.info")}
                       </Text>
                     </View>
                   </View>
@@ -1253,9 +1278,9 @@ export function ThemeCreatorModal({
                             {key.replace(/([A-Z])/g, " $1").trim()}
                           </Text>
                           <Text style={[styles.description, { color: colors.textSecondary }]}>
-                            {key === "success" && "Success states, confirmations, and positive feedback"}
-                            {key === "danger" && "Error states, warnings, and destructive actions"}
-                            {key === "info" && "Informational messages and notices"}
+                            {key === "success" && t("themeCreator.colors.successDescription")}
+                            {key === "danger" && t("themeCreator.colors.dangerDescription")}
+                            {key === "info" && t("themeCreator.colors.infoDescription")}
                           </Text>
                         </View>
                         <View style={styles.colorInputRow}>
@@ -2277,9 +2302,11 @@ export function ThemeCreatorModal({
 
               {/* Tab Bar Navigation Settings */}
               <View style={[styles.section, { backgroundColor: colors.surface }]}>
-                <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>Navigation Bar</Text>
+                <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
+                  {t("themeCreator.navigation.title")}
+                </Text>
                 <Text style={[styles.sectionDescription, { color: colors.textSecondary }]}>
-                  Customize the appearance of your bottom navigation bar. Preview updates in real-time.
+                  {t("themeCreator.navigation.description")}
                 </Text>
 
                 {/* Preview */}
@@ -2366,9 +2393,11 @@ export function ThemeCreatorModal({
                 <View style={styles.inputGroup}>
                   <View style={styles.switchRow}>
                     <View style={{ flex: 1 }}>
-                      <Text style={[styles.label, { color: colors.textPrimary }]}>Show Icons</Text>
+                      <Text style={[styles.label, { color: colors.textPrimary }]}>
+                        {t("themeCreator.navigation.showIcons")}
+                      </Text>
                       <Text style={[styles.description, { color: colors.textSecondary }]}>
-                        Display icons in navigation items
+                        {t("themeCreator.navigation.showIconsDescription")}
                       </Text>
                     </View>
                     <Switch
@@ -2401,10 +2430,12 @@ export function ThemeCreatorModal({
                 {/* Icon Selection - Only show if icons are enabled */}
                 {tabBar.icon?.show && (
                   <View style={styles.inputGroup}>
-                    <Text style={[styles.label, { color: colors.textPrimary }]}>Tab Icons</Text>
-                    <Text style={[styles.description, { color: colors.textSecondary }]}>
-                      Choose icons for each navigation tab
-                    </Text>
+                  <Text style={[styles.label, { color: colors.textPrimary }]}>
+                    {t("themeCreator.navigation.tabIcons")}
+                  </Text>
+                  <Text style={[styles.description, { color: colors.textSecondary }]}>
+                    {t("themeCreator.navigation.tabIconsDescription")}
+                  </Text>
                     {(["home", "kitchen", "lists"] as const).map((tab) => (
                       <View key={tab} style={{ marginBottom: tokens.spacing.sm }}>
                         <Text
@@ -2450,6 +2481,51 @@ export function ThemeCreatorModal({
                         />
                       </View>
                     ))}
+
+                    <View style={styles.inputGroup}>
+                      <View style={styles.sliderRow}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={[styles.label, { color: colors.textPrimary }]}>
+                            {t("themeCreator.navigation.iconSize")}
+                          </Text>
+                          <Text style={[styles.description, { color: colors.textSecondary }]}>
+                            {t("themeCreator.navigation.iconSizeDescription")}
+                          </Text>
+                        </View>
+                        <Text style={[styles.valueLabel, { color: colors.textSecondary }]}>
+                          {(tabBar.icon?.size || tokens.iconSizes.md)}px
+                        </Text>
+                      </View>
+                      <Slider
+                        style={styles.slider}
+                        minimumValue={12}
+                        maximumValue={48}
+                        step={1}
+                        value={tabBar.icon?.size || tokens.iconSizes.md}
+                        onValueChange={(val) =>
+                          setTabBar((prev) => ({
+                            ...prev,
+                            icon: prev.icon
+                              ? { ...prev.icon, size: Math.round(val), show: true }
+                              : {
+                                  show: true,
+                                  family: "Feather",
+                                  size: Math.round(val),
+                                  inactiveColor: colors.textSecondary,
+                                  activeColor: colors.accentOnPrimary,
+                                  names: {
+                                    home: "home",
+                                    kitchen: "shopping-cart",
+                                    lists: "list",
+                                  },
+                                },
+                          }))
+                        }
+                        minimumTrackTintColor={colors.accent}
+                        maximumTrackTintColor={colors.border}
+                        thumbTintColor={colors.accent}
+                      />
+                    </View>
                   </View>
                 )}
 
@@ -2457,9 +2533,11 @@ export function ThemeCreatorModal({
                 <View style={styles.inputGroup}>
                   <View style={styles.switchRow}>
                     <View style={{ flex: 1 }}>
-                      <Text style={[styles.label, { color: colors.textPrimary }]}>Show Labels</Text>
+                      <Text style={[styles.label, { color: colors.textPrimary }]}>
+                        {t("themeCreator.navigation.showLabels")}
+                      </Text>
                       <Text style={[styles.description, { color: colors.textSecondary }]}>
-                        Display text labels in navigation items
+                        {t("themeCreator.navigation.showLabelsDescription")}
                       </Text>
                     </View>
                     <Switch
@@ -2481,9 +2559,11 @@ export function ThemeCreatorModal({
                   <View style={styles.inputGroup}>
                     <View style={styles.switchRow}>
                       <View style={{ flex: 1 }}>
-                        <Text style={[styles.label, { color: colors.textPrimary }]}>Uppercase Labels</Text>
+                        <Text style={[styles.label, { color: colors.textPrimary }]}>
+                          {t("themeCreator.navigation.uppercaseLabels")}
+                        </Text>
                         <Text style={[styles.description, { color: colors.textSecondary }]}>
-                          Transform labels to uppercase
+                          {t("themeCreator.navigation.uppercaseLabelsDescription")}
                         </Text>
                       </View>
                       <Switch
@@ -2503,9 +2583,11 @@ export function ThemeCreatorModal({
 
                 {/* Shape Selection */}
                 <View style={styles.inputGroup}>
-                  <Text style={[styles.label, { color: colors.textPrimary }]}>Button Shape</Text>
+                  <Text style={[styles.label, { color: colors.textPrimary }]}>
+                    {t("themeCreator.navigation.buttonShape")}
+                  </Text>
                   <Text style={[styles.description, { color: colors.textSecondary }]}>
-                    Shape of navigation buttons
+                    {t("themeCreator.navigation.buttonShapeDescription")}
                   </Text>
                   <View style={{ flexDirection: "row", gap: tokens.spacing.sm, marginTop: tokens.spacing.xs }}>
                     <Pressable
@@ -2536,7 +2618,7 @@ export function ThemeCreatorModal({
                           fontFamily: tokens.fontFamilies.semiBold,
                         }}
                       >
-                        Pill
+                        {t("themeCreator.navigation.pillShape")}
                       </Text>
                     </Pressable>
                     <Pressable
@@ -2567,7 +2649,7 @@ export function ThemeCreatorModal({
                           fontFamily: tokens.fontFamilies.semiBold,
                         }}
                       >
-                        Box
+                        {t("themeCreator.navigation.boxShape")}
                       </Text>
                     </Pressable>
                   </View>

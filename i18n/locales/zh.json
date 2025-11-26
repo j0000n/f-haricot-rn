@@ -416,9 +416,110 @@
     "shareCodePrompt": "有共享代码吗？",
     "shareCodePlaceholder": "输入代码",
     "loading": "加载中...",
-    "apply": "应用"
+    "apply": "应用",
+    "customThemeLabel": "Custom theme",
+    "shareCodeDisplay": "Share code: {{code}}",
+    "copyShareCode": "Copy",
+    "copyShareCodeTitle": "Share code copied",
+    "copyShareCodeMessage": "Share code {{code}} copied to clipboard."
   },
   "navigation": {
     "back": "返回"
+  },
+  "themeCreator": {
+    "header": {
+      "create": "Create Theme",
+      "preview": "Preview Theme",
+      "editMode": "Edit",
+      "previewMode": "Preview"
+    },
+    "alerts": {
+      "successTitle": "Theme created!",
+      "successMessage": "Your theme has been saved and applied. Share code: {{shareCode}}",
+      "copyCode": "Copy Code",
+      "copiedTitle": "Copied!",
+      "copiedMessage": "Share code {{shareCode}} copied to clipboard.",
+      "dismiss": "Close",
+      "errorTitle": "Error",
+      "errorMessage": "Failed to save theme. Please try again."
+    },
+    "randomName": {
+      "adjectives": [
+        "Cool",
+        "Fresh",
+        "Bold",
+        "Smooth",
+        "Vibrant",
+        "Elegant",
+        "Modern",
+        "Classic",
+        "Dynamic",
+        "Stylish"
+      ],
+      "nouns": [
+        "Theme",
+        "Palette",
+        "Style",
+        "Design",
+        "Look",
+        "Vibe",
+        "Aesthetic",
+        "Scheme"
+      ]
+    },
+    "themeInfo": {
+      "title": "Theme Info",
+      "nameLabel": "Theme Name",
+      "placeholder": "Your Awesome Theme"
+    },
+    "logo": {
+      "title": "Logo",
+      "fieldLabel": "Logo",
+      "fillColor": "Fill Color"
+    },
+    "colors": {
+      "title": "Colors",
+      "backgroundSection": "Background Colors",
+      "backgroundDescription": "Main app background color",
+      "surfaceDescription": "Card and container backgrounds",
+      "overlayDescription": "Overlay backgrounds for modals and popups",
+      "textSection": "Text Colors",
+      "textPreview": {
+        "heading": "Heading Text",
+        "body": "This is secondary text that appears below headings and in descriptions.",
+        "muted": "Muted text for placeholders and hints"
+      },
+      "interactiveSection": "Interactive Colors",
+      "accentDescription": "Primary accent color for buttons and highlights",
+      "accentOnPrimaryDescription": "Text color on accent backgrounds",
+      "borderDescription": "Border color for dividers and outlines",
+      "statusSection": "Status Colors",
+      "statusPreview": {
+        "success": "Success",
+        "danger": "Danger",
+        "info": "Info"
+      },
+      "successDescription": "Success states, confirmations, and positive feedback",
+      "dangerDescription": "Error states, warnings, and destructive actions",
+      "infoDescription": "Informational messages and notices"
+    },
+    "navigation": {
+      "title": "Navigation Bar",
+      "description": "Customize the appearance of your bottom navigation bar. Preview updates in real-time.",
+      "showIcons": "Show Icons",
+      "showIconsDescription": "Display icons in navigation items",
+      "tabIcons": "Tab Icons",
+      "tabIconsDescription": "Choose icons for each navigation tab",
+      "showLabels": "Show Labels",
+      "showLabelsDescription": "Display text labels in navigation items",
+      "uppercaseLabels": "Uppercase Labels",
+      "uppercaseLabelsDescription": "Transform labels to uppercase",
+      "buttonShape": "Button Shape",
+      "buttonShapeDescription": "Shape of navigation buttons",
+      "pillShape": "Pill",
+      "boxShape": "Box",
+      "iconSize": "Icon Size",
+      "iconSizeDescription": "Adjust the size of navigation icons"
+    }
   }
 }

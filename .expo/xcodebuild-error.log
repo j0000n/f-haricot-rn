@@ -1,8 +1,0 @@
-** BUILD FAILED **
-
-
-The following build commands failed:
-	CompileC /Users/jlw/Library/Developer/Xcode/DerivedData/haricot-dzytsbhnriqwkccnwockfisopxxh/Build/Intermediates.noindex/Pods.build/Debug-iphonesimulator/RNReanimated.build/Objects-normal/arm64/TransformMatrix3D.o /Users/jlw/haricot/react-native/node_modules/react-native-reanimated/Common/cpp/reanimated/CSS/common/transforms/TransformMatrix3D.cpp normal arm64 c++ com.apple.compilers.llvm.clang.1_0.compiler (in target 'RNReanimated' from project 'Pods')
-	CompileC /Users/jlw/Library/Developer/Xcode/DerivedData/haricot-dzytsbhnriqwkccnwockfisopxxh/Build/Intermediates.noindex/Pods.build/Debug-iphonesimulator/RNReanimated.build/Objects-normal/arm64/SimpleValueInterpolator.o /Users/jlw/haricot/react-native/node_modules/react-native-reanimated/Common/cpp/reanimated/CSS/interpolation/values/SimpleValueInterpolator.cpp normal arm64 c++ com.apple.compilers.llvm.clang.1_0.compiler (in target 'RNReanimated' from project 'Pods')
-	Building workspace haricot with scheme haricot and configuration Debug
-(3 failures)

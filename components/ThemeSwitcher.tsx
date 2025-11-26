@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Alert, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import * as Clipboard from "expo-clipboard";
 
 import { api } from "@/convex/_generated/api";
 import { useTranslation } from "@/i18n/useTranslation";
@@ -54,10 +55,14 @@ export function ThemeSwitcher({ variant = "default" }: ThemeSwitcherProps) {
   // Don't auto-load if user has switched to a built-in theme
   useEffect(() => {
     if (savedCustomThemeQuery && savedCustomThemeShareCode && !customTheme && themeName === "custom") {
+      console.log("Loading saved custom theme:", savedCustomThemeQuery.name, savedCustomThemeQuery.shareCode);
       setCustomTheme({
         name: savedCustomThemeQuery.name,
         shareCode: savedCustomThemeQuery.shareCode,
-        colors: savedCustomThemeQuery.colors,
+        colors: {
+          ...savedCustomThemeQuery.colors,
+          logoFill: savedCustomThemeQuery.colors.logoFill ?? savedCustomThemeQuery.colors.textPrimary,
+        },
         spacing: savedCustomThemeQuery.spacing,
         padding: savedCustomThemeQuery.padding,
         radii: savedCustomThemeQuery.radii,
@@ -87,10 +92,14 @@ export function ThemeSwitcher({ variant = "default" }: ThemeSwitcherProps) {
     if (customThemeQuery !== undefined && queryShareCode) {
       if (customThemeQuery) {
         // Apply the custom theme
+        // Ensure logoFill is included in colors (matching ThemeProvider logic)
         const themeData = {
           name: customThemeQuery.name,
           shareCode: customThemeQuery.shareCode,
-          colors: customThemeQuery.colors,
+          colors: {
+            ...customThemeQuery.colors,
+            logoFill: customThemeQuery.colors.logoFill ?? customThemeQuery.colors.textPrimary,
+          },
           spacing: customThemeQuery.spacing,
           padding: customThemeQuery.padding,
           radii: customThemeQuery.radii,
@@ -99,6 +108,7 @@ export function ThemeSwitcher({ variant = "default" }: ThemeSwitcherProps) {
           logoAsset: customThemeQuery.logoAsset,
           tabBar: customThemeQuery.tabBar,
         };
+        console.log("Applying custom theme:", themeData.name, themeData.shareCode);
         setCustomTheme(themeData);
         
         // Save the share code to user profile for persistence
@@ -211,6 +221,14 @@ export function ThemeSwitcher({ variant = "default" }: ThemeSwitcherProps) {
   };
 
   const accentColor = tokens.colors.accent;
+
+  const handleCopyCustomShareCode = async (code: string) => {
+    await Clipboard.setStringAsync(code);
+    Alert.alert(
+      t("themeSwitcher.copyShareCodeTitle"),
+      t("themeSwitcher.copyShareCodeMessage", { code })
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -332,8 +350,46 @@ export function ThemeSwitcher({ variant = "default" }: ThemeSwitcherProps) {
                   color: themeName === "custom" ? customTheme.colors.accentOnPrimary : customTheme.colors.textSecondary,
                 }}
               >
-                Custom theme
+                {t("themeSwitcher.customThemeLabel")}
               </Text>
+            ) : null}
+            {customTheme.shareCode ? (
+              <View
+                style={[
+                  styles.shareCodePill,
+                  {
+                    backgroundColor:
+                      themeName === "custom" ? customTheme.colors.overlay : customTheme.colors.surface,
+                    borderColor: customTheme.colors.border,
+                  },
+                ]}
+              >
+                <Text
+                  style={{
+                    fontSize: customTheme.typography.tiny,
+                    fontFamily: customTheme.fontFamilies.regular,
+                    color: themeName === "custom"
+                      ? customTheme.colors.accentOnPrimary
+                      : customTheme.colors.textPrimary,
+                  }}
+                >
+                  {t("themeSwitcher.shareCodeDisplay", { code: customTheme.shareCode })}
+                </Text>
+                <Pressable
+                  onPress={() => handleCopyCustomShareCode(customTheme.shareCode)}
+                  style={[styles.copyButton, { borderColor: customTheme.colors.border }]}
+                >
+                  <Text
+                    style={{
+                      fontSize: customTheme.typography.tiny,
+                      fontFamily: customTheme.fontFamilies.semiBold,
+                      color: customTheme.colors.accent,
+                    }}
+                  >
+                    {t("themeSwitcher.copyShareCode")}
+                  </Text>
+                </Pressable>
+              </View>
             ) : null}
           </Pressable>
         )}
@@ -521,5 +577,23 @@ const createStyles = (tokens: ThemeTokens) =>
       fontSize: tokens.typography.body,
       fontFamily: tokens.fontFamilies.semiBold,
       color: tokens.colors.accentOnPrimary,
+    },
+    shareCodePill: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      borderWidth: tokens.borderWidths.thin,
+      borderRadius: tokens.radii.sm,
+      paddingVertical: tokens.spacing.xs,
+      paddingHorizontal: tokens.spacing.sm,
+      gap: tokens.spacing.sm,
+      marginTop: tokens.spacing.xs,
+    },
+    copyButton: {
+      paddingVertical: tokens.spacing.xs,
+      paddingHorizontal: tokens.spacing.sm,
+      borderRadius: tokens.radii.sm,
+      borderWidth: tokens.borderWidths.thin,
+      backgroundColor: tokens.colors.surface,
     },
   });
