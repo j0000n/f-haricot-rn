@@ -267,6 +267,16 @@ export default function HomeScreen() {
         style={styles.tasksContainer}
         contentContainerStyle={styles.scrollContent}
       >
+        <View style={styles.worldEntry}>
+          <Link href="/world" asChild>
+            <Pressable style={styles.worldButton} accessibilityRole="button">
+              <Text style={styles.worldButtonTitle}>Explore World Map</Text>
+              <Text style={styles.worldButtonSubtitle}>
+                Navigate continents, regions, and cities to find new culinary inspiration.
+              </Text>
+            </Pressable>
+          </Link>
+        </View>
         <View style={styles.searchSection}>
 
           {generateRecipeImagePrompt && (

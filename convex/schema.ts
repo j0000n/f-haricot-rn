@@ -417,6 +417,40 @@ const schema = defineSchema({
   })
     .index("by_share_code", ["shareCode"])
     .index("by_creator", ["creatorId"]),
+  continents: defineTable({
+    name: v.string(),
+    slug: v.string(),
+  }).index("by_slug", ["slug"]),
+  regions: defineTable({
+    continentId: v.id("continents"),
+    name: v.string(),
+    slug: v.string(),
+  })
+    .index("by_slug", ["slug"])
+    .index("by_continent", ["continentId"]),
+  countries: defineTable({
+    regionId: v.id("regions"),
+    name: v.string(),
+    slug: v.string(),
+  })
+    .index("by_slug", ["slug"])
+    .index("by_region", ["regionId"]),
+  subregions: defineTable({
+    countryId: v.id("countries"),
+    name: v.string(),
+    slug: v.string(),
+  })
+    .index("by_slug", ["slug"])
+    .index("by_country", ["countryId"]),
+  cities: defineTable({
+    countryId: v.id("countries"),
+    subregionId: v.optional(v.id("subregions")),
+    name: v.string(),
+    slug: v.string(),
+  })
+    .index("by_slug", ["slug"])
+    .index("by_country", ["countryId"])
+    .index("by_subregion", ["subregionId"]),
 });
 
 export default schema;
