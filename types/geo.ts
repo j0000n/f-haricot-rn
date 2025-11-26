@@ -4,6 +4,8 @@ export interface City {
   name: string;
   subregionId?: string;
   countryId: string;
+  lat?: number;
+  lng?: number;
 }
 
 export interface CountrySubregion {
