@@ -24,6 +24,7 @@ import type * as tasks from "../tasks.js";
 import type * as testFunction from "../testFunction.js";
 import type * as testFunctionNode from "../testFunctionNode.js";
 import type * as users from "../users.js";
+import type * as world from "../world.js";
 
 import type {
   ApiFromModules,
@@ -56,6 +57,7 @@ declare const fullApi: ApiFromModules<{
   testFunction: typeof testFunction;
   testFunctionNode: typeof testFunctionNode;
   users: typeof users;
+  world: typeof world;
 }>;
 declare const fullApiWithMounts: typeof fullApi;
 

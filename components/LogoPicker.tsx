@@ -1,5 +1,5 @@
+import React from "react";
 import {
-  Image as RNImage,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -8,7 +8,7 @@ import {
   View,
 } from "react-native";
 import { Image } from "expo-image";
-import { SvgUri } from "react-native-svg";
+import type { StyleProp, ImageStyle } from "react-native";
 import { useThemedStyles, useTokens } from "@/styles/tokens";
 import type { ThemeTokens } from "@/styles/tokens";
 import { WebsiteStyleColorPicker } from "./WebsiteStyleColorPicker";
@@ -101,9 +101,96 @@ export function LogoPicker({
         {AVAILABLE_LOGOS.map((logo) => {
           const isSelected = logo.path === selectedLogoPath;
           const isSvg = logo.path.endsWith(".svg");
-          // Use SvgLogo for haricot-logo.svg (the only one with SVG data), otherwise use Image with tintColor
+          // Use SvgLogo for haricot-logo.svg (the only one with SVG data)
           const useSvgLogo = logo.path === "@/assets/images/haricot-logo.svg";
-          const assetUri = RNImage.resolveAssetSource(logo.source as any)?.uri;
+          
+          // Check if logo.source is a React component (SVG transformers can return components)
+          const logoSource = logo.source;
+          const isDirectFunctionComponent = typeof logoSource === "function";
+          const hasComponentInDefault = 
+            typeof logoSource === "object" && 
+            logoSource !== null && 
+            "default" in logoSource && 
+            typeof (logoSource as any).default === "function";
+          const hasReactComponentProperties = 
+            typeof logoSource === "object" && 
+            logoSource !== null && 
+            ("$$typeof" in logoSource || "displayName" in logoSource || "render" in logoSource || "prototype" in logoSource);
+          const isReactComponent = isDirectFunctionComponent || hasComponentInDefault || hasReactComponentProperties;
+          
+          // Validate that logoSource is a valid image source for expo-image
+          // A valid image source should be:
+          // - A number (require() result for non-SVG images)
+          // - An object with uri/localUri
+          const isValidImageSource = 
+            typeof logoSource === "number" ||
+            (typeof logoSource === "object" && 
+             logoSource !== null && 
+             !isReactComponent &&
+             ("uri" in logoSource || "localUri" in logoSource));
+
+          // Render function to determine what to display
+          const renderLogo = () => {
+            // Use SvgLogo for haricot logo if we have fill color support
+            if (useSvgLogo) {
+              return (
+                <SvgLogo
+                  width={60}
+                  height={60}
+                  fillColor={logoFillColor}
+                  logoPath={logo.path}
+                />
+              );
+            }
+            
+            // If it's a React component (like SVG transformers return), render it directly
+            if (isReactComponent) {
+              try {
+                let LogoComponent: React.ComponentType<{ 
+                  width?: number | string; 
+                  height?: number | string; 
+                  style?: StyleProp<ImageStyle>;
+                }>;
+                
+                if (hasComponentInDefault) {
+                  LogoComponent = (logoSource as any).default;
+                } else if (isDirectFunctionComponent) {
+                  LogoComponent = logoSource as React.ComponentType<{ 
+                    width?: number | string; 
+                    height?: number | string; 
+                    style?: StyleProp<ImageStyle>;
+                  }>;
+                } else {
+                  LogoComponent = logoSource as any;
+                }
+                
+                return (
+                  <LogoComponent
+                    width={60}
+                    height={60}
+                    style={styles.logoImage}
+                  />
+                );
+              } catch (error) {
+                console.warn("LogoPicker: Error rendering SVG component", error);
+                // Fall through to Image component
+              }
+            }
+            
+            // Only use Image component if we have a valid image source
+            if (isValidImageSource) {
+              return (
+                <Image
+                  source={logoSource as any}
+                  style={styles.logoImage}
+                  contentFit="contain"
+                />
+              );
+            }
+            
+            // Fallback: return null if we can't render anything
+            return null;
+          };
 
           return (
             <Pressable
@@ -112,22 +199,7 @@ export function LogoPicker({
               onPress={() => onSelectLogo(logo)}
             >
               <View style={styles.logoImageContainer}>
-                {useSvgLogo ? (
-                  <SvgLogo
-                    width={60}
-                    height={60}
-                    fillColor={logoFillColor}
-                    logoPath={logo.path}
-                  />
-                ) : isSvg && assetUri ? (
-                  <SvgUri uri={assetUri} width={60} height={60} fill={logoFillColor} color={logoFillColor} />
-                ) : (
-                  <Image
-                    source={logo.source as any}
-                    style={styles.logoImage}
-                    contentFit="contain"
-                  />
-                )}
+                {renderLogo()}
               </View>
               <Text style={[styles.logoLabel, isSelected ? styles.logoLabelSelected : null]}>
                 {logo.label}

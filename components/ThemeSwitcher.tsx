@@ -55,10 +55,14 @@ export function ThemeSwitcher({ variant = "default" }: ThemeSwitcherProps) {
   // Don't auto-load if user has switched to a built-in theme
   useEffect(() => {
     if (savedCustomThemeQuery && savedCustomThemeShareCode && !customTheme && themeName === "custom") {
+      console.log("Loading saved custom theme:", savedCustomThemeQuery.name, savedCustomThemeQuery.shareCode);
       setCustomTheme({
         name: savedCustomThemeQuery.name,
         shareCode: savedCustomThemeQuery.shareCode,
-        colors: savedCustomThemeQuery.colors,
+        colors: {
+          ...savedCustomThemeQuery.colors,
+          logoFill: savedCustomThemeQuery.colors.logoFill ?? savedCustomThemeQuery.colors.textPrimary,
+        },
         spacing: savedCustomThemeQuery.spacing,
         padding: savedCustomThemeQuery.padding,
         radii: savedCustomThemeQuery.radii,
@@ -88,10 +92,14 @@ export function ThemeSwitcher({ variant = "default" }: ThemeSwitcherProps) {
     if (customThemeQuery !== undefined && queryShareCode) {
       if (customThemeQuery) {
         // Apply the custom theme
+        // Ensure logoFill is included in colors (matching ThemeProvider logic)
         const themeData = {
           name: customThemeQuery.name,
           shareCode: customThemeQuery.shareCode,
-          colors: customThemeQuery.colors,
+          colors: {
+            ...customThemeQuery.colors,
+            logoFill: customThemeQuery.colors.logoFill ?? customThemeQuery.colors.textPrimary,
+          },
           spacing: customThemeQuery.spacing,
           padding: customThemeQuery.padding,
           radii: customThemeQuery.radii,
@@ -100,6 +108,7 @@ export function ThemeSwitcher({ variant = "default" }: ThemeSwitcherProps) {
           logoAsset: customThemeQuery.logoAsset,
           tabBar: customThemeQuery.tabBar,
         };
+        console.log("Applying custom theme:", themeData.name, themeData.shareCode);
         setCustomTheme(themeData);
         
         // Save the share code to user profile for persistence
