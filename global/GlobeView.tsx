@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef } from "react";
+import React, { useCallback, useRef } from "react";
 import { StyleSheet, View } from "react-native";
 import { WebView, type WebViewMessageEvent } from "react-native-webview";
 import { GLOBE_HTML } from "./globeHtml";
@@ -29,11 +29,6 @@ export const GlobeView: React.FC = () => {
     }
   }, []);
 
-  useEffect(() => {
-    const timeout = setTimeout(sendMarkersToGlobe, 800);
-    return () => clearTimeout(timeout);
-  }, [sendMarkersToGlobe]);
-
   return (
     <View style={styles.container}>
       <WebView
@@ -43,6 +38,7 @@ export const GlobeView: React.FC = () => {
         originWhitelist={["*"]}
         source={{ html: GLOBE_HTML }}
         onMessage={handleMessage}
+        onLoadEnd={sendMarkersToGlobe}
         javaScriptEnabled
         domStorageEnabled
         allowFileAccess

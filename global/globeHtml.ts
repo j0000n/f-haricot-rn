@@ -27,8 +27,8 @@ export const GLOBE_HTML = `<!DOCTYPE html>
 
       const worldGlobe = Globe()
         (globeContainer)
-        .globeImageUrl('//unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
-        .bumpImageUrl('//unpkg.com/three-globe/example/img/earth-topology.png')
+        .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
+        .bumpImageUrl('https://unpkg.com/three-globe/example/img/earth-topology.png')
         .backgroundColor('#000011')
         .showAtmosphere(true)
         .atmosphereColor('lightskyblue')
