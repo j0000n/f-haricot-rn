@@ -2818,14 +2818,34 @@ export const generatedContinents: Continent[] = [
                 "slug": "ile-de-france-paris",
                 "name": "Île-de-France (Paris)",
                 "countryId": "continent-europe-region-western-europe-country-northwestern-europe",
-                "cities": []
+                "cities": [
+                  {
+                    "id": "continent-europe-region-western-europe-country-northwestern-europe-subregion-ile-de-france-paris-city-paris",
+                    "slug": "paris",
+                    "name": "Paris",
+                    "countryId": "continent-europe-region-western-europe-country-northwestern-europe",
+                    "subregionId": "continent-europe-region-western-europe-country-northwestern-europe-subregion-ile-de-france-paris",
+                    "lat": 48.8566,
+                    "lng": 2.3522
+                  }
+                ]
               },
               {
                 "id": "continent-europe-region-western-europe-country-northwestern-europe-subregion-provence",
                 "slug": "provence",
                 "name": "Provence",
                 "countryId": "continent-europe-region-western-europe-country-northwestern-europe",
-                "cities": []
+                "cities": [
+                  {
+                    "id": "continent-europe-region-western-europe-country-northwestern-europe-subregion-provence-city-marseille",
+                    "slug": "marseille",
+                    "name": "Marseille",
+                    "countryId": "continent-europe-region-western-europe-country-northwestern-europe",
+                    "subregionId": "continent-europe-region-western-europe-country-northwestern-europe-subregion-provence",
+                    "lat": 43.2965,
+                    "lng": 5.3698
+                  }
+                ]
               },
               {
                 "id": "continent-europe-region-western-europe-country-northwestern-europe-subregion-brittany",
@@ -4144,7 +4164,17 @@ export const generatedContinents: Continent[] = [
                 "slug": "detroit",
                 "name": "Detroit",
                 "countryId": "continent-north-america-region-united-states-of-america-country-midwest-region",
-                "cities": []
+                "cities": [
+                  {
+                    "id": "continent-north-america-region-united-states-of-america-country-midwest-region-subregion-detroit-city-detroit",
+                    "slug": "detroit",
+                    "name": "Detroit",
+                    "countryId": "continent-north-america-region-united-states-of-america-country-midwest-region",
+                    "subregionId": "continent-north-america-region-united-states-of-america-country-midwest-region-subregion-detroit",
+                    "lat": 42.3314,
+                    "lng": -83.0458
+                  }
+                ]
               },
               {
                 "id": "continent-north-america-region-united-states-of-america-country-midwest-region-subregion-upper-peninsula",

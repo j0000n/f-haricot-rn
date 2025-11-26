@@ -1,3 +1,4 @@
+import type { City, Continent, Country, CountrySubregion, Region } from "@/types/geo";
 import { generatedContinents } from "./generatedWorldData";
 
 export const continents = generatedContinents;
@@ -39,3 +40,39 @@ export const getCitiesForSubregion = (
 ) => getSubregionBySlugs(continentSlug, regionSlug, countrySlug, subregionSlug)?.cities ?? [];
 
 // TODO: Replace in-memory helpers with Convex queries once data is stored remotely.
+
+export interface CityContext {
+  city: City;
+  subregion?: CountrySubregion;
+  country: Country;
+  region: Region;
+  continent: Continent;
+}
+
+export const getAllCitiesWithContext = (): CityContext[] => {
+  const cityEntries: CityContext[] = [];
+
+  continents.forEach((continent) => {
+    continent.regions.forEach((region) => {
+      region.countries.forEach((country) => {
+        const subregions = country.subregions ?? [];
+
+        subregions.forEach((subregion) => {
+          const cities = subregion.cities ?? [];
+
+          cities.forEach((city) => {
+            cityEntries.push({
+              city,
+              subregion,
+              country,
+              region,
+              continent,
+            });
+          });
+        });
+      });
+    });
+  });
+
+  return cityEntries;
+};

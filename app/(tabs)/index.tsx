@@ -268,6 +268,16 @@ export default function HomeScreen() {
         contentContainerStyle={styles.scrollContent}
       >
         <View style={styles.worldEntry}>
+          <Link href="/globe" asChild>
+            <Pressable style={styles.worldButton} accessibilityRole="button">
+              <Text style={styles.worldButtonTitle}>View Globe</Text>
+              <Text style={styles.worldButtonSubtitle}>
+                See cities as interactive markers on a 3D globe.
+              </Text>
+            </Pressable>
+          </Link>
+        </View>
+        <View style={styles.worldEntry}>
           <Link href="/world" asChild>
             <Pressable style={styles.worldButton} accessibilityRole="button">
               <Text style={styles.worldButtonTitle}>Explore World Map</Text>
