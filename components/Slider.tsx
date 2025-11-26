@@ -72,6 +72,12 @@ export function Slider({
   const trackFillPercentage = ((value - minimumValue) / (maximumValue - minimumValue)) * 100;
   const thumbPosition = getPositionFromValue(value);
 
+  const handleResponderChange = (evt: { nativeEvent: { locationX?: number } }) => {
+    const locationX = evt.nativeEvent.locationX ?? 0;
+    const newValue = getValueFromPosition(locationX);
+    onValueChange(newValue);
+  };
+
   return (
     <View
       ref={containerRef}
@@ -82,6 +88,9 @@ export function Slider({
           setSliderWidth(width);
         }
       }}
+      onStartShouldSetResponder={() => true}
+      onResponderGrant={handleResponderChange}
+      onResponderMove={handleResponderChange}
     >
       <Pressable
         style={styles.pressableArea}

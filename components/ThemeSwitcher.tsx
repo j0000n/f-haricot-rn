@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Alert, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import * as Clipboard from "expo-clipboard";
 
 import { api } from "@/convex/_generated/api";
 import { useTranslation } from "@/i18n/useTranslation";
@@ -212,6 +213,14 @@ export function ThemeSwitcher({ variant = "default" }: ThemeSwitcherProps) {
 
   const accentColor = tokens.colors.accent;
 
+  const handleCopyCustomShareCode = async (code: string) => {
+    await Clipboard.setStringAsync(code);
+    Alert.alert(
+      t("themeSwitcher.copyShareCodeTitle"),
+      t("themeSwitcher.copyShareCodeMessage", { code })
+    );
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.optionsRow}>
@@ -332,8 +341,46 @@ export function ThemeSwitcher({ variant = "default" }: ThemeSwitcherProps) {
                   color: themeName === "custom" ? customTheme.colors.accentOnPrimary : customTheme.colors.textSecondary,
                 }}
               >
-                Custom theme
+                {t("themeSwitcher.customThemeLabel")}
               </Text>
+            ) : null}
+            {customTheme.shareCode ? (
+              <View
+                style={[
+                  styles.shareCodePill,
+                  {
+                    backgroundColor:
+                      themeName === "custom" ? customTheme.colors.overlay : customTheme.colors.surface,
+                    borderColor: customTheme.colors.border,
+                  },
+                ]}
+              >
+                <Text
+                  style={{
+                    fontSize: customTheme.typography.tiny,
+                    fontFamily: customTheme.fontFamilies.regular,
+                    color: themeName === "custom"
+                      ? customTheme.colors.accentOnPrimary
+                      : customTheme.colors.textPrimary,
+                  }}
+                >
+                  {t("themeSwitcher.shareCodeDisplay", { code: customTheme.shareCode })}
+                </Text>
+                <Pressable
+                  onPress={() => handleCopyCustomShareCode(customTheme.shareCode)}
+                  style={[styles.copyButton, { borderColor: customTheme.colors.border }]}
+                >
+                  <Text
+                    style={{
+                      fontSize: customTheme.typography.tiny,
+                      fontFamily: customTheme.fontFamilies.semiBold,
+                      color: customTheme.colors.accent,
+                    }}
+                  >
+                    {t("themeSwitcher.copyShareCode")}
+                  </Text>
+                </Pressable>
+              </View>
             ) : null}
           </Pressable>
         )}
@@ -521,5 +568,23 @@ const createStyles = (tokens: ThemeTokens) =>
       fontSize: tokens.typography.body,
       fontFamily: tokens.fontFamilies.semiBold,
       color: tokens.colors.accentOnPrimary,
+    },
+    shareCodePill: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      borderWidth: tokens.borderWidths.thin,
+      borderRadius: tokens.radii.sm,
+      paddingVertical: tokens.spacing.xs,
+      paddingHorizontal: tokens.spacing.sm,
+      gap: tokens.spacing.sm,
+      marginTop: tokens.spacing.xs,
+    },
+    copyButton: {
+      paddingVertical: tokens.spacing.xs,
+      paddingHorizontal: tokens.spacing.sm,
+      borderRadius: tokens.radii.sm,
+      borderWidth: tokens.borderWidths.thin,
+      backgroundColor: tokens.colors.surface,
     },
   });

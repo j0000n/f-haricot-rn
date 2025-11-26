@@ -1,10 +1,13 @@
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { Image } from "expo-image";
+import { Asset } from "expo-asset";
+import { SvgUri } from "react-native-svg";
 import { useThemedStyles, useTokens } from "@/styles/tokens";
 import type { ThemeTokens } from "@/styles/tokens";
-import { RobustColorPicker } from "./RobustColorPicker";
+import { WebsiteStyleColorPicker } from "./WebsiteStyleColorPicker";
 import { SvgLogo } from "./SvgLogo";
 import { AVAILABLE_LOGOS, type LogoAsset } from "./logoAssets";
+import { useTranslation } from "@/i18n/useTranslation";
 
 // Re-export for backward compatibility
 export type { LogoAsset };
@@ -37,22 +40,28 @@ export function LogoPicker({
 }: LogoPickerProps) {
   const styles = useThemedStyles(createStyles);
   const defaultTokens = useTokens();
+  const { t } = useTranslation();
   const themeColors = colors || styles.colors || {};
   const themeTokens = providedTokens || defaultTokens;
+  const colorPickerColors = {
+    ...themeColors,
+    surface: (themeColors as any).surface || themeTokens.colors.surface,
+    background: (themeColors as any).background || themeTokens.colors.background,
+  } as any;
 
   return (
     <View style={styles.container}>
       <View style={styles.logoRow}>
-        <Text style={styles.label}>Logo</Text>
+        <Text style={styles.label}>{t("themeCreator.logo.fieldLabel")}</Text>
         {onLogoFillColorChange && (
           <View style={styles.colorPickerContainer}>
             <Text style={[styles.colorLabel, { color: themeColors.textPrimary || styles.label.color }]}>
-              Fill Color
+              {t("themeCreator.logo.fillColor")}
             </Text>
-            <RobustColorPicker
+            <WebsiteStyleColorPicker
               value={logoFillColor}
               onChange={onLogoFillColorChange || (() => {})}
-              colors={themeColors as any}
+              colors={colorPickerColors as any}
               tokens={themeTokens}
             />
             <TextInput
@@ -87,7 +96,9 @@ export function LogoPicker({
           const isSvg = logo.path.endsWith(".svg");
           // Use SvgLogo for haricot-logo.svg (the only one with SVG data), otherwise use Image with tintColor
           const useSvgLogo = logo.path === "@/assets/images/haricot-logo.svg";
-          
+          const asset = Asset.fromModule(logo.source);
+          const assetUri = asset.uri || asset.localUri || undefined;
+
           return (
             <Pressable
               key={logo.id}
@@ -102,12 +113,13 @@ export function LogoPicker({
                     fillColor={logoFillColor}
                     logoPath={logo.path}
                   />
+                ) : isSvg && assetUri ? (
+                  <SvgUri uri={assetUri} width={60} height={60} fill={logoFillColor} color={logoFillColor} />
                 ) : (
-                  <Image 
-                    source={logo.source as any} 
-                    style={styles.logoImage} 
+                  <Image
+                    source={logo.source as any}
+                    style={styles.logoImage}
                     contentFit="contain"
-                    tintColor={isSvg ? logoFillColor : undefined}
                   />
                 )}
               </View>
