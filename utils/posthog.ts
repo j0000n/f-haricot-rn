@@ -7,6 +7,7 @@ const POSTHOG_OPTIONS = {
   host: POSTHOG_HOST,
   captureApplicationLifecycleEvents: true,
   captureScreens: true,
+  enableSessionReplay: true,
 };
 
 export { POSTHOG_API_KEY, POSTHOG_HOST, POSTHOG_OPTIONS };

@@ -233,7 +233,8 @@ function AuthenticatedAppShell({ isAuthenticated, isLoading, user }: Authenticat
     }
 
     const inOnboarding = segments[0] === "onboarding";
-    const onboardingComplete = Boolean((user as { onboardingCompleted?: boolean } | null)?.onboardingCompleted);
+    const onboardingComplete = Boolean((user as { onboardingCompleted?: boolean } | null)
+      ?.onboardingCompleted);
 
     if (!onboardingComplete && !inOnboarding) {
       router.replace("/onboarding/accessibility");
@@ -324,7 +325,7 @@ export default function RootLayout() {
   }
 
   return (
-    <PostHogProvider apiKey={POSTHOG_API_KEY} options={POSTHOG_OPTIONS}>
+    <PostHogProvider apiKey={POSTHOG_API_KEY} options={POSTHOG_OPTIONS} autocapture>
       <ConvexAuthProvider
         client={convex}
         storage={
