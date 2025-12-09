@@ -1,9 +1,9 @@
-import { Link } from "expo-router";
+import { Link, Href } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 export type BreadcrumbItem = {
   label: string;
-  href?: string;
+  href?: Href;
 };
 
 interface BreadcrumbsProps {

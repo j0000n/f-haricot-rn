@@ -21,7 +21,7 @@ import { BrandLogo } from "@/components/BrandLogo";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { useTranslation } from "@/i18n/useTranslation";
-import { createDisplayEntries, formatLabel, formatValue } from "@/utils/formatting";
+import { createDisplayEntries } from "@/utils/formatting";
 
 const TEXT_SIZE_OPTIONS: {
   value: BaseTextSize;

@@ -56,6 +56,12 @@ export type ThemeTokens = {
     background: string;
     surface: string;
     overlay: string;
+    surfaceVariant: string;
+    surfaceSubdued: string;
+    surfaceMuted: string;
+    primary: string;
+    onPrimary: string;
+    muted: string;
     textPrimary: string;
     textSecondary: string;
     textMuted: string;
@@ -70,6 +76,7 @@ export type ThemeTokens = {
   };
   spacing: {
     none: 0;
+    xxxs: number;
     xxs: number;
     xs: number;
     sm: number;
@@ -88,12 +95,15 @@ export type ThemeTokens = {
     sm: number;
     md: number;
     lg: number;
+    round: number;
   };
   typography: {
+    display: number;
     title: number;
     heading: number;
     subheading: number;
     body: number;
+    extraSmall: number;
     small: number;
     tiny: number;
   };
@@ -120,12 +130,14 @@ export type ThemeTokens = {
     elevation: number;
   }>;
   borderWidths: {
+    hairline: number;
     thin: number;
     regular: number;
     thick: number;
   };
   lineHeights: {
     tight: number;
+    snug: number;
     normal: number;
     relaxed: number;
   };
@@ -236,10 +248,12 @@ export type ThemeDefinition = {
 export const FULL_WIDTH = "100%" as const;
 
 export const baseTypography = {
+  display: 40,
   title: 32,
   heading: 24,
   subheading: 18,
   body: 16,
+  extraSmall: 14,
   small: 14,
   tiny: 12,
 } as const;
@@ -263,6 +277,7 @@ export const baseLayout = {
 
 export const baseSpacing = {
   none: 0,
+  xxxs: 2,
   xxs: 4,
   xs: 8,
   sm: 12,
@@ -283,6 +298,7 @@ export const baseRadii = {
   sm: 8,
   md: 12,
   lg: 28,
+  round: 999,
 } as const;
 
 export const baseIconSizes = {
@@ -292,13 +308,15 @@ export const baseIconSizes = {
 } as const;
 
 export const baseBorderWidths = {
-  thin: 0.5,
-  regular: 1,
+  hairline: 0.5,
+  thin: 1,
+  regular: 1.5,
   thick: 2,
 } as const;
 
 export const baseLineHeights = {
   tight: 1.2,
+  snug: 1.3,
   normal: 1.375,
   relaxed: 1.5,
 } as const;

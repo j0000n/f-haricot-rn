@@ -5,6 +5,7 @@ import {
   baseComponentSizes,
   baseComponentTokens,
   baseFontFamilies,
+  baseRadii,
   baseIconSizes,
   baseLayout,
   baseLetterSpacing,
@@ -18,6 +19,12 @@ const colors = {
   background: "#056366",
   surface: "#6B2C58",
   overlay: "#A8A8A8",
+  surfaceVariant: "#8a5a78",
+  surfaceSubdued: "#7a4868",
+  surfaceMuted: "#5d2f4f",
+  primary: "#6B2C58",
+  onPrimary: "#FFFFFF",
+  muted: "#7b7b7b",
   textPrimary: "#fff",
   textSecondary: "#d8d8d8",
   textMuted: "#808080",
@@ -47,6 +54,7 @@ export const ninetiesTheme: ThemeDefinition = {
       sm: 4,   // Sharp, digital corners
       md: 8,   // Slight pixel softening
       lg: 12,   // Minimal rounding
+      round: baseRadii.round,
     },
     typography: baseTypography,
     fontFamilies: {
@@ -70,11 +78,7 @@ export const ninetiesTheme: ThemeDefinition = {
         elevation: 6,
       },
     },
-    borderWidths: {
-      thin: 1,
-      regular: 2,
-      thick: 3,
-    },
+    borderWidths: baseBorderWidths,
     lineHeights: baseLineHeights,
     letterSpacing: baseLetterSpacing,
     opacity: baseOpacity,

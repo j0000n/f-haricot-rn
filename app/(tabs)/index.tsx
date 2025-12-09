@@ -17,8 +17,8 @@ import type { NutrientDish } from "@/types/nutrition";
 import type { Recipe } from "@/types/recipe";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { Link, useRouter } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
-import { Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { useMemo, useState } from "react";
+import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { LinkPreviewRail } from "@/components/LinkPreviewRail";
 import { useLinkPreviews, createFallbackImage } from "@/hooks/useLinkPreviews";
 import type { LinkPreviewData } from "@/utils/linkPreview";
@@ -77,7 +77,6 @@ export default function HomeScreen() {
   const updateProfile = useMutation(api.users.updateProfile);
   const doSomething = useAction(api.testFunction.doSomething);
   const generateRecipeImagePrompt = useAction(api.promptGenerators.generateRecipeImagePrompt);
-  const doSomethingNode = useAction(api.testFunctionNode.doSomethingNode);
   const ensureHousehold = useMutation(api.households.ensureHousehold);
   const seedInventory = useMutation(api.users.seedInventory);
   const seedRecipes = useMutation(api.recipes.seed);

@@ -8,7 +8,7 @@ import type { Doc } from "@/convex/_generated/dataModel";
 import { RecipeCard } from "@/components/cards/RecipeCard";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { api } from "@/convex/_generated/api";
-import { useRecipeLists, type RecipeList } from "@/hooks/useRecipeLists";
+import { useRecipeLists } from "@/hooks/useRecipeLists";
 import { useInventoryDisplay } from "@/hooks/useInventoryDisplay";
 import { useTranslation } from "@/i18n/useTranslation";
 import { EMOJI_TAGS } from "@/types/emojiTags";
@@ -279,7 +279,7 @@ export default function ListDetailScreen() {
                   accessibilityRole="button"
                 >
                   <Image
-                    source={{ uri: recipe.imageUrl }}
+                    source={{ uri: recipe.imageUrls?.[0] ?? "" }}
                     style={styles.listImage}
                     resizeMode="cover"
                     accessibilityLabel={recipe.recipeName[language] || recipe.recipeName.en}

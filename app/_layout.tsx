@@ -261,7 +261,9 @@ function AuthenticatedAppShell({ isAuthenticated, isLoading, user }: Authenticat
       return;
     }
 
-    const inOnboarding = segments[0] === "onboarding";
+    const segmentsList = segments as string[];
+    const inOnboarding = segmentsList[0] === "onboarding";
+    const flowSegment = segmentsList.length > 1 ? segmentsList[1] : undefined;
     const onboardingComplete = Boolean((user as { onboardingCompleted?: boolean } | null)?.onboardingCompleted);
     const onboardingEntry =
       userType === "creator"
@@ -269,8 +271,8 @@ function AuthenticatedAppShell({ isAuthenticated, isLoading, user }: Authenticat
         : userType === "vendor"
         ? "/onboarding/vendor"
         : "/onboarding/accessibility";
-    const inCreatorFlow = segments[1] === "creator";
-    const inVendorFlow = segments[1] === "vendor";
+    const inCreatorFlow = flowSegment === "creator";
+    const inVendorFlow = flowSegment === "vendor";
     const inCorrectFlow =
       (userType === "creator" && inCreatorFlow) ||
       (userType === "vendor" && inVendorFlow) ||

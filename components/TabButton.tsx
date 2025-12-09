@@ -1,9 +1,7 @@
-import type { ComponentProps } from "react";
-import { forwardRef } from "react";
+import { forwardRef, type ComponentProps } from "react";
 import { Pressable, Text, View } from "react-native";
 import { TabTriggerSlotProps } from "expo-router/ui";
 import { Feather } from "@expo/vector-icons";
-import type { ReactElement } from "react";
 
 import type { AppTabKey, TabIconFamily } from "@/styles/themes";
 import createTabLayoutStyles from "@/styles/tabLayoutStyles";

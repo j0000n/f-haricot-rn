@@ -3,6 +3,9 @@
 declare module "react-native" {
   // Import and re-export all types from React Native's type definitions
   export {
+    Animated,
+    Easing,
+    FlatList,
     View,
     Text,
     Image,
@@ -13,6 +16,7 @@ declare module "react-native" {
     ActivityIndicator,
     Alert,
     Platform,
+    UIManager,
     Modal,
     Switch,
     KeyboardAvoidingView,

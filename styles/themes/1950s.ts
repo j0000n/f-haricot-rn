@@ -6,6 +6,7 @@ import {
   baseComponentSizes,
   baseComponentTokens,
   baseFontFamilies,
+  baseRadii,
   baseIconSizes,
   baseLayout,
   baseLetterSpacing,
@@ -19,6 +20,12 @@ const colors = {
   background: "#FFF9F5",
   surface: "#FFE8E8",
   overlay: "#FFD5D5",
+  surfaceVariant: "#ffd0d0",
+  surfaceSubdued: "#ffe2de",
+  surfaceMuted: "#f6cccc",
+  primary: "#FF6F61",
+  onPrimary: "#FFFFFF",
+  muted: "#f2d8d8",
   textPrimary: "#2D2D2D",
   textSecondary: "#666666",
   textMuted: "#999999",
@@ -48,6 +55,7 @@ export const fifitiesTheme: ThemeDefinition = {
       sm: 4,   // Minimal rounding for boxy feel
       md: 6,   // Subtle curves
       lg: 8,   // Just a hint of roundness
+      round: baseRadii.round,
     },
     typography: baseTypography,
     fontFamilies: {

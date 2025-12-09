@@ -71,7 +71,7 @@ export default function AnimationPlayground() {
       tension: 140,
       friction: 10,
       useNativeDriver: true,
-    }).start(({ finished }) => {
+    }).start(({ finished }: { finished?: boolean }) => {
       if (finished) {
         springValue.setValue(0.9);
       }

@@ -53,6 +53,7 @@ type CustomThemeData = {
   shareCode: string;
   colors: Omit<ThemeTokens["colors"], "logoFill"> & {
     logoFill?: string;
+    imageBackgroundColor?: string;
   };
   spacing: Omit<ThemeTokens["spacing"], "none">;
   padding: ThemeTokens["padding"];
@@ -198,6 +199,8 @@ export function ThemeProvider({
             return current; // Already loaded, don't update
           }
 
+          const fallbackTokens = defaultDefinition.tokens;
+
           const {
             colors,
             spacing,
@@ -215,13 +218,14 @@ export function ThemeProvider({
             name,
             shareCode,
             colors: {
+              ...fallbackTokens.colors,
               ...colors,
               logoFill: colors.logoFill ?? colors.textPrimary,
             },
-            spacing,
+            spacing: { ...fallbackTokens.spacing, ...spacing },
             padding,
-            radii,
-            typography,
+            radii: { ...fallbackTokens.radii, ...radii },
+            typography: { ...fallbackTokens.typography, ...typography },
             fontFamilies,
             logoAsset,
             tabBar,
@@ -278,7 +282,8 @@ export function ThemeProvider({
     // and if initialThemeName is actually a valid built-in theme
     if (initialThemeName && isThemeName(initialThemeName)) {
       const resolved = resolveThemeName(initialThemeName);
-      if (resolved !== themeName && themeName !== "custom") {
+      const isCustomTheme = (themeName as string) === "custom";
+      if (!isCustomTheme && resolved !== themeName) {
         setThemeName(resolved);
       }
     }
@@ -386,6 +391,12 @@ export function ThemeProvider({
         ...customTheme.colors,
         logoFill: customTheme.colors.logoFill ?? customTheme.colors.textPrimary ?? "#000000",
         imageBackgroundColor: customTheme.colors.imageBackgroundColor ?? customTheme.colors.surface ?? customTheme.colors.background,
+        primary: customTheme.colors.primary ?? customTheme.colors.accent,
+        onPrimary: customTheme.colors.onPrimary ?? customTheme.colors.accentOnPrimary ?? customTheme.colors.textPrimary,
+        muted: customTheme.colors.muted ?? customTheme.colors.overlay ?? customTheme.colors.surface,
+        surfaceVariant: customTheme.colors.surfaceVariant ?? customTheme.colors.surface,
+        surfaceSubdued: customTheme.colors.surfaceSubdued ?? customTheme.colors.overlay ?? customTheme.colors.surface,
+        surfaceMuted: customTheme.colors.surfaceMuted ?? customTheme.colors.overlay ?? customTheme.colors.surface,
       };
       
       const tabBarTokens: ThemeTokens["components"]["tabBar"] = customTheme.tabBar
@@ -508,10 +519,12 @@ export function ThemeProvider({
       scale === 1
         ? baseTokens.typography
         : {
+            display: Math.round(baseTokens.typography.display * scale),
             title: Math.round(baseTokens.typography.title * scale),
             heading: Math.round(baseTokens.typography.heading * scale),
             subheading: Math.round(baseTokens.typography.subheading * scale),
             body: Math.round(baseTokens.typography.body * scale),
+            extraSmall: Math.round(baseTokens.typography.extraSmall * scale),
             small: Math.round(baseTokens.typography.small * scale),
             tiny: Math.round(baseTokens.typography.tiny * scale),
           };

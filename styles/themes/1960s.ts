@@ -5,6 +5,7 @@ import {
   baseComponentSizes,
   baseComponentTokens,
   baseFontFamilies,
+  baseRadii,
   baseIconSizes,
   baseLayout,
   baseLetterSpacing,
@@ -18,6 +19,12 @@ const colors = {
   background: "#F5F1E8",
   surface: "#dbcb9a",
   overlay: "#C9BB9A",
+  surfaceVariant: "#d1c199",
+  surfaceSubdued: "#c3b68f",
+  surfaceMuted: "#b8ab83",
+  primary: "#e79950",
+  onPrimary: "#403a21",
+  muted: "#cbbd9d",
   textPrimary: "#403a21",
   textSecondary: "#6B6142",
   textMuted: "#8B7D5A",
@@ -47,6 +54,7 @@ export const sixtiesTheme: ThemeDefinition = {
       sm: 10,  // Soft, organic curves
       md: 14,  // Flowing rounded corners
       lg: 20,  // Peace and love roundness
+      round: baseRadii.round,
     },
     typography: baseTypography,
     fontFamilies: {

@@ -32,12 +32,12 @@ type InventorySuggestion = {
 
 type CaptureMode = "camera" | "voice" | "text";
 
-const captureModes: Array<{
+const captureModes: {
   key: CaptureMode;
   icon: keyof typeof Feather.glyphMap;
   label: string;
   description: string;
-}> = [
+}[] = [
   {
     key: "camera",
     icon: "camera",
