@@ -1,6 +1,10 @@
 {
   "auth": {
     "signInTitle": "Iniciar sesión o crear una cuenta",
+    "signUpCreatorTitle": "Regístrate como creador",
+    "signUpCreatorSubtitle": "Comparte tu experiencia y publica recetas con nuestra comunidad.",
+    "signUpVendorTitle": "Regístrate como vendedor",
+    "signUpVendorSubtitle": "Muestra tus productos y conéctate con hogares hambrientos.",
     "email": "Correo electrónico",
     "sending": "Enviando...",
     "sendCode": "Enviar código",
@@ -11,6 +15,10 @@
     "verifyCode": "Verificar código",
     "resendCode": "Reenviar código",
     "changeEmail": "Cambiar correo electrónico",
+    "returnToSignIn": "Volver a iniciar sesión",
+    "partnerSignUpPrompt": "¿Quieres asociarte con nosotros?",
+    "signUpCreatorLink": "Regístrate como creador",
+    "signUpVendorLink": "Regístrate como vendedor",
     "codeSentTitle": "Código enviado",
     "codeSentMessage": "Se ha enviado un nuevo código a tu correo electrónico.",
     "errorTitle": "Error",
@@ -162,6 +170,21 @@
       "seasonal": "Menús estacionales",
       "delivery": "Coordinar con entregas o kits",
       "saveError": "No pudimos guardar tus preferencias de planificación de comidas. Inténtalo de nuevo."
+    },
+    "partnerOnboarding": {
+      "creatorIntroTitle": "Bienvenido, creador",
+      "creatorIntroBody": "Ajustaremos las herramientas para ayudarte a publicar recetas y conectar con cocineros.",
+      "creatorProfileTitle": "Define tu perfil de creador",
+      "creatorProfileBody": "Comparte qué enseñas, qué te inspira y cómo quieres colaborar.",
+      "creatorFinishTitle": "Listo para crear",
+      "creatorFinishBody": "Termina la configuración para compartir tu trabajo con la comunidad de Haricot.",
+      "vendorIntroTitle": "Bienvenido, vendedor",
+      "vendorIntroBody": "Preparemos tu tienda para que los hogares descubran tus productos.",
+      "vendorProfileTitle": "Describe tus productos",
+      "vendorProfileBody": "Cuéntanos qué vendes, cómo cumples los pedidos y tus especialidades.",
+      "vendorFinishTitle": "Listo para vender",
+      "vendorFinishBody": "Completa la incorporación para mostrar tus artículos en Haricot.",
+      "switchToStandard": "Continuar con la incorporación estándar"
     }
   },
   "themes": {
@@ -211,6 +234,9 @@
   "home": {
     "title": "Inicio",
     "logOut": "Cerrar sesión",
+    "userTypeLabel": "Tipo de cuenta: {{type}}",
+    "userTypeCreator": "Creador",
+    "userTypeVendor": "Vendedor",
     "freshProduce": "Productos frescos",
     "freshProduceDesc": "Frutas y bayas en tu cocina",
     "featuredRecipes": "Recetas destacadas",

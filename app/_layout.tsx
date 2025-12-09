@@ -15,6 +15,7 @@ import {
   isThemeName,
   useThemedStyles,
 } from "@/styles/tokens";
+import { clearPendingUserType, getPendingUserType } from "@/utils/pendingUserType";
 import { FONT_SOURCES } from "@/utils/fonts";
 import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import { ConvexReactClient, useConvexAuth, useMutation, useQuery } from "convex/react";
@@ -143,6 +144,34 @@ function AuthenticatedApp() {
     }
   }, [user]);
 
+  useEffect(() => {
+    if (!isAuthenticated || user === undefined) {
+      return;
+    }
+
+    const syncPendingUserType = async () => {
+      const pendingType = await getPendingUserType();
+
+      if (!pendingType) {
+        return;
+      }
+
+      const existingType = (user as { userType?: string } | null)?.userType ?? "";
+
+      try {
+        if (existingType !== pendingType) {
+          await updateProfile({ userType: pendingType, onboardingCompleted: false });
+        }
+      } catch (error) {
+        console.error("Failed to persist pending user type", error);
+      } finally {
+        await clearPendingUserType();
+      }
+    };
+
+    void syncPendingUserType();
+  }, [isAuthenticated, updateProfile, user]);
+
   const persistThemePreference = useCallback(
     async (nextTheme: ThemeName) => {
       setPreferredTheme(nextTheme);
@@ -224,6 +253,7 @@ function AuthenticatedAppShell({ isAuthenticated, isLoading, user }: Authenticat
   const styles = useThemedStyles(createLayoutStyles) as ReturnType<typeof createLayoutStyles>;
   const { tokens } = useThemedStyles((t) => ({ tokens: t })) as { tokens: typeof defaultTokens };
   const { t } = useTranslation();
+  const userType = (user as { userType?: string } | null)?.userType ?? "";
 
   useEffect(() => {
     if (!isAuthenticated || user === undefined) {
@@ -232,15 +262,31 @@ function AuthenticatedAppShell({ isAuthenticated, isLoading, user }: Authenticat
 
     const inOnboarding = segments[0] === "onboarding";
     const onboardingComplete = Boolean((user as { onboardingCompleted?: boolean } | null)?.onboardingCompleted);
+    const onboardingEntry =
+      userType === "creator"
+        ? "/onboarding/creator"
+        : userType === "vendor"
+        ? "/onboarding/vendor"
+        : "/onboarding/accessibility";
+    const inCreatorFlow = segments[1] === "creator";
+    const inVendorFlow = segments[1] === "vendor";
+    const inCorrectFlow =
+      (userType === "creator" && inCreatorFlow) ||
+      (userType === "vendor" && inVendorFlow) ||
+      (!userType && !inCreatorFlow && !inVendorFlow);
 
     if (!onboardingComplete && !inOnboarding) {
-      router.replace("/onboarding/accessibility");
+      router.replace(onboardingEntry);
+    }
+
+    if (!onboardingComplete && inOnboarding && !inCorrectFlow) {
+      router.replace(onboardingEntry);
     }
 
     if (onboardingComplete && inOnboarding) {
       router.replace("/");
     }
-  }, [isAuthenticated, router, segments, user]);
+  }, [isAuthenticated, router, segments, user, userType]);
 
   if (isLoading) {
     return (

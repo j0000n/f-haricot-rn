@@ -1,6 +1,10 @@
 {
   "auth": {
     "signInTitle": "Mag-sign in o gumawa ng account",
+    "signUpCreatorTitle": "Mag-sign up bilang creator",
+    "signUpCreatorSubtitle": "Ibahagi ang iyong kaalaman at mag-publish ng mga recipe sa aming komunidad.",
+    "signUpVendorTitle": "Mag-sign up bilang vendor",
+    "signUpVendorSubtitle": "Ipakita ang iyong mga produkto at kumonekta sa mga sambahayan.",
     "email": "Email",
     "sending": "Nagpapadala...",
     "sendCode": "Ipadala ang code",
@@ -11,6 +15,10 @@
     "verifyCode": "I-verify ang code",
     "resendCode": "Ipadala ulit ang code",
     "changeEmail": "Baguhin ang email",
+    "returnToSignIn": "Bumalik sa sign in",
+    "partnerSignUpPrompt": "Gusto mo bang makipag-partner sa amin?",
+    "signUpCreatorLink": "Mag-sign up bilang creator",
+    "signUpVendorLink": "Mag-sign up bilang vendor",
     "codeSentTitle": "Code Ipinadala",
     "codeSentMessage": "Ang bagong code ay ipinadala sa iyong email.",
     "errorTitle": "Error",
@@ -91,6 +99,21 @@
       "japanese": "Japanese",
       "american": "American",
       "saveError": "Hindi namin ma-save ang iyong cuisine preferences. Pakisubukan ulit."
+    },
+    "partnerOnboarding": {
+      "creatorIntroTitle": "Maligayang pagdating, creator",
+      "creatorIntroBody": "Iaayos namin ang mga tool para matulungan kang mag-publish ng recipes at kumonekta sa mga cook.",
+      "creatorProfileTitle": "Ihugis ang iyong creator profile",
+      "creatorProfileBody": "Ibahagi ang iyong itinuturo, inspirasyon, at kung paano mo gustong makipag-collaborate.",
+      "creatorFinishTitle": "Handa ka nang lumikha",
+      "creatorFinishBody": "Tapusin ang setup para simulang ibahagi ang iyong gawa sa komunidad ng Haricot.",
+      "vendorIntroTitle": "Maligayang pagdating, vendor",
+      "vendorIntroBody": "Ayusin natin ang iyong storefront para madiskubre ng mga sambahayan ang iyong mga produkto.",
+      "vendorProfileTitle": "Ilarawan ang iyong mga produkto",
+      "vendorProfileBody": "Sabihin kung ano ang ibinebenta mo, paano ka nagfu-fulfill ng order, at anumang specialty mo.",
+      "vendorFinishTitle": "Handa ka nang magbenta",
+      "vendorFinishBody": "Kumpletuhin ang onboarding para maipakita ang iyong goods sa Haricot.",
+      "switchToStandard": "Magpatuloy sa karaniwang onboarding"
     }
   },
   "themes": {
@@ -132,6 +155,9 @@
   "home": {
     "title": "Home",
     "logOut": "Mag-log out",
+    "userTypeLabel": "Uri ng account: {{type}}",
+    "userTypeCreator": "Creator",
+    "userTypeVendor": "Vendor",
     "freshProduce": "Fresh Produce",
     "freshProduceDesc": "Mga prutas at berries sa iyong kusina",
     "featuredRecipes": "Mga tampok na resipe",

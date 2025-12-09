@@ -1,6 +1,10 @@
 {
   "auth": {
     "signInTitle": "Sign in or create an account",
+    "signUpCreatorTitle": "Sign up as a creator",
+    "signUpCreatorSubtitle": "Share your expertise and publish recipes with our community.",
+    "signUpVendorTitle": "Sign up as a vendor",
+    "signUpVendorSubtitle": "Showcase your offerings and connect with hungry households.",
     "email": "Email",
     "sending": "Sending...",
     "sendCode": "Send code",
@@ -11,6 +15,10 @@
     "verifyCode": "Verify code",
     "resendCode": "Resend code",
     "changeEmail": "Change email",
+    "returnToSignIn": "Back to sign in",
+    "partnerSignUpPrompt": "Want to partner with us?",
+    "signUpCreatorLink": "Sign up as a creator",
+    "signUpVendorLink": "Sign up as a vendor",
     "codeSentTitle": "Code Sent",
     "codeSentMessage": "A new code has been sent to your email.",
     "errorTitle": "Error",
@@ -199,6 +207,21 @@
       "seasonal": "Seasonal menu planning",
       "delivery": "Coordinate with delivery or kits",
       "saveError": "We couldn't save your meal planning preferences. Please try again."
+    },
+    "partnerOnboarding": {
+      "creatorIntroTitle": "Welcome, creator",
+      "creatorIntroBody": "We'll tailor tools to help you publish recipes and connect with cooks.",
+      "creatorProfileTitle": "Shape your creator profile",
+      "creatorProfileBody": "Share what you teach, what inspires you, and how you'd like to collaborate.",
+      "creatorFinishTitle": "You're ready to create",
+      "creatorFinishBody": "Finish setup to start sharing your work with the Haricot community.",
+      "vendorIntroTitle": "Welcome, vendor",
+      "vendorIntroBody": "Let's get your storefront ready so households can discover your offerings.",
+      "vendorProfileTitle": "Describe your products",
+      "vendorProfileBody": "Tell us what you sell, how you fulfill orders, and any specialties.",
+      "vendorFinishTitle": "You're ready to sell",
+      "vendorFinishBody": "Complete onboarding to begin showcasing your goods in Haricot.",
+      "switchToStandard": "Continue with the standard onboarding"
     }
   },
   "themes": {
@@ -248,6 +271,9 @@
   "home": {
     "title": "Home",
     "logOut": "Log out",
+    "userTypeLabel": "Account type: {{type}}",
+    "userTypeCreator": "Creator",
+    "userTypeVendor": "Vendor",
     "freshProduce": "Fresh Produce",
     "freshProduceDesc": "Fruits and berries in your kitchen",
     "featuredRecipes": "Featured Recipes",

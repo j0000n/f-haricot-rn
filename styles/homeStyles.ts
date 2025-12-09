@@ -65,6 +65,20 @@ const createHomeStyles = (tokens: ThemeTokens) =>
       paddingTop: tokens.spacing.lg,
       paddingBottom: tokens.layout.fabOffset + tokens.spacing.lg,
     },
+    userTypeBanner: {
+      marginHorizontal: tokens.spacing.lg,
+      marginBottom: tokens.spacing.md,
+      padding: tokens.spacing.md,
+      borderRadius: tokens.radii.md,
+      borderWidth: tokens.borderWidths.thin,
+      borderColor: tokens.colors.border,
+      backgroundColor: tokens.colors.surface,
+    },
+    userTypeLabel: {
+      fontSize: tokens.typography.body,
+      fontFamily: tokens.fontFamilies.semiBold,
+      color: tokens.colors.textPrimary,
+    },
     searchSection: {
       marginHorizontal: tokens.spacing.lg,
       marginBottom: tokens.spacing.lg,
