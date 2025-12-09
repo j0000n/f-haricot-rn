@@ -18,17 +18,18 @@ async function fillSignIn(page: Page, request: APIRequestContext, selectionText?
   await clearInbox(request);
 
   await page.goto("/");
+  await expect(page.getByText(/Sign in or create an account/i)).toBeVisible();
 
   if (selectionText) {
     await page.getByText(selectionText).click();
   }
 
   await page.getByPlaceholder("Email").fill(email);
-  await page.getByRole("button", { name: /Send code/i }).click();
+  await page.getByText(/Send code/i).click();
 
   const code = await waitForVerificationCode(request, email);
   await page.getByPlaceholder("000000").fill(code);
-  await page.getByRole("button", { name: /Verify code/i }).click();
+  await page.getByText(/Verify code/i).click();
 }
 
 async function completeStandardOnboarding(page: Page) {

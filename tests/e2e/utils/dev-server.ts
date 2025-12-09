@@ -42,6 +42,8 @@ export async function startDevServer(baseURL: string = defaultBaseUrl) {
         ...process.env,
         CI: "1",
         EXPO_NO_TELEMETRY: "1",
+        MAILDEV_SMTP_HOST: process.env.MAILDEV_SMTP_HOST ?? "127.0.0.1",
+        MAILDEV_SMTP_PORT: process.env.MAILDEV_SMTP_PORT ?? "1025",
       },
       stdio: "pipe",
     }
