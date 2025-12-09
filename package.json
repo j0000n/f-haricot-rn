@@ -44,7 +44,7 @@
     "reset-project": "node ./scripts/reset-project.js",
     "patch:expo-cli": "node scripts/patch-expo-cli.js",
     "postinstall": "node scripts/patch-expo-cli.js",
-    "test:e2e": "playwright test",
+    "test:e2e": "playwright install --with-deps chromium && playwright test",
     "maildev": "maildev --smtp 1025 --web 1080 --disable-webhook"
   },
   "dependencies": {
