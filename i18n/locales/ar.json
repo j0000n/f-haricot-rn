@@ -1,6 +1,10 @@
 {
   "auth": {
     "signInTitle": "تسجيل الدخول أو إنشاء حساب",
+    "signUpCreatorTitle": "سجل كمنشئ محتوى",
+    "signUpCreatorSubtitle": "شارك خبرتك وانشر الوصفات مع مجتمعنا.",
+    "signUpVendorTitle": "سجل كتاجر",
+    "signUpVendorSubtitle": "اعرض منتجاتك وتواصل مع الأسر المهتمة.",
     "email": "البريد الإلكتروني",
     "sending": "جاري الإرسال...",
     "sendCode": "إرسال الرمز",
@@ -11,6 +15,10 @@
     "verifyCode": "التحقق من الرمز",
     "resendCode": "إعادة إرسال الرمز",
     "changeEmail": "تغيير البريد الإلكتروني",
+    "returnToSignIn": "العودة لتسجيل الدخول",
+    "partnerSignUpPrompt": "هل تريد الشراكة معنا؟",
+    "signUpCreatorLink": "سجل كمنشئ محتوى",
+    "signUpVendorLink": "سجل كتاجر",
     "codeSentTitle": "تم إرسال الرمز",
     "codeSentMessage": "تم إرسال رمز جديد إلى بريدك الإلكتروني.",
     "errorTitle": "خطأ",
@@ -91,6 +99,21 @@
       "japanese": "ياباني",
       "american": "أمريكي",
       "saveError": "تعذر حفظ تفضيلات المطبخ الخاصة بك. يُرجى المحاولة مرة أخرى."
+    },
+    "partnerOnboarding": {
+      "creatorIntroTitle": "مرحبًا أيها المنشئ",
+      "creatorIntroBody": "سنخصص الأدوات لمساعدتك في نشر الوصفات والتواصل مع الطهاة.",
+      "creatorProfileTitle": "صمم ملفك كمُنشئ",
+      "creatorProfileBody": "شارك ما تقدمه، وما يلهمك، وكيف تفضل التعاون.",
+      "creatorFinishTitle": "أنت جاهز للإنشاء",
+      "creatorFinishBody": "أكمل الإعداد لبدء مشاركة عملك مع مجتمع Haricot.",
+      "vendorIntroTitle": "مرحبًا أيها البائع",
+      "vendorIntroBody": "هيا نجهز متجرك ليكتشف الناس منتجاتك.",
+      "vendorProfileTitle": "صف منتجاتك",
+      "vendorProfileBody": "أخبرنا بما تبيعه، وكيف تنفذ الطلبات، وأي تخصصات لديك.",
+      "vendorFinishTitle": "أنت جاهز للبيع",
+      "vendorFinishBody": "أكمل الإعداد لبدء عرض منتجاتك في Haricot.",
+      "switchToStandard": "المتابعة مع الإعداد القياسي"
     }
   },
   "themes": {
@@ -132,6 +155,9 @@
   "home": {
     "title": "الرئيسية",
     "logOut": "تسجيل الخروج",
+    "userTypeLabel": "نوع الحساب: {{type}}",
+    "userTypeCreator": "منشئ",
+    "userTypeVendor": "تاجر",
     "freshProduce": "المنتجات الطازجة",
     "freshProduceDesc": "الفواكه والتوت في مطبخك",
     "featuredRecipes": "وصفات مميزة",

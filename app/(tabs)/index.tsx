@@ -105,6 +105,7 @@ export default function HomeScreen() {
   const onboardingCompleted = Boolean(
     (user as { onboardingCompleted?: boolean } | null)?.onboardingCompleted
   );
+  const userType = (user as { userType?: string } | null)?.userType ?? "";
 
   const handleRelaunchOnboarding = async () => {
     if (isResettingOnboarding) {
@@ -114,7 +115,13 @@ export default function HomeScreen() {
     try {
       setIsResettingOnboarding(true);
       await updateProfile({ onboardingCompleted: false });
-      router.push("/onboarding/accessibility");
+      const onboardingStart =
+        userType === "creator"
+          ? "/onboarding/creator"
+          : userType === "vendor"
+          ? "/onboarding/vendor"
+          : "/onboarding/accessibility";
+      router.push(onboardingStart);
     } catch (error) {
       console.error("Failed to relaunch onboarding", error);
     } finally {
@@ -267,6 +274,20 @@ export default function HomeScreen() {
         style={styles.tasksContainer}
         contentContainerStyle={styles.scrollContent}
       >
+        {userType ? (
+          <View style={styles.userTypeBanner}>
+            <Text style={styles.userTypeLabel}>
+              {t("home.userTypeLabel", {
+                type:
+                  userType === "creator"
+                    ? t("home.userTypeCreator")
+                    : userType === "vendor"
+                    ? t("home.userTypeVendor")
+                    : userType,
+              })}
+            </Text>
+          </View>
+        ) : null}
         <View style={styles.worldEntry}>
           <Link href="/globe" asChild>
             <Pressable style={styles.worldButton} accessibilityRole="button">

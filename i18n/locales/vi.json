@@ -1,6 +1,10 @@
 {
   "auth": {
     "signInTitle": "Đăng nhập hoặc tạo tài khoản",
+    "signUpCreatorTitle": "Đăng ký làm người sáng tạo",
+    "signUpCreatorSubtitle": "Chia sẻ chuyên môn và xuất bản công thức với cộng đồng.",
+    "signUpVendorTitle": "Đăng ký làm nhà cung cấp",
+    "signUpVendorSubtitle": "Giới thiệu sản phẩm và kết nối với các hộ gia đình.",
     "email": "Email",
     "sending": "Đang gửi...",
     "sendCode": "Gửi mã",
@@ -11,6 +15,10 @@
     "verifyCode": "Xác minh mã",
     "resendCode": "Gửi lại mã",
     "changeEmail": "Thay đổi email",
+    "returnToSignIn": "Quay lại đăng nhập",
+    "partnerSignUpPrompt": "Muốn hợp tác cùng chúng tôi?",
+    "signUpCreatorLink": "Đăng ký làm người sáng tạo",
+    "signUpVendorLink": "Đăng ký làm nhà cung cấp",
     "codeSentTitle": "Mã đã được gửi",
     "codeSentMessage": "Một mã mới đã được gửi tới email của bạn.",
     "errorTitle": "Lỗi",
@@ -91,6 +99,21 @@
       "japanese": "Nhật Bản",
       "american": "Mỹ",
       "saveError": "Chúng tôi không thể lưu sở thích ẩm thực của bạn. Vui lòng thử lại."
+    },
+    "partnerOnboarding": {
+      "creatorIntroTitle": "Chào mừng, người sáng tạo",
+      "creatorIntroBody": "Chúng tôi sẽ điều chỉnh công cụ để giúp bạn xuất bản công thức và kết nối với người nấu ăn.",
+      "creatorProfileTitle": "Định hình hồ sơ người sáng tạo",
+      "creatorProfileBody": "Chia sẻ bạn dạy gì, điều gì truyền cảm hứng cho bạn và cách bạn muốn hợp tác.",
+      "creatorFinishTitle": "Sẵn sàng sáng tạo",
+      "creatorFinishBody": "Hoàn tất cài đặt để bắt đầu chia sẻ công việc với cộng đồng Haricot.",
+      "vendorIntroTitle": "Chào mừng, nhà cung cấp",
+      "vendorIntroBody": "Hãy chuẩn bị gian hàng của bạn để các hộ gia đình khám phá sản phẩm.",
+      "vendorProfileTitle": "Mô tả sản phẩm của bạn",
+      "vendorProfileBody": "Cho chúng tôi biết bạn bán gì, cách bạn hoàn tất đơn và các mặt hàng đặc biệt.",
+      "vendorFinishTitle": "Sẵn sàng bán hàng",
+      "vendorFinishBody": "Hoàn thành onboarding để bắt đầu giới thiệu hàng hóa của bạn trong Haricot.",
+      "switchToStandard": "Tiếp tục với onboarding tiêu chuẩn"
     }
   },
   "themes": {
@@ -132,6 +155,9 @@
   "home": {
     "title": "Trang chủ",
     "logOut": "Đăng xuất",
+    "userTypeLabel": "Loại tài khoản: {{type}}",
+    "userTypeCreator": "Người sáng tạo",
+    "userTypeVendor": "Nhà cung cấp",
     "freshProduce": "Sản phẩm tươi sống",
     "freshProduceDesc": "Trái cây và quả mọng trong bếp của bạn",
     "featuredRecipes": "Công thức nổi bật",

@@ -1,6 +1,10 @@
 {
   "auth": {
     "signInTitle": "登录或创建账户",
+    "signUpCreatorTitle": "以创作者身份注册",
+    "signUpCreatorSubtitle": "分享你的专业知识并向社区发布食谱。",
+    "signUpVendorTitle": "以商家身份注册",
+    "signUpVendorSubtitle": "展示你的产品并与有需求的家庭联系。",
     "email": "电子邮件",
     "sending": "发送中...",
     "sendCode": "发送验证码",
@@ -11,6 +15,10 @@
     "verifyCode": "验证验证码",
     "resendCode": "重新发送验证码",
     "changeEmail": "更改电子邮件",
+    "returnToSignIn": "返回登录",
+    "partnerSignUpPrompt": "想与我们合作吗？",
+    "signUpCreatorLink": "以创作者身份注册",
+    "signUpVendorLink": "以商家身份注册",
     "codeSentTitle": "验证码已发送",
     "codeSentMessage": "新的验证码已发送到您的电子邮件。",
     "errorTitle": "错误",
@@ -91,6 +99,21 @@
       "japanese": "日本菜",
       "american": "美国菜",
       "saveError": "我们无法保存您的美食偏好。请重试。"
+    },
+    "partnerOnboarding": {
+      "creatorIntroTitle": "欢迎，创作者",
+      "creatorIntroBody": "我们将调整工具，帮助你发布食谱并与厨师交流。",
+      "creatorProfileTitle": "塑造你的创作者档案",
+      "creatorProfileBody": "分享你教授的内容、灵感来源以及希望如何合作。",
+      "creatorFinishTitle": "准备好创作了",
+      "creatorFinishBody": "完成设置，开始与 Haricot 社区分享你的作品。",
+      "vendorIntroTitle": "欢迎，商家",
+      "vendorIntroBody": "让我们准备好你的店面，让家庭发现你的商品。",
+      "vendorProfileTitle": "描述你的产品",
+      "vendorProfileBody": "告诉我们你销售什么、如何履约以及任何特色。",
+      "vendorFinishTitle": "准备好销售了",
+      "vendorFinishBody": "完成引导以开始在 Haricot 展示你的商品。",
+      "switchToStandard": "继续使用标准引导"
     }
   },
   "themes": {
@@ -132,6 +155,9 @@
   "home": {
     "title": "主页",
     "logOut": "登出",
+    "userTypeLabel": "账户类型：{{type}}",
+    "userTypeCreator": "创作者",
+    "userTypeVendor": "商家",
     "freshProduce": "新鲜农产品",
     "freshProduceDesc": "厨房里的水果和浆果",
     "featuredRecipes": "精选食谱",

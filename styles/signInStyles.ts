@@ -24,6 +24,13 @@ const createSignInStyles = (tokens: ThemeTokens) =>
       color: tokens.colors.textPrimary,
       textAlign: "center",
     },
+    subtitle: {
+      fontSize: tokens.typography.body,
+      fontFamily: tokens.fontFamilies.regular,
+      color: tokens.colors.textMuted,
+      textAlign: "center",
+      marginTop: -tokens.spacing.sm,
+    },
     input: {
       width: tokens.widths.full,
       maxWidth: tokens.layout.maxFormWidth,
@@ -76,6 +83,26 @@ const createSignInStyles = (tokens: ThemeTokens) =>
       color: tokens.colors.textMuted,
       fontSize: tokens.typography.body,
       fontFamily: tokens.fontFamilies.regular,
+    },
+    footerLinks: {
+      alignItems: "center",
+      marginTop: tokens.spacing.lg,
+      gap: tokens.spacing.xs,
+    },
+    signUpLinks: {
+      alignItems: "center",
+      gap: tokens.spacing.sm,
+    },
+    helperText: {
+      color: tokens.colors.textPrimary,
+      fontSize: tokens.typography.body,
+      fontFamily: tokens.fontFamilies.regular,
+      textAlign: "center",
+    },
+    userTypeLinks: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: tokens.spacing.sm,
     },
   });
 

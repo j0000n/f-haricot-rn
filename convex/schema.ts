@@ -67,6 +67,9 @@ const schema = defineSchema({
     ),
     lastPendingApprovalSeenAt: v.optional(v.number()),
     pendingHouseholdId: v.optional(v.id("households")),
+    userType: v.optional(
+      v.union(v.literal(""), v.literal("creator"), v.literal("vendor"))
+    ),
   })
     .index("email", ["email"])
     .index("phone", ["phone"]),

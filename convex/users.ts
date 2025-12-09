@@ -164,6 +164,9 @@ export const getCurrentInventory = query({
 export const updateProfile = mutation({
   args: {
     onboardingCompleted: v.optional(v.boolean()),
+    userType: v.optional(
+      v.union(v.literal(""), v.literal("creator"), v.literal("vendor"))
+    ),
     dietaryRestrictions: v.optional(v.array(v.string())),
     customDiet: v.optional(
       v.union(
@@ -223,6 +226,9 @@ export const updateProfile = mutation({
 
     if (args.onboardingCompleted !== undefined) {
       updates.onboardingCompleted = args.onboardingCompleted;
+    }
+    if (args.userType !== undefined) {
+      updates.userType = args.userType;
     }
     if (args.dietaryRestrictions !== undefined) {
       updates.dietaryRestrictions = args.dietaryRestrictions;
