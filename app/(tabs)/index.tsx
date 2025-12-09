@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { Rail } from "@/components/Rail";
 import { RecipeRail } from "@/components/RecipeRail";
 import { RecipeRailCompact } from "@/components/RecipeRailCompact";
+import { NutrientRail } from "@/components/NutrientRail";
 
 import { api } from "@/convex/_generated/api";
 import { useInventoryDisplay } from "@/hooks/useInventoryDisplay";
@@ -12,6 +13,7 @@ import { useTranslation } from "@/i18n/useTranslation";
 import createHomeStyles from "@/styles/homeStyles";
 import { useThemedStyles, useTokens } from "@/styles/tokens";
 import type { InventoryDisplayItem } from "@/types/food";
+import type { NutrientDish } from "@/types/nutrition";
 import type { Recipe } from "@/types/recipe";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { Link, useRouter } from "expo-router";
@@ -20,6 +22,7 @@ import { Platform, Pressable, ScrollView, Text, TextInput, View } from "react-na
 import { LinkPreviewRail } from "@/components/LinkPreviewRail";
 import { useLinkPreviews, createFallbackImage } from "@/hooks/useLinkPreviews";
 import type { LinkPreviewData } from "@/utils/linkPreview";
+import { nutrientDishes } from "@/data/nutrientDishes";
 import {
   getFreshProduceItems,
   getPantryItems,
@@ -170,6 +173,10 @@ export default function HomeScreen() {
 
   const handleRecipePress = (recipe: Recipe) => {
     router.push(`/recipe/${recipe._id}`);
+  };
+
+  const handleDishPress = (dish: NutrientDish) => {
+    console.log("Nutrient dish pressed:", dish.name);
   };
 
   const handleSearchResultPress = (recipeId: string) => {
@@ -434,6 +441,12 @@ export default function HomeScreen() {
             userInventory={userInventoryCodes}
           />
         ) : null}
+        <NutrientRail
+          header="Nutrition spotlights"
+          subheader="Calories forward with detailed macros and quick micro highlights"
+          dishes={nutrientDishes}
+          onDishPress={handleDishPress}
+        />
         {/* THE THREE RAILS GO HERE */}
         {freshProduceItems.length > 0 ? (
           <Rail
