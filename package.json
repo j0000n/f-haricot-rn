@@ -43,7 +43,9 @@
     "reset": "npm run clean && npm install && npx expo install --fix",
     "reset-project": "node ./scripts/reset-project.js",
     "patch:expo-cli": "node scripts/patch-expo-cli.js",
-    "postinstall": "node scripts/patch-expo-cli.js"
+    "postinstall": "node scripts/patch-expo-cli.js",
+    "test:e2e": "playwright install --with-deps chromium && playwright test",
+    "maildev": "maildev --smtp 1025 --web 1080 --disable-webhook"
   },
   "dependencies": {
     "@auth/core": "^0.37.0",
@@ -92,12 +94,15 @@
     "react-native-webview": "13.15.0",
     "react-native-worklets": "0.5.1",
     "replicate": "^1.3.1",
+    "nodemailer": "^6.9.11",
     "resend": "^6.3.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.49.0",
     "@types/react": "~19.1.0",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
+    "maildev": "^2.1.0",
     "react-native-svg-transformer": "^1.5.2",
     "typescript": "~5.9.2"
   },

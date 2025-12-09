@@ -48,3 +48,13 @@ Join our community of developers creating universal apps.
 
 - [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
 - [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+
+## End-to-end tests
+
+The Playwright suite installs its required browser binaries automatically. To run the e2e tests locally:
+
+```bash
+npm run test:e2e
+```
+
+This command downloads the Chromium binary if it is not already present, starts a local MailDev SMTP/Web UI for email capture, launches the Expo web dev server (default http://localhost:8081, override with `E2E_BASE_URL`), and then executes the onboarding flows.
