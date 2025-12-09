@@ -134,7 +134,7 @@ const createStyles = (tokens: ThemeTokens) =>
       color: tokens.colors.accent,
     },
     scrollArea: {
-      maxHeight: tokens.spacing.xxl * 3,
+      maxHeight: tokens.spacing.xxl * 4,
       borderRadius: tokens.radii.sm,
     },
     scrollContent: {

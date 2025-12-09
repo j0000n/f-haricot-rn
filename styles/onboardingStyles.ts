@@ -14,7 +14,7 @@ const createOnboardingStyles = (tokens: ThemeTokens) =>
       paddingVertical: tokens.spacing.xl,
     },
     contentWithNavigation: {
-      paddingBottom: tokens.spacing.xxl * 3,
+      paddingBottom: tokens.spacing.xxl * 4,
     },
     card: {
       width: tokens.widths.full,
