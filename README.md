@@ -57,4 +57,4 @@ The Playwright suite installs its required browser binaries automatically. To ru
 npm run test:e2e
 ```
 
-This command downloads the Chromium binary if it is not already present, starts a local MailDev SMTP/Web UI for email capture, and then executes the onboarding flows.
+This command downloads the Chromium binary if it is not already present, starts a local MailDev SMTP/Web UI for email capture, launches the Expo web dev server (default http://localhost:8081, override with `E2E_BASE_URL`), and then executes the onboarding flows.
