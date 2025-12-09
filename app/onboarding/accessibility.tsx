@@ -18,6 +18,7 @@ import {
 import { useRouter } from "expo-router";
 import { useTheme, useThemedStyles } from "@/styles/tokens";
 import { BrandLogo } from "@/components/BrandLogo";
+import { OnboardingNavigation } from "@/components/OnboardingNavigation";
 import { useTranslation } from "@/i18n/useTranslation";
 
 const TEXT_SIZE_OPTIONS: {
@@ -150,6 +151,10 @@ export default function AccessibilityPreferencesScreen() {
     void setAccessibilityPreferences({ motionPreference: value });
   };
 
+  const handleBack = () => {
+    router.back();
+  };
+
   const handleContinue = async () => {
     if (isSubmitting || isUpdatingAccessibility) {
       return;
@@ -181,7 +186,10 @@ export default function AccessibilityPreferencesScreen() {
   return (
     <View style={onboardingStyles.container}>
       <ScrollView
-        contentContainerStyle={onboardingStyles.content}
+        contentContainerStyle={[
+          onboardingStyles.content,
+          onboardingStyles.contentWithNavigation,
+        ]}
         showsVerticalScrollIndicator={false}
       >
         <View style={onboardingStyles.card}>
@@ -345,22 +353,6 @@ export default function AccessibilityPreferencesScreen() {
             })}
           </View>
 
-          <Pressable
-            onPress={handleContinue}
-            style={[
-              onboardingStyles.button,
-              (isSubmitting || isUpdatingAccessibility) &&
-                onboardingStyles.buttonDisabled,
-            ]}
-            disabled={isSubmitting || isUpdatingAccessibility}
-          >
-            <Text style={onboardingStyles.buttonText}>
-              {isSubmitting || isUpdatingAccessibility
-                ? t("onboarding.saving")
-                : t("onboarding.next")}
-            </Text>
-          </Pressable>
-
           <View style={onboardingStyles.footer}>
             <Text style={onboardingStyles.progressText}>
               {t("onboarding.stepIndicator", { current: 1, total: 9 })}
@@ -368,6 +360,15 @@ export default function AccessibilityPreferencesScreen() {
           </View>
         </View>
       </ScrollView>
+
+      <OnboardingNavigation
+        backLabel={t("onboarding.back")}
+        busyLabel={t("onboarding.saving")}
+        continueLabel={t("onboarding.next")}
+        isBusy={isSubmitting || isUpdatingAccessibility}
+        onBack={handleBack}
+        onContinue={handleContinue}
+      />
     </View>
   );
 }

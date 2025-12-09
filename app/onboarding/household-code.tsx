@@ -7,6 +7,7 @@ import createOnboardingStyles from "@/styles/onboardingStyles";
 import { useTheme, useThemedStyles } from "@/styles/tokens";
 import { api } from "@/convex/_generated/api";
 import { BrandLogo } from "@/components/BrandLogo";
+import { OnboardingNavigation } from "@/components/OnboardingNavigation";
 import { useTranslation } from "@/i18n/useTranslation";
 
 type FeedbackTone = "info" | "success" | "error";
@@ -93,7 +94,10 @@ export default function HouseholdCodeScreen() {
   return (
     <View style={onboardingStyles.container}>
       <ScrollView
-        contentContainerStyle={onboardingStyles.content}
+        contentContainerStyle={[
+          onboardingStyles.content,
+          onboardingStyles.contentWithNavigation,
+        ]}
         showsVerticalScrollIndicator={false}
       >
         <View style={onboardingStyles.card}>
@@ -162,27 +166,6 @@ export default function HouseholdCodeScreen() {
             ) : null}
           </View>
 
-          <View style={onboardingStyles.buttonGroup}>
-            <Pressable
-              onPress={handleBack}
-              style={[onboardingStyles.buttonSecondary, isSubmitting ? onboardingStyles.buttonDisabled : null]}
-              disabled={isSubmitting}
-            >
-              <Text style={onboardingStyles.buttonSecondaryText}>
-                {t("onboarding.back")}
-              </Text>
-            </Pressable>
-            <Pressable
-              onPress={handleContinue}
-              style={[onboardingStyles.button, isSubmitting ? onboardingStyles.buttonDisabled : null]}
-              disabled={isSubmitting}
-            >
-              <Text style={onboardingStyles.buttonText}>
-                {t("onboarding.household.code.continueButton")}
-              </Text>
-            </Pressable>
-          </View>
-
           <View style={onboardingStyles.footer}>
             <Text style={onboardingStyles.progressText}>
               {t("onboarding.stepIndicator", { current: 5, total: 9 })}
@@ -190,6 +173,15 @@ export default function HouseholdCodeScreen() {
           </View>
         </View>
       </ScrollView>
+
+      <OnboardingNavigation
+        backLabel={t("onboarding.back")}
+        busyLabel={t("onboarding.joining")}
+        continueLabel={t("onboarding.household.code.continueButton")}
+        isBusy={isSubmitting}
+        onBack={handleBack}
+        onContinue={handleContinue}
+      />
     </View>
   );
 }
