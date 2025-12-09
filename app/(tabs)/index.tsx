@@ -315,6 +315,16 @@ export default function HomeScreen() {
             </Pressable>
           </Link>
         </View>
+        <View style={styles.worldEntry}>
+          <Link href="/animations" asChild>
+            <Pressable style={styles.worldButton} accessibilityRole="button">
+              <Text style={styles.worldButtonTitle}>Built-in animations walkthrough</Text>
+              <Text style={styles.worldButtonSubtitle}>
+                Developer-only preview that documents Animated and LayoutAnimation with live samples.
+              </Text>
+            </Pressable>
+          </Link>
+        </View>
         <View style={styles.searchSection}>
 
           {generateRecipeImagePrompt && (
