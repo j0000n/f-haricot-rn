@@ -13,6 +13,9 @@ const createOnboardingStyles = (tokens: ThemeTokens) =>
       alignItems: "center",
       paddingVertical: tokens.spacing.xl,
     },
+    contentWithNavigation: {
+      paddingBottom: tokens.spacing.xxl * 3,
+    },
     card: {
       width: tokens.widths.full,
       maxWidth: tokens.layout.maxFormWidth,
@@ -275,6 +278,26 @@ const createOnboardingStyles = (tokens: ThemeTokens) =>
     },
     buttonGroup: {
       gap: tokens.spacing.sm,
+    },
+    navigationContainer: {
+      position: "absolute",
+      left: tokens.spacing.lg,
+      right: tokens.spacing.lg,
+      bottom: tokens.spacing.lg,
+      alignItems: "center",
+    },
+    navigationCard: {
+      width: tokens.widths.full,
+      maxWidth: tokens.layout.maxFormWidth,
+      backgroundColor: tokens.colors.surface,
+      borderRadius: tokens.radii.md,
+      padding: tokens.spacing.lg,
+      gap: tokens.spacing.sm,
+      shadowColor: tokens.shadows.card.shadowColor,
+      shadowOffset: tokens.shadows.card.shadowOffset,
+      shadowOpacity: tokens.shadows.card.shadowOpacity,
+      shadowRadius: tokens.shadows.card.shadowRadius,
+      elevation: tokens.shadows.card.elevation,
     },
     buttonSecondary: {
       backgroundColor: tokens.colors.surface,

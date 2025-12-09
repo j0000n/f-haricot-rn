@@ -6,6 +6,7 @@ import { Alert, Pressable, ScrollView, Text, TextInput, View } from "react-nativ
 import { useRouter } from "expo-router";
 import { useTheme, useThemedStyles } from "@/styles/tokens";
 import { BrandLogo } from "@/components/BrandLogo";
+import { OnboardingNavigation } from "@/components/OnboardingNavigation";
 import { useTranslation } from "@/i18n/useTranslation";
 
 const DIETARY_OPTIONS: { value: string; labelKey: string; defaultLabel: string }[] = [
@@ -151,7 +152,10 @@ export default function DietaryRestrictionsScreen() {
   return (
     <View style={onboardingStyles.container}>
       <ScrollView
-        contentContainerStyle={onboardingStyles.content}
+        contentContainerStyle={[
+          onboardingStyles.content,
+          onboardingStyles.contentWithNavigation,
+        ]}
         showsVerticalScrollIndicator={false}
       >
         <View style={onboardingStyles.card}>
@@ -232,33 +236,6 @@ export default function DietaryRestrictionsScreen() {
             />
           </View>
 
-          <View style={onboardingStyles.buttonGroup}>
-            <Pressable
-              onPress={handleBack}
-              style={[
-                onboardingStyles.buttonSecondary,
-                isSubmitting ? onboardingStyles.buttonDisabled : null,
-              ]}
-              disabled={isSubmitting}
-            >
-              <Text style={onboardingStyles.buttonSecondaryText}>
-                {t("onboarding.back")}
-              </Text>
-            </Pressable>
-            <Pressable
-              onPress={handleContinue}
-              style={[
-                onboardingStyles.button,
-                isSubmitting ? onboardingStyles.buttonDisabled : null,
-              ]}
-              disabled={isSubmitting}
-            >
-              <Text style={onboardingStyles.buttonText}>
-                {isSubmitting ? t("onboarding.saving") : t("onboarding.next")}
-              </Text>
-            </Pressable>
-          </View>
-
           <View style={onboardingStyles.footer}>
             <Text style={onboardingStyles.progressText}>
               {t("onboarding.stepIndicator", { current: 3, total: 9 })}
@@ -266,6 +243,15 @@ export default function DietaryRestrictionsScreen() {
           </View>
         </View>
       </ScrollView>
+
+      <OnboardingNavigation
+        backLabel={t("onboarding.back")}
+        busyLabel={t("onboarding.saving")}
+        continueLabel={t("onboarding.next")}
+        isBusy={isSubmitting}
+        onBack={handleBack}
+        onContinue={handleContinue}
+      />
     </View>
   );
 }

@@ -7,6 +7,7 @@ import createOnboardingStyles from "@/styles/onboardingStyles";
 import { useThemedStyles, useTheme } from "@/styles/tokens";
 import { api } from "@/convex/_generated/api";
 import { BrandLogo } from "@/components/BrandLogo";
+import { OnboardingNavigation } from "@/components/OnboardingNavigation";
 import { useTranslation } from "@/i18n/useTranslation";
 
 const ALLERGY_SUGGESTION_KEYS = [
@@ -88,7 +89,10 @@ export default function AllergiesScreen() {
   return (
     <View style={onboardingStyles.container}>
       <ScrollView
-        contentContainerStyle={onboardingStyles.content}
+        contentContainerStyle={[
+          onboardingStyles.content,
+          onboardingStyles.contentWithNavigation,
+        ]}
         showsVerticalScrollIndicator={false}
       >
         <View style={onboardingStyles.card}>
@@ -196,33 +200,6 @@ export default function AllergiesScreen() {
             </View>
           </View>
 
-          <View style={onboardingStyles.buttonGroup}>
-            <Pressable
-              onPress={handleBack}
-              style={[
-                onboardingStyles.buttonSecondary,
-                isSubmitting ? onboardingStyles.buttonDisabled : null,
-              ]}
-              disabled={isSubmitting}
-            >
-              <Text style={onboardingStyles.buttonSecondaryText}>
-                {t("onboarding.back")}
-              </Text>
-            </Pressable>
-            <Pressable
-              onPress={handleContinue}
-              style={[
-                onboardingStyles.button,
-                isSubmitting ? onboardingStyles.buttonDisabled : null,
-              ]}
-              disabled={isSubmitting}
-            >
-              <Text style={onboardingStyles.buttonText}>
-                {isSubmitting ? t("onboarding.saving") : t("onboarding.next")}
-              </Text>
-            </Pressable>
-          </View>
-
           <View style={onboardingStyles.footer}>
             <Text style={onboardingStyles.progressText}>
               {t("onboarding.stepIndicator", { current: 4, total: 9 })}
@@ -230,6 +207,15 @@ export default function AllergiesScreen() {
           </View>
         </View>
       </ScrollView>
+
+      <OnboardingNavigation
+        backLabel={t("onboarding.back")}
+        busyLabel={t("onboarding.saving")}
+        continueLabel={t("onboarding.next")}
+        isBusy={isSubmitting}
+        onBack={handleBack}
+        onContinue={handleContinue}
+      />
     </View>
   );
 }

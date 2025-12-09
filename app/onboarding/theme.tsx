@@ -1,7 +1,8 @@
 import { useRouter } from "expo-router";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { ScrollView, Text, View } from "react-native";
 
 import { BrandLogo } from "@/components/BrandLogo";
+import { OnboardingNavigation } from "@/components/OnboardingNavigation";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { useTranslation } from "@/i18n/useTranslation";
 import createOnboardingStyles from "@/styles/onboardingStyles";
@@ -28,7 +29,10 @@ export default function ThemeSelectionScreen() {
   return (
     <View style={onboardingStyles.container}>
       <ScrollView
-        contentContainerStyle={onboardingStyles.content}
+        contentContainerStyle={[
+          onboardingStyles.content,
+          onboardingStyles.contentWithNavigation,
+        ]}
         showsVerticalScrollIndicator={false}
       >
         <View style={onboardingStyles.card}>
@@ -56,33 +60,6 @@ export default function ThemeSelectionScreen() {
 
           <ThemeSwitcher />
 
-          <View style={onboardingStyles.buttonGroup}>
-            <Pressable
-              onPress={handleBack}
-              style={[
-                onboardingStyles.buttonSecondary,
-                isUpdatingTheme ? onboardingStyles.buttonDisabled : null,
-              ]}
-              disabled={isUpdatingTheme}
-            >
-              <Text style={onboardingStyles.buttonSecondaryText}>
-                {t("onboarding.back")}
-              </Text>
-            </Pressable>
-            <Pressable
-              onPress={handleContinue}
-              style={[
-                onboardingStyles.button,
-                isUpdatingTheme ? onboardingStyles.buttonDisabled : null,
-              ]}
-              disabled={isUpdatingTheme}
-            >
-              <Text style={onboardingStyles.buttonText}>
-                {isUpdatingTheme ? t("onboarding.saving") : t("onboarding.next")}
-              </Text>
-            </Pressable>
-          </View>
-
           <View style={onboardingStyles.footer}>
             <Text style={onboardingStyles.progressText}>
               {t("onboarding.stepIndicator", { current: 2, total: 9 })}
@@ -90,6 +67,15 @@ export default function ThemeSelectionScreen() {
           </View>
         </View>
       </ScrollView>
+
+      <OnboardingNavigation
+        backLabel={t("onboarding.back")}
+        busyLabel={t("onboarding.saving")}
+        continueLabel={t("onboarding.next")}
+        isBusy={isUpdatingTheme}
+        onBack={handleBack}
+        onContinue={handleContinue}
+      />
     </View>
   );
 }
