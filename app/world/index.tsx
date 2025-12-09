@@ -9,10 +9,10 @@ export default function WorldScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <Breadcrumbs items={[{ label: "World" }]} />
-      <FlatList
+      <FlatList<typeof continents[number]>
         data={continents}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
+        keyExtractor={(item: (typeof continents)[number]) => item.id}
+        renderItem={({ item }: { item: (typeof continents)[number] }) => (
           <Link href={`/world/${item.slug}`} asChild>
             <Pressable style={styles.item}>
               <Text style={styles.title}>{item.name}</Text>

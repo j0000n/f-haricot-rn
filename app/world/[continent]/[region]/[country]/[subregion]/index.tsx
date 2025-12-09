@@ -44,10 +44,10 @@ export default function CountrySubregionScreen() {
         ]}
       />
       {continent && region && country && subregion ? (
-        <FlatList
+        <FlatList<typeof cities[number]>
           data={cities}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
+          keyExtractor={(item: (typeof cities)[number]) => item.id}
+          renderItem={({ item }: { item: (typeof cities)[number] }) => (
             <Link
               href={`/world/${continent.slug}/${region.slug}/${country.slug}/${subregion.slug}/${item.slug}`}
               asChild

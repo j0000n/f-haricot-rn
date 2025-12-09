@@ -1,5 +1,4 @@
 import type { ThemeTokens } from "@/styles/tokens";
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore - Slider types have JSX component issues but works at runtime
 import Slider from "@react-native-community/slider";
 import { useEffect, useState } from "react";

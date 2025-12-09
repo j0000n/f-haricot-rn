@@ -6,7 +6,6 @@ import { useThemedStyles } from "@/styles/tokens";
 import type { InventoryDisplayItem } from "@/types/food";
 import {
   LOCATION_ORDER,
-  getLocationIndex,
   sortByLocation,
   sortByQuantity,
   sortByPurchaseDate,

@@ -100,7 +100,6 @@ export function LogoPicker({
       >
         {AVAILABLE_LOGOS.map((logo) => {
           const isSelected = logo.path === selectedLogoPath;
-          const isSvg = logo.path.endsWith(".svg");
           // Use SvgLogo for haricot-logo.svg (the only one with SVG data)
           const useSvgLogo = logo.path === "@/assets/images/haricot-logo.svg";
           

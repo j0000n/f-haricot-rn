@@ -71,7 +71,7 @@ interface LinkPreviewCardProps {
 const getDomainFromUrl = (url: string) => {
   try {
     return new URL(url).hostname.replace(/^www\./, "");
-  } catch (error) {
+  } catch {
     return url;
   }
 };
@@ -85,7 +85,7 @@ export const LinkPreviewCard: React.FC<LinkPreviewCardProps> = ({ preview, onPre
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => [styles.container, pressed && styles.containerPressed]}
+      style={({ pressed }: { pressed: boolean }) => [styles.container, pressed && styles.containerPressed]}
       accessibilityRole="button"
       accessibilityLabel={preview.title}
     >

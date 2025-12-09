@@ -5,6 +5,7 @@ import {
   baseComponentSizes,
   baseComponentTokens,
   baseFontFamilies,
+  baseRadii,
   baseIconSizes,
   baseLayout,
   baseLetterSpacing,
@@ -19,6 +20,12 @@ const colors = {
   background: "#8CA1C6",
   surface: "#987AA5",
   overlay: "#B8C7DD",
+  surfaceVariant: "#ac98b7",
+  surfaceSubdued: "#a289b0",
+  surfaceMuted: "#8d7299",
+  primary: "#CC480F",
+  onPrimary: "#FFF3D6",
+  muted: "#a9b7d1",
   textPrimary: "#2F2619",
   textSecondary: "#4A3C2A",
   textMuted: "#7A6B52",
@@ -36,6 +43,7 @@ const radii = {
   sm: 6,
   md: 12,
   lg: 18,
+  round: baseRadii.round,
 } as const;
 
 export const springfieldTheme: ThemeDefinition = {

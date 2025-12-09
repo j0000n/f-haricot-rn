@@ -4,7 +4,7 @@ import * as Clipboard from "expo-clipboard";
 
 import { api } from "@/convex/_generated/api";
 import { useTranslation } from "@/i18n/useTranslation";
-import { getThemeDefinition } from "@/styles/themes";
+import { defaultThemeName, getThemeDefinition } from "@/styles/themes";
 import type { ThemeName, ThemeTokens } from "@/styles/tokens";
 import { useTheme, useThemedStyles } from "@/styles/tokens";
 import { Feather } from "@expo/vector-icons";
@@ -56,17 +56,21 @@ export function ThemeSwitcher({ variant = "default" }: ThemeSwitcherProps) {
   useEffect(() => {
     if (savedCustomThemeQuery && savedCustomThemeShareCode && !customTheme && themeName === "custom") {
       console.log("Loading saved custom theme:", savedCustomThemeQuery.name, savedCustomThemeQuery.shareCode);
+
+      const fallbackTokens = getThemeDefinition(defaultThemeName).tokens;
+
       setCustomTheme({
         name: savedCustomThemeQuery.name,
         shareCode: savedCustomThemeQuery.shareCode,
         colors: {
+          ...fallbackTokens.colors,
           ...savedCustomThemeQuery.colors,
           logoFill: savedCustomThemeQuery.colors.logoFill ?? savedCustomThemeQuery.colors.textPrimary,
         },
-        spacing: savedCustomThemeQuery.spacing,
+        spacing: { ...fallbackTokens.spacing, ...savedCustomThemeQuery.spacing },
         padding: savedCustomThemeQuery.padding,
-        radii: savedCustomThemeQuery.radii,
-        typography: savedCustomThemeQuery.typography,
+        radii: { ...fallbackTokens.radii, ...savedCustomThemeQuery.radii },
+        typography: { ...fallbackTokens.typography, ...savedCustomThemeQuery.typography },
         fontFamilies: savedCustomThemeQuery.fontFamilies,
         logoAsset: savedCustomThemeQuery.logoAsset,
         tabBar: savedCustomThemeQuery.tabBar,
@@ -93,17 +97,19 @@ export function ThemeSwitcher({ variant = "default" }: ThemeSwitcherProps) {
       if (customThemeQuery) {
         // Apply the custom theme
         // Ensure logoFill is included in colors (matching ThemeProvider logic)
+        const fallbackTokens = getThemeDefinition(defaultThemeName).tokens;
         const themeData = {
           name: customThemeQuery.name,
           shareCode: customThemeQuery.shareCode,
           colors: {
+            ...fallbackTokens.colors,
             ...customThemeQuery.colors,
             logoFill: customThemeQuery.colors.logoFill ?? customThemeQuery.colors.textPrimary,
           },
-          spacing: customThemeQuery.spacing,
+          spacing: { ...fallbackTokens.spacing, ...customThemeQuery.spacing },
           padding: customThemeQuery.padding,
-          radii: customThemeQuery.radii,
-          typography: customThemeQuery.typography,
+          radii: { ...fallbackTokens.radii, ...customThemeQuery.radii },
+          typography: { ...fallbackTokens.typography, ...customThemeQuery.typography },
           fontFamilies: customThemeQuery.fontFamilies,
           logoAsset: customThemeQuery.logoAsset,
           tabBar: customThemeQuery.tabBar,

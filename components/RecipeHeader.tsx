@@ -115,7 +115,7 @@ export const RecipeHeader: React.FC<RecipeHeaderProps> = ({
   return (
     <View style={styles.container}>
       <Image
-        source={{ uri: recipe.imageUrl }}
+        source={{ uri: recipe.imageUrls?.[0] ?? "" }}
         style={styles.heroImage}
         resizeMode="cover"
         accessibilityLabel={recipe.recipeName[language] || recipe.recipeName.en}

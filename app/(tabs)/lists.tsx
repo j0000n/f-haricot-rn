@@ -7,7 +7,6 @@ import { useTranslation } from "@/i18n/useTranslation";
 import createListsStyles from "@/styles/listsStyles";
 import { useThemedStyles, useTokens } from "@/styles/tokens";
 import type { Recipe } from "@/types/recipe";
-import { calculateIngredientMatch } from "@/utils/inventory";
 import {
   buildRecipeIds,
   decorateRecipesWithMatches,

@@ -5,14 +5,13 @@ import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useQuery } from "convex/react";
 
 import { api } from "@/convex/_generated/api";
+import { decodeUrl } from "@/utils/url";
 import createSearchStyles, { type SearchStyles } from "@/styles/searchStyles";
 import { useThemedStyles } from "@/styles/tokens";
 import { useTranslation } from "@/i18n/useTranslation";
 import type { Recipe } from "@/types/recipe";
 
 const SEARCH_RESULTS_LIMIT = 50;
-
-import { decodeUrl } from "@/utils/url";
 
 export default function SearchResultsScreen() {
   const { query } = useLocalSearchParams<{ query: string }>();

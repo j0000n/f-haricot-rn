@@ -22,10 +22,10 @@ export default function RegionScreen() {
         ]}
       />
       {continent && region ? (
-        <FlatList
+        <FlatList<typeof countries[number]>
           data={countries}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
+          keyExtractor={(item: (typeof countries)[number]) => item.id}
+          renderItem={({ item }: { item: (typeof countries)[number] }) => (
             <Link href={`/world/${continent.slug}/${region.slug}/${item.slug}`} asChild>
               <Pressable style={styles.item}>
                 <Text style={styles.title}>{item.name}</Text>

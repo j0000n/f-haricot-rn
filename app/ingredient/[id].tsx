@@ -252,10 +252,10 @@ export default function IngredientDetailScreen() {
                     <Text style={styles.infoLabel}>{lang.toUpperCase()}</Text>
                     <Text style={styles.infoValue}>
                       {resolveTranslation(
-                        food.translations as Record<string, TranslationValue>,
-                        translationLanguage,
-                      )}
-                    </Text>
+                      food.translations as unknown as Record<string, string>,
+                      translationLanguage,
+                    )}
+                  </Text>
                   </View>
                 );
               })}

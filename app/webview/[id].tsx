@@ -6,8 +6,10 @@ import {
   Text,
   View,
   Platform,
+  type StyleProp,
+  type ViewStyle,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, type SafeAreaViewProps } from "react-native-safe-area-context";
 import * as WebBrowser from "expo-web-browser";
 
 import { useTranslation } from "@/i18n/useTranslation";
@@ -101,9 +103,13 @@ const WebViewScreen = () => {
     }
   };
 
+  const SafeArea = SafeAreaView as unknown as React.ComponentType<
+    SafeAreaViewProps & { style?: StyleProp<ViewStyle> }
+  >;
+
   if (!decodedUrl) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeArea style={styles.container}>
         <View style={styles.header}>
           <Pressable
             style={styles.backButton}
@@ -117,12 +123,12 @@ const WebViewScreen = () => {
         <View style={[styles.loadingContainer, { backgroundColor: "transparent" }]}>
           <Text style={styles.title}>{t("home.webPreviewUnavailable")}</Text>
         </View>
-      </SafeAreaView>
+      </SafeArea>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeArea style={styles.container}>
       <View style={styles.header}>
         <Pressable style={styles.backButton} onPress={() => router.back()} accessibilityRole="button">
           <Text style={styles.backText}>{t("common.back")}</Text>
@@ -210,7 +216,7 @@ const WebViewScreen = () => {
           )}
         </View>
       ) : null}
-    </SafeAreaView>
+    </SafeArea>
   );
 };
 
