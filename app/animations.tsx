@@ -35,6 +35,7 @@ export default function AnimationPlayground() {
   const springValue = useRef(new Animated.Value(0)).current;
 
   const [layoutItems, setLayoutItems] = useState<LayoutExampleItem[]>(DEFAULT_ITEMS);
+  const nextId = useRef(DEFAULT_ITEMS.length + 1);
 
   useEffect(() => {
     if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -85,11 +86,13 @@ export default function AnimationPlayground() {
       delete: { type: "easeInEaseOut", property: "opacity" },
     });
 
+    const id = nextId.current++;
+
     setLayoutItems((items) => [
       {
-        id: `adaptive-${items.length + 1}`,
-        label: `Adaptive card ${items.length + 1}`,
-        height: 44 + ((items.length + 1) % 3) * 6,
+        id: `adaptive-${id}`,
+        label: `Adaptive card ${id}`,
+        height: 44 + (id % 3) * 6,
       },
       ...items,
     ]);
