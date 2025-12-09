@@ -17,7 +17,7 @@ import {
 } from "@/styles/tokens";
 import { clearPendingUserType, getPendingUserType } from "@/utils/pendingUserType";
 import { FONT_SOURCES } from "@/utils/fonts";
-import { POSTHOG_API_KEY, POSTHOG_OPTIONS } from "@/utils/posthog";
+import { AnalyticsProvider } from "@/components/AnalyticsProvider";
 import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import { ConvexReactClient, useConvexAuth, useMutation, useQuery } from "convex/react";
 import { useFonts } from "expo-font";
@@ -26,7 +26,6 @@ import { Stack, useRouter, useSegments } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Platform, View } from "react-native";
-import { PostHogProvider } from "posthog-react-native";
 
 const convex = new ConvexReactClient(process.env.EXPO_PUBLIC_CONVEX_URL!, {
   unsavedChangesWarning: false,
@@ -371,7 +370,7 @@ export default function RootLayout() {
   }
 
   return (
-    <PostHogProvider apiKey={POSTHOG_API_KEY} options={POSTHOG_OPTIONS} autocapture>
+    <AnalyticsProvider>
       <ConvexAuthProvider
         client={convex}
         storage={
@@ -382,6 +381,6 @@ export default function RootLayout() {
       >
         <AuthenticatedApp />
       </ConvexAuthProvider>
-    </PostHogProvider>
+    </AnalyticsProvider>
   );
 }
