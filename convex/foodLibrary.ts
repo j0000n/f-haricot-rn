@@ -1,11 +1,14 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import type { Doc } from "./_generated/dataModel";
 
 import { foodLibrarySeed } from "../data/foodLibrarySeed";
 import type { FoodLibraryItem } from "../types/food";
 
 // Transform seed data to match schema format
-function transformFoodLibraryItem(item: FoodLibraryItem) {
+function transformFoodLibraryItem(
+  item: FoodLibraryItem,
+): Omit<Doc<"foodLibrary">, "_id" | "_creationTime"> {
   // Helper to convert string to singular/plural format and add missing languages
   const transformTranslations = (
     translations: Record<string, string>
@@ -55,65 +58,19 @@ function transformFoodLibraryItem(item: FoodLibraryItem) {
 
   return {
     ...item,
-    translations: transformTranslations(item.translations as unknown as Record<string, string>),
+    translations: transformTranslations(
+      item.translations as Record<string, string>,
+    ) as Doc<"foodLibrary">["translations"],
     categoryTranslations: transformCategoryTranslations(
-      item.categoryTranslations as unknown as Record<string, string>
-    ),
+      item.categoryTranslations as Record<string, string>,
+    ) as Doc<"foodLibrary">["categoryTranslations"],
     varieties: item.varieties.map((variety) => ({
       ...variety,
       translations: transformVarietyTranslations(
-        variety.translations as unknown as Record<string, string>
-      ),
+        variety.translations as Record<string, string>,
+      ) as Doc<"foodLibrary">["varieties"][number]["translations"],
     })),
-    nutritionPer100g: item.nutritionPer100g,
-    densityHints: item.densityHints,
-  } as {
-    code: string;
-    namespace: string;
-    name: string;
-    translations: {
-      en: { singular: string; plural: string };
-      es: { singular: string; plural: string };
-      zh: { singular: string; plural: string };
-      fr: { singular: string; plural: string };
-      ar: { singular: string; plural: string };
-      ja: { singular: string; plural: string };
-      vi: { singular: string; plural: string };
-      tl: { singular: string; plural: string };
-    };
-    category: string;
-    categoryTranslations: {
-      en: string;
-      es: string;
-      zh: string;
-      fr: string;
-      ar: string;
-      ja: string;
-      vi: string;
-      tl: string;
-    };
-    defaultImageUrl: string;
-    emoji?: string;
-    shelfLifeDays: number;
-    storageLocation: "pantry" | "fridge" | "freezer" | "spicecabinet";
-    storageTips: string;
-    varieties: Array<{
-      code: string;
-      translations: {
-        en: string;
-        es: string;
-        zh: string;
-        fr: string;
-        ar: string;
-        ja: string;
-        vi: string;
-        tl: string;
-      };
-      defaultImageUrl?: string;
-    }>;
-    nutritionPer100g: unknown;
-    densityHints?: unknown;
-  };
+  } satisfies Omit<Doc<"foodLibrary">, "_id" | "_creationTime">;
 }
 
 export const listAll = query({

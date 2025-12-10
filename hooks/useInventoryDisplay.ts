@@ -6,6 +6,7 @@ import type { Doc } from "@/convex/_generated/dataModel";
 
 import type {
   InventoryDisplayItem,
+  SUPPORTED_LANGUAGES,
   SupportedLanguage,
   UserInventoryEntry,
 } from "@/types/food";
@@ -53,8 +54,7 @@ const normalizeLanguage = (language: string | undefined): SupportedLanguage => {
   }
 
   // Support the languages from types, fallback to en if not supported
-  const supported = ["en", "es", "zh", "fr", "ar"] as const;
-  if (supported.includes(language as SupportedLanguage)) {
+  if (SUPPORTED_LANGUAGES.includes(language as SupportedLanguage)) {
     return language as SupportedLanguage;
   }
 

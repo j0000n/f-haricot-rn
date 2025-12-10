@@ -419,9 +419,11 @@ Captured text: ${sourceSummary}`;
       updatedAt: now,
       isPublic: false,
       foodItemsAdded: [...foodItemsAdded, ...(enhanced.foodItemsAdded ?? [])],
-    } satisfies Omit<Doc<"recipes">, "_id">;
+    } satisfies Omit<Doc<"recipes">, "_id" | "_creationTime">;
 
-    const recipeId = await ctx.db.insert("recipes", recipeData);
+    const recipeId = await ctx.runMutation(api.recipes.insertFromIngestion, {
+      recipeData,
+    });
 
     const perServing = computeNutritionProfile(
       normalizedIngredients,
@@ -872,6 +874,134 @@ export const create = mutation({
   returns: v.id("recipes"),
   handler: async (ctx, args) => {
     return await ctx.db.insert("recipes", args);
+  },
+});
+
+export const insertFromIngestion = mutation({
+  args: {
+    recipeData: v.object({
+      recipeName: v.object({
+        en: v.string(),
+        es: v.string(),
+        zh: v.string(),
+        fr: v.string(),
+        ar: v.string(),
+        ja: v.string(),
+        vi: v.string(),
+        tl: v.string(),
+      }),
+      description: v.object({
+        en: v.string(),
+        es: v.string(),
+        zh: v.string(),
+        fr: v.string(),
+        ar: v.string(),
+        ja: v.string(),
+        vi: v.string(),
+        tl: v.string(),
+      }),
+      ingredients: v.array(
+        v.object({
+          foodCode: v.string(),
+          varietyCode: v.optional(v.string()),
+          quantity: v.number(),
+          unit: v.string(),
+          preparation: v.optional(v.string()),
+          displayQuantity: v.optional(v.string()),
+          displayUnit: v.optional(v.string()),
+          normalizedQuantity: v.optional(v.number()),
+          normalizedUnit: v.optional(
+            v.union(v.literal("g"), v.literal("ml"), v.literal("count"))
+          ),
+          originalText: v.optional(v.string()),
+          validation: v.optional(
+            v.object({
+              status: v.union(
+                v.literal("matched"),
+                v.literal("ambiguous"),
+                v.literal("missing"),
+              ),
+              suggestions: v.optional(v.array(v.string())),
+            })
+          ),
+        })
+      ),
+      steps: v.array(
+        v.object({
+          stepNumber: v.number(),
+          instructions: v.object({
+            en: v.string(),
+            es: v.string(),
+            zh: v.string(),
+            fr: v.string(),
+            ar: v.string(),
+            ja: v.string(),
+            vi: v.string(),
+            tl: v.string(),
+          }),
+          timeInMinutes: v.optional(v.number()),
+          temperature: v.optional(
+            v.object({
+              value: v.number(),
+              unit: v.union(v.literal("F"), v.literal("C")),
+            })
+          ),
+        })
+      ),
+      emojiTags: v.array(v.string()),
+      prepTimeMinutes: v.number(),
+      cookTimeMinutes: v.number(),
+      totalTimeMinutes: v.number(),
+      servings: v.number(),
+      source: v.optional(
+        v.union(
+          v.literal("website"),
+          v.literal("audio"),
+          v.literal("text"),
+          v.literal("photograph"),
+          v.literal("instagram"),
+          v.literal("tiktok"),
+          v.literal("pinterest"),
+          v.literal("youtube"),
+          v.literal("cookbook"),
+          v.literal("magazine"),
+          v.literal("newspaper"),
+          v.literal("recipe_card"),
+          v.literal("handwritten"),
+          v.literal("voice_note"),
+          v.literal("video"),
+          v.literal("facebook"),
+          v.literal("twitter"),
+          v.literal("reddit"),
+          v.literal("blog"),
+          v.literal("podcast"),
+          v.literal("other")
+        )
+      ),
+      sourceUrl: v.optional(v.string()),
+      attribution: v.object({
+        source: v.string(),
+        sourceUrl: v.optional(v.string()),
+        author: v.optional(v.string()),
+        dateRetrieved: v.string(),
+      }),
+      imageUrls: v.optional(v.array(v.string())),
+      originalImageLargeStorageId: v.optional(v.id("_storage")),
+      originalImageSmallStorageId: v.optional(v.id("_storage")),
+      transparentImageLargeStorageId: v.optional(v.id("_storage")),
+      transparentImageSmallStorageId: v.optional(v.id("_storage")),
+      encodedSteps: v.optional(v.string()),
+      encodingVersion: v.optional(v.string()),
+      foodItemsAdded: v.optional(v.array(v.id("foodLibrary"))),
+      createdAt: v.number(),
+      updatedAt: v.number(),
+      createdBy: v.optional(v.id("users")),
+      isPublic: v.boolean(),
+    }),
+  },
+  returns: v.id("recipes"),
+  handler: async (ctx, args) => {
+    return await ctx.db.insert("recipes", args.recipeData);
   },
 });
 

@@ -19,7 +19,7 @@ const localize = (text: string): LocalizedRecipeText => {
   }, {} as LocalizedRecipeText);
 };
 
-export type RecipeSeed = Omit<Doc<"recipes">, "_id">;
+export type RecipeSeed = Omit<Doc<"recipes">, "_id" | "_creationTime">;
 
 const baseCreatedAt = new Date("2024-10-15T12:00:00Z").getTime();
 
