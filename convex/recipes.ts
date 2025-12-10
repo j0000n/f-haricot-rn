@@ -352,8 +352,9 @@ Captured text: ${sourceSummary}`;
     const enhanced = JSON.parse(jsonText);
 
     const validationSummary = { ambiguous: 0, missing: 0 };
-    const normalizedIngredients = (enhanced.ingredients || []).map(
-      (ingredient: any) => {
+    const foodItemsAdded: Id<"foodLibrary">[] = [];
+    const normalizedIngredients = await Promise.all(
+      (enhanced.ingredients || []).map(async (ingredient: any) => {
         const match = foodLibrary.find(
           (entry) => entry.code === ingredient.foodCode,
         );
@@ -368,6 +369,14 @@ Captured text: ${sourceSummary}`;
             .slice(0, 3)
             .map((entry) => entry.code);
           suggestions = nearby;
+
+          const createdId = await ctx.runMutation(api.foodLibrary.ensureProvisional, {
+            code: ingredient.foodCode,
+            name: ingredient.originalText || ingredient.foodCode,
+            namespace: ingredient.foodCode?.split(".")[0],
+            category: ingredient.category || "Provisional",
+          });
+          foodItemsAdded.push(createdId);
         }
 
         const ingredientValidation = ingredient.validation ?? {};
@@ -378,7 +387,7 @@ Captured text: ${sourceSummary}`;
             suggestions: ingredientValidation.suggestions || suggestions,
           },
         };
-      },
+      }),
     );
 
     const now = Date.now();
@@ -409,7 +418,7 @@ Captured text: ${sourceSummary}`;
       createdAt: now,
       updatedAt: now,
       isPublic: false,
-      foodItemsAdded: enhanced.foodItemsAdded ?? [],
+      foodItemsAdded: [...foodItemsAdded, ...(enhanced.foodItemsAdded ?? [])],
     } satisfies Omit<Doc<"recipes">, "_id">;
 
     const recipeId = await ctx.db.insert("recipes", recipeData);

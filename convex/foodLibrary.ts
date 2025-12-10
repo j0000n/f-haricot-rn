@@ -148,6 +148,75 @@ export const seed = mutation({
   },
 });
 
+export const ensureProvisional = mutation({
+  args: {
+    code: v.string(),
+    name: v.string(),
+    namespace: v.optional(v.string()),
+    category: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("foodLibrary")
+      .withIndex("by_code", (q) => q.eq("code", args.code))
+      .unique();
+
+    if (existing) {
+      return existing._id;
+    }
+
+    const fallbackName = args.name || args.code;
+    const namespace = args.namespace || args.code.split(".")[0] || "provisional";
+    const baseCategory = args.category || "Provisional";
+    const languages = ["en", "es", "zh", "fr", "ar", "ja", "vi", "tl"] as const;
+    const blankTranslations = languages.reduce(
+      (acc, lang) => {
+        acc[lang] = {
+          singular: fallbackName,
+          plural: `${fallbackName}s`,
+        } as { singular: string; plural: string };
+        return acc;
+      },
+      {} as Record<(typeof languages)[number], { singular: string; plural: string }>,
+    );
+
+    const categoryTranslations = languages.reduce(
+      (acc, lang) => {
+        acc[lang] = baseCategory;
+        return acc;
+      },
+      {} as Record<(typeof languages)[number], string>,
+    );
+
+    const insertedId = await ctx.db.insert("foodLibrary", {
+      code: args.code,
+      namespace,
+      name: fallbackName,
+      translations: blankTranslations,
+      category: baseCategory,
+      categoryTranslations,
+      defaultImageUrl:
+        "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=600&q=80",
+      emoji: "🧾",
+      shelfLifeDays: 7,
+      storageLocation: "pantry",
+      storageTips: "Auto-generated placeholder ingredient. Confirm details in admin tools.",
+      varieties: [],
+      nutritionPer100g: {
+        calories: 0,
+        macronutrients: {
+          protein: 0,
+          carbohydrates: 0,
+          fat: 0,
+        },
+      },
+      densityHints: { defaultUnit: "g", gramsPerPiece: 50 },
+    });
+
+    return insertedId;
+  },
+});
+
 export const listNutritionSummaries = query({
   args: {},
   handler: async (ctx) => {

@@ -15,6 +15,7 @@ import { useThemedStyles, useTokens } from "@/styles/tokens";
 import type { InventoryDisplayItem } from "@/types/food";
 import type { NutrientDish } from "@/types/nutrition";
 import type { Recipe } from "@/types/recipe";
+import type { Id } from "@/convex/_generated/dataModel";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { Link, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
@@ -80,11 +81,50 @@ export default function HomeScreen() {
   const ensureHousehold = useMutation(api.households.ensureHousehold);
   const seedInventory = useMutation(api.users.seedInventory);
   const seedRecipes = useMutation(api.recipes.seed);
+  const seedFoodLibrary = useMutation(api.foodLibrary.seed);
+  const ingestUniversal = useAction(api.recipes.ingestUniversal);
   const { seedLists } = useRecipeLists();
   const router = useRouter();
   const [isResettingOnboarding, setIsResettingOnboarding] = useState(false);
   const [isSeedingInventory, setIsSeedingInventory] = useState(false);
   const [isSeedingLists, setIsSeedingLists] = useState(false);
+  const [isSeedingFoodLibrary, setIsSeedingFoodLibrary] = useState(false);
+  const [isIngestingRecipe, setIsIngestingRecipe] = useState(false);
+  const [sourceType, setSourceType] = useState<
+    | "website"
+    | "audio"
+    | "text"
+    | "photograph"
+    | "instagram"
+    | "tiktok"
+    | "pinterest"
+    | "youtube"
+    | "cookbook"
+    | "magazine"
+    | "newspaper"
+    | "recipe_card"
+    | "handwritten"
+    | "voice_note"
+    | "video"
+    | "facebook"
+    | "twitter"
+    | "reddit"
+    | "blog"
+    | "podcast"
+    | "other"
+  >("website");
+  const [sourceUrl, setSourceUrl] = useState("");
+  const [rawText, setRawText] = useState("");
+  const [ingestError, setIngestError] = useState<string | null>(null);
+  const [ingestResult, setIngestResult] = useState<
+    | {
+        recipeId: Id<"recipes">;
+        encodingVersion: string;
+        validationSummary: { ambiguous: number; missing: number };
+      }
+    | null
+  >(null);
+  const [createdRecipeId, setCreatedRecipeId] = useState<Id<"recipes"> | null>(null);
   const styles = useThemedStyles(createHomeStyles);
   const { t, i18n } = useTranslation();
   const tokens = useTokens();
@@ -232,6 +272,51 @@ export default function HomeScreen() {
     }
   };
 
+  const handleSeedFoodLibrary = async () => {
+    if (isSeedingFoodLibrary) {
+      return;
+    }
+
+    try {
+      setIsSeedingFoodLibrary(true);
+      await seedFoodLibrary({});
+    } catch (error) {
+      console.error("Failed to seed food library", error);
+    } finally {
+      setIsSeedingFoodLibrary(false);
+    }
+  };
+
+  const handleIngestRecipe = async () => {
+    if (!ingestUniversal) {
+      setIngestError("Ingestion action is unavailable in this build.");
+      return;
+    }
+
+    if (!rawText.trim() && !sourceUrl.trim()) {
+      setIngestError("Please provide a URL, raw text, or both so we can ingest a recipe.");
+      return;
+    }
+
+    try {
+      setIsIngestingRecipe(true);
+      setIngestError(null);
+      const response = await ingestUniversal({
+        sourceType,
+        sourceUrl: sourceUrl.trim() || undefined,
+        rawText: rawText.trim() || undefined,
+      });
+
+      setIngestResult(response);
+      setCreatedRecipeId(response.recipeId);
+    } catch (error) {
+      console.error("Failed to ingest recipe", error);
+      setIngestError((error as Error)?.message ?? "Unable to ingest recipe right now.");
+    } finally {
+      setIsIngestingRecipe(false);
+    }
+  };
+
   const recipeList = useMemo(() => (recipes ?? []) as Recipe[], [recipes]);
   const previewRecipes = useMemo(
     () => (searchPreview ?? []) as Recipe[],
@@ -239,6 +324,10 @@ export default function HomeScreen() {
   );
   const isSearching = searchPreview === undefined && trimmedSearchTerm.length > 0;
   const language = (i18n.language || "en") as keyof Recipe["recipeName"];
+  const createdRecipe = useQuery(
+    api.recipes.getById,
+    createdRecipeId ? { id: createdRecipeId } : "skip",
+  );
 
   const userInventoryCodes = useMemo(() => {
     const entries = inventoryEntries;
@@ -323,6 +412,113 @@ export default function HomeScreen() {
               </Text>
             </Pressable>
           </Link>
+        </View>
+        <View style={styles.ingestionSection}>
+          <Text style={styles.ingestionEyebrow}>Universal recipe ingestion</Text>
+          <Text style={styles.ingestionHeadline}>
+            Drop in a link, photo transcription, or raw steps and watch the app build a fully localized recipe with encoded steps.
+          </Text>
+          <Text style={styles.ingestionBody}>
+            The UI below calls the same Convex action used by the ingestion pipeline. Use it to try URLs, paste OCR text, or validate social posts. Missing ingredients are auto-added to the food library so nothing blocks testing.
+          </Text>
+
+          <View style={styles.sourceTypeRow}>
+            {["website", "instagram", "tiktok", "pinterest", "youtube", "photograph", "text", "other"].map(
+              (type) => (
+                <Pressable
+                  key={type}
+                  onPress={() => setSourceType(type as typeof sourceType)}
+                  style={[
+                    styles.sourcePill,
+                    sourceType === type && styles.sourcePillActive,
+                  ]}
+                  accessibilityRole="button"
+                >
+                  <Text
+                    style={
+                      sourceType === type
+                        ? styles.sourcePillTextActive
+                        : styles.sourcePillText
+                    }
+                  >
+                    {type}
+                  </Text>
+                </Pressable>
+              ),
+            )}
+          </View>
+
+          <Text style={styles.ingestionLabel}>Link or source URL</Text>
+          <TextInput
+            value={sourceUrl}
+            onChangeText={setSourceUrl}
+            placeholder="https://example.com/your-recipe"
+            placeholderTextColor={tokens.colors.textMuted}
+            style={styles.ingestionInput}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+
+          <Text style={styles.ingestionLabel}>Pasted text, OCR, or social caption</Text>
+          <TextInput
+            value={rawText}
+            onChangeText={setRawText}
+            placeholder="Paste ingredients or steps here so we can normalize them"
+            placeholderTextColor={tokens.colors.textMuted}
+            style={styles.ingestionTextArea}
+            multiline
+            numberOfLines={5}
+            textAlignVertical="top"
+          />
+
+          <Pressable
+            onPress={handleIngestRecipe}
+            disabled={isIngestingRecipe}
+            style={[styles.ingestButton, isIngestingRecipe && styles.ingestButtonDisabled]}
+            accessibilityRole="button"
+          >
+            <Text style={styles.ingestButtonText}>
+              {isIngestingRecipe ? "Ingesting…" : "Convert into a structured recipe"}
+            </Text>
+          </Pressable>
+
+          {ingestError ? (
+            <Text style={styles.ingestErrorText}>{ingestError}</Text>
+          ) : null}
+
+          {ingestResult ? (
+            <View style={styles.ingestResultCard}>
+              <Text style={styles.ingestionLabel}>Ingestion summary</Text>
+              <Text style={styles.ingestionBody}>
+                Encoding version {ingestResult.encodingVersion} · {" "}
+                {ingestResult.validationSummary.missing} missing items · {" "}
+                {ingestResult.validationSummary.ambiguous} ambiguous items
+              </Text>
+              <Link href={`/recipe/${ingestResult.recipeId}`} asChild>
+                <Pressable style={styles.ingestLinkButton} accessibilityRole="button">
+                  <Text style={styles.ingestLinkButtonText}>
+                    View the structured recipe page
+                  </Text>
+                </Pressable>
+              </Link>
+              {createdRecipe ? (
+                <View style={styles.ingestionDetailsBox}>
+                  <Text style={styles.ingestionLabel}>Recipe preview</Text>
+                  <Text style={styles.ingestionBody}>
+                    {createdRecipe.recipeName?.[language] || createdRecipe.recipeName?.en}
+                  </Text>
+                  <Text style={styles.ingestionBody}>
+                    {createdRecipe.description?.[language] || createdRecipe.description?.en}
+                  </Text>
+                  <Text style={styles.ingestionCaption}>
+                    {createdRecipe.ingredients?.length ?? 0} ingredients · {" "}
+                    {createdRecipe.steps?.length ?? 0} steps · {" "}
+                    {createdRecipe.foodItemsAdded?.length ?? 0} new library entries
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+          ) : null}
         </View>
         <View style={styles.searchSection}>
 
@@ -411,13 +607,22 @@ export default function HomeScreen() {
             </Text>
           </Pressable>
 
+            <Pressable
+              onPress={handleSeedLists}
+              style={[styles.seedButton, isSeedingLists && styles.seedButtonDisabled]}
+              disabled={isSeedingLists}
+            >
+              <Text style={styles.seedButtonText}>
+                {isSeedingLists ? t("home.seedingLists") : t("home.seedLists")}
+              </Text>
+            </Pressable>
           <Pressable
-            onPress={handleSeedLists}
-            style={[styles.seedButton, isSeedingLists && styles.seedButtonDisabled]}
-            disabled={isSeedingLists}
+            onPress={handleSeedFoodLibrary}
+            style={[styles.seedButton, isSeedingFoodLibrary && styles.seedButtonDisabled]}
+            disabled={isSeedingFoodLibrary}
           >
             <Text style={styles.seedButtonText}>
-              {isSeedingLists ? t("home.seedingLists") : t("home.seedLists")}
+              {isSeedingFoodLibrary ? "Seeding foods…" : "Seed food library"}
             </Text>
           </Pressable>
         </View>
