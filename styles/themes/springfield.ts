@@ -133,6 +133,8 @@ export const springfieldTheme: ThemeDefinition = {
             home: "home",
             kitchen: "shopping-cart",
             lists: "list",
+            creator: "edit-3",
+            vendor: "briefcase",
           } satisfies Record<AppTabKey, string>,
         },
       },

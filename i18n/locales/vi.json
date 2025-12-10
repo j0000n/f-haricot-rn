@@ -150,7 +150,29 @@
     "home": "Trang chủ",
     "kitchen": "Nhà bếp",
     "profile": "Hồ sơ",
-    "lists": "Danh sách"
+    "lists": "Danh sách",
+    "creator": "Người sáng tạo",
+    "vendor": "Nhà cung cấp"
+  },
+  "creator": {
+    "title": "Bảng điều khiển người sáng tạo",
+    "description": "Xem trước trải nghiệm người sáng tạo với dữ liệu hồ sơ mẫu trong khi chúng tôi xây dựng thêm công cụ.",
+    "profileHeading": "Tóm tắt hồ sơ",
+    "nameLabel": "Tên",
+    "emailLabel": "Email",
+    "userTypeLabel": "Loại người dùng",
+    "missingField": "Chưa cung cấp",
+    "badge": "Tài khoản người sáng tạo"
+  },
+  "vendor": {
+    "title": "Bảng điều khiển nhà cung cấp",
+    "description": "Xem thông tin dành cho nhà cung cấp với các chi tiết hồ sơ tạm thời cho đến khi dữ liệu trực tiếp sẵn sàng.",
+    "profileHeading": "Tóm tắt hồ sơ",
+    "nameLabel": "Tên",
+    "emailLabel": "Email",
+    "userTypeLabel": "Loại người dùng",
+    "missingField": "Chưa cung cấp",
+    "badge": "Tài khoản nhà cung cấp"
   },
   "home": {
     "title": "Trang chủ",

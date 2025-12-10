@@ -112,6 +112,8 @@ const buildHighContrastTheme = ({
             home: "home",
             kitchen: "grid",
             lists: "list",
+            creator: "edit-3",
+            vendor: "briefcase",
           },
         },
       },

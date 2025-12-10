@@ -229,7 +229,29 @@
     "home": "Inicio",
     "kitchen": "Cocina",
     "profile": "Perfil",
-    "lists": "Listas"
+    "lists": "Listas",
+    "creator": "Creador",
+    "vendor": "Vendedor"
+  },
+  "creator": {
+    "title": "Panel de creador",
+    "description": "Accede a vistas de creador y datos de perfil de ejemplo mientras construimos más herramientas para ti.",
+    "profileHeading": "Resumen del perfil",
+    "nameLabel": "Nombre",
+    "emailLabel": "Correo electrónico",
+    "userTypeLabel": "Tipo de usuario",
+    "missingField": "No proporcionado",
+    "badge": "Cuenta de creador"
+  },
+  "vendor": {
+    "title": "Panel de vendedor",
+    "description": "Revisa la información para vendedores con datos de perfil de muestra mientras preparamos la versión final.",
+    "profileHeading": "Resumen del perfil",
+    "nameLabel": "Nombre",
+    "emailLabel": "Correo electrónico",
+    "userTypeLabel": "Tipo de usuario",
+    "missingField": "No proporcionado",
+    "badge": "Cuenta de vendedor"
   },
   "home": {
     "title": "Inicio",

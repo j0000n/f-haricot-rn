@@ -150,7 +150,29 @@
     "home": "主页",
     "kitchen": "厨房",
     "profile": "个人资料",
-    "lists": "清单"
+    "lists": "清单",
+    "creator": "创作者",
+    "vendor": "供应商"
+  },
+  "creator": {
+    "title": "创作者控制台",
+    "description": "在我们构建更多工具时，查看创作者体验和示例资料数据。",
+    "profileHeading": "资料概览",
+    "nameLabel": "姓名",
+    "emailLabel": "电子邮件",
+    "userTypeLabel": "用户类型",
+    "missingField": "未提供",
+    "badge": "创作者账户"
+  },
+  "vendor": {
+    "title": "供应商控制台",
+    "description": "在最终数据准备好之前，查看供应商信息和占位资料详情。",
+    "profileHeading": "资料概览",
+    "nameLabel": "姓名",
+    "emailLabel": "电子邮件",
+    "userTypeLabel": "用户类型",
+    "missingField": "未提供",
+    "badge": "供应商账户"
   },
   "home": {
     "title": "主页",
