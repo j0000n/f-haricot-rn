@@ -15,7 +15,7 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
    ```bash
    npx expo start
    ```
-
+#TODO, this version is working but without proper encoding, but this is a safe commit to go back to, also the actual todo : UPDATE THE README!!!
 In the output, you'll find options to open the app in a
 
 - [development build](https://docs.expo.dev/develop/development-builds/introduction/)
