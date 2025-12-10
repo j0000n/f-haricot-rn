@@ -1,4 +1,5 @@
 import { mutation, query } from "./_generated/server";
+import { v } from "convex/values";
 
 import { foodLibrarySeed } from "../data/foodLibrarySeed";
 import type { FoodLibraryItem } from "../types/food";
@@ -64,6 +65,8 @@ function transformFoodLibraryItem(item: FoodLibraryItem) {
         variety.translations as unknown as Record<string, string>
       ),
     })),
+    nutritionPer100g: item.nutritionPer100g,
+    densityHints: item.densityHints,
   } as {
     code: string;
     namespace: string;
@@ -108,6 +111,8 @@ function transformFoodLibraryItem(item: FoodLibraryItem) {
       };
       defaultImageUrl?: string;
     }>;
+    nutritionPer100g: unknown;
+    densityHints?: unknown;
   };
 }
 
@@ -140,5 +145,74 @@ export const seed = mutation({
     }
 
     return { inserted, total: foodLibrarySeed.length };
+  },
+});
+
+export const listNutritionSummaries = query({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db
+      .query("foodLibrary")
+      .collect()
+      .then((rows) =>
+        rows.map((row) => ({
+          code: row.code,
+          name: row.name,
+          nutritionPer100g: row.nutritionPer100g,
+          densityHints: row.densityHints,
+        })),
+      );
+  },
+});
+
+export const overrideNutritionMapping = mutation({
+  args: {
+    code: v.string(),
+    nutritionPer100g: v.object({
+      calories: v.number(),
+      macronutrients: v.object({
+        protein: v.number(),
+        carbohydrates: v.number(),
+        fat: v.number(),
+        fiber: v.optional(v.number()),
+        sugars: v.optional(v.number()),
+      }),
+      micronutrients: v.optional(
+        v.array(
+          v.object({
+            label: v.string(),
+            amount: v.number(),
+            unit: v.string(),
+            dailyValuePercent: v.optional(v.number()),
+          }),
+        ),
+      ),
+    }),
+    densityHints: v.optional(
+      v.object({
+        gramsPerMilliliter: v.optional(v.number()),
+        gramsPerPiece: v.optional(v.number()),
+        defaultUnit: v.optional(
+          v.union(v.literal("g"), v.literal("ml"), v.literal("piece")),
+        ),
+      }),
+    ),
+  },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("foodLibrary")
+      .withIndex("by_code", (q) => q.eq("code", args.code))
+      .unique();
+
+    if (!existing) {
+      throw new Error(`Food item not found for code ${args.code}`);
+    }
+
+    await ctx.db.patch(existing._id, {
+      nutritionPer100g: args.nutritionPer100g,
+      densityHints: args.densityHints,
+    });
+
+    return existing._id;
   },
 });

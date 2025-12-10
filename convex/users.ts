@@ -67,6 +67,8 @@ function transformFoodLibraryItem(item: FoodLibraryItem) {
         variety.translations as unknown as Record<string, string>
       ),
     })),
+    nutritionPer100g: item.nutritionPer100g,
+    densityHints: item.densityHints,
   } as {
     code: string;
     namespace: string;
@@ -111,6 +113,8 @@ function transformFoodLibraryItem(item: FoodLibraryItem) {
       };
       defaultImageUrl?: string;
     }>;
+    nutritionPer100g: unknown;
+    densityHints?: unknown;
   };
 }
 

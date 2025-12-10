@@ -29,6 +29,8 @@ export interface FoodLibraryItem {
   storageLocation: "pantry" | "fridge" | "freezer" | "spicecabinet";
   storageTips: string;
   varieties: FoodVariety[];
+  nutritionPer100g: import("./nutrition").NutritionFacts;
+  densityHints?: import("./nutrition").DensityHints;
 }
 
 export interface UserInventoryEntry {

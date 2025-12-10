@@ -18,6 +18,15 @@ export interface RecipeIngredient {
   quantity: number;
   unit: string;
   preparation?: string;
+  displayQuantity?: string;
+  displayUnit?: string;
+  normalizedQuantity?: number;
+  normalizedUnit?: "g" | "ml" | "count";
+  originalText?: string;
+  validation?: {
+    status: "matched" | "ambiguous" | "missing";
+    suggestions?: string[];
+  };
 }
 
 export type TemperatureUnit = "F" | "C";

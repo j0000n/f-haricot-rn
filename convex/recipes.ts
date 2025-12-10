@@ -1,9 +1,122 @@
 import { action, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { Id } from "./_generated/dataModel";
+import { Doc, Id } from "./_generated/dataModel";
 import { api } from "./_generated/api";
 
 import { recipesSeed } from "../data/recipesSeed";
+import { foodLibrarySeed } from "../data/foodLibrarySeed";
+
+type SourceType =
+  | "website"
+  | "audio"
+  | "text"
+  | "photograph"
+  | "instagram"
+  | "tiktok"
+  | "pinterest"
+  | "youtube"
+  | "cookbook"
+  | "magazine"
+  | "newspaper"
+  | "recipe_card"
+  | "handwritten"
+  | "voice_note"
+  | "video"
+  | "facebook"
+  | "twitter"
+  | "reddit"
+  | "blog"
+  | "podcast"
+  | "other";
+
+const normalizeToGrams = (
+  ingredient: {
+    normalizedQuantity?: number;
+    normalizedUnit?: "g" | "ml" | "count";
+    quantity: number;
+    unit: string;
+  },
+  densityHints?: {
+    gramsPerMilliliter?: number;
+    gramsPerPiece?: number;
+  },
+) => {
+  const baseQuantity = ingredient.normalizedQuantity ?? ingredient.quantity;
+  if (ingredient.normalizedUnit === "g" || ingredient.unit === "g") {
+    return baseQuantity;
+  }
+  if (ingredient.normalizedUnit === "ml" || ingredient.unit === "ml") {
+    const factor = densityHints?.gramsPerMilliliter ?? 1;
+    return baseQuantity * factor;
+  }
+  if (ingredient.normalizedUnit === "count") {
+    const factor = densityHints?.gramsPerPiece ?? 1;
+    return baseQuantity * factor;
+  }
+  return baseQuantity;
+};
+
+const computeNutritionProfile = (
+  ingredients: Array<{
+    foodCode: string;
+    normalizedQuantity?: number;
+    normalizedUnit?: "g" | "ml" | "count";
+    quantity: number;
+    unit: string;
+  }>,
+  servings: number,
+  library: Array<{
+    code: string;
+    nutritionPer100g?: {
+      calories: number;
+      macronutrients: {
+        protein: number;
+        carbohydrates: number;
+        fat: number;
+        fiber?: number;
+        sugars?: number;
+      };
+    };
+    densityHints?: { gramsPerMilliliter?: number; gramsPerPiece?: number };
+  }>,
+) => {
+  const totals = {
+    calories: 0,
+    protein: 0,
+    carbohydrates: 0,
+    fat: 0,
+    fiber: 0,
+    sugars: 0,
+  };
+
+  for (const ingredient of ingredients) {
+    const item = library.find((entry) => entry.code === ingredient.foodCode);
+    if (!item?.nutritionPer100g) continue;
+
+    const grams = normalizeToGrams(ingredient, item.densityHints);
+    const factor = grams / 100;
+
+    totals.calories += item.nutritionPer100g.calories * factor;
+    totals.protein += item.nutritionPer100g.macronutrients.protein * factor;
+    totals.carbohydrates += item.nutritionPer100g.macronutrients.carbohydrates * factor;
+    totals.fat += item.nutritionPer100g.macronutrients.fat * factor;
+    totals.fiber += (item.nutritionPer100g.macronutrients.fiber ?? 0) * factor;
+    totals.sugars += (item.nutritionPer100g.macronutrients.sugars ?? 0) * factor;
+  }
+
+  const perServing = {
+    calories: totals.calories / Math.max(servings, 1),
+    macronutrients: {
+      protein: totals.protein / Math.max(servings, 1),
+      carbohydrates: totals.carbohydrates / Math.max(servings, 1),
+      fat: totals.fat / Math.max(servings, 1),
+      fiber: totals.fiber / Math.max(servings, 1),
+      sugars: totals.sugars / Math.max(servings, 1),
+    },
+  };
+
+  return perServing;
+};
 
 export const getById = query({
   args: {
@@ -94,6 +207,9 @@ export const seed = mutation({
         description: recipe.description,
         ingredients: recipe.ingredients,
         steps: recipe.steps,
+        encodedSteps: recipe.encodedSteps,
+        encodingVersion: recipe.encodingVersion,
+        foodItemsAdded: recipe.foodItemsAdded,
         emojiTags: recipe.emojiTags,
         prepTimeMinutes: recipe.prepTimeMinutes,
         cookTimeMinutes: recipe.cookTimeMinutes,
@@ -120,6 +236,209 @@ export const seed = mutation({
     }
 
     return { inserted, total: recipesSeed.length };
+  },
+});
+
+export const ingestUniversal = action({
+  args: {
+    sourceType: v.union(
+      v.literal("website"),
+      v.literal("audio"),
+      v.literal("text"),
+      v.literal("photograph"),
+      v.literal("instagram"),
+      v.literal("tiktok"),
+      v.literal("pinterest"),
+      v.literal("youtube"),
+      v.literal("cookbook"),
+      v.literal("magazine"),
+      v.literal("newspaper"),
+      v.literal("recipe_card"),
+      v.literal("handwritten"),
+      v.literal("voice_note"),
+      v.literal("video"),
+      v.literal("facebook"),
+      v.literal("twitter"),
+      v.literal("reddit"),
+      v.literal("blog"),
+      v.literal("podcast"),
+      v.literal("other"),
+    ),
+    sourceUrl: v.optional(v.string()),
+    rawText: v.optional(v.string()),
+    extractedText: v.optional(v.string()),
+    oembedPayload: v.optional(v.any()),
+    socialMetadata: v.optional(
+      v.object({
+        title: v.optional(v.string()),
+        description: v.optional(v.string()),
+      }),
+    ),
+  },
+  returns: v.object({
+    recipeId: v.id("recipes"),
+    encodingVersion: v.string(),
+    validationSummary: v.object({
+      ambiguous: v.number(),
+      missing: v.number(),
+    }),
+  }),
+  handler: async (ctx, args) => {
+    const openAiKey = process.env.OPEN_AI_KEY;
+    if (!openAiKey) {
+      throw new Error("OPEN_AI_KEY is not configured on the server");
+    }
+
+    const foodLibrary = await ctx.runQuery(api.foodLibrary.listAll, {});
+    const translationGuides = await ctx.runQuery(api.translationGuides.listAll, {});
+
+    const sourceSummary =
+      args.rawText ||
+      args.extractedText ||
+      args.socialMetadata?.description ||
+      args.socialMetadata?.title ||
+      "Provide a universal recipe representation for ingestion.";
+
+    const prompt = `You are the Universal Recipe Encoding System (URES) ingestion agent. Produce strict JSON for Convex mutation.
+
+Use encoding guide from plan/encoding-guide.md and include encodedSteps plus encodingVersion.
+Use decoding guide at plan/decoding-guide.md to ensure qualifier order and deterministic cues.
+Preserve free-text steps for fallback while providing encodedSteps.
+The food library codes include: ${foodLibrary
+      .slice(0, 50)
+      .map((f: { code: string }) => f.code)
+      .join(", ")}. Codes outside the library must be flagged via validation.status=\"missing\" and suggestions referencing nearby codes.
+
+Return JSON with fields: recipeName (8 languages), description (8 languages), ingredients (foodCode, varietyCode?, quantity, unit, preparation?, displayQuantity?, displayUnit?, normalizedQuantity?, normalizedUnit?, originalText?, validation {status,suggestions}), steps (stepNumber, instructions 8 languages, timeInMinutes?, temperature {value, unit}), emojiTags, prepTimeMinutes, cookTimeMinutes, totalTimeMinutes, servings, encodedSteps, encodingVersion (default URES-4.6), attribution {source, sourceUrl?, author?, dateRetrieved}, imageUrls (optional array).
+
+Source context: ${args.sourceType} ${args.sourceUrl ?? "(no url)"}
+Captured text: ${sourceSummary}`;
+
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${openAiKey}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        temperature: 0.2,
+        messages: [
+          {
+            role: "system",
+            content: "You are a deterministic URES encoder. Always emit valid JSON only.",
+          },
+          { role: "user", content: prompt },
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`OpenAI request failed: ${response.status} ${text}`);
+    }
+
+    const payload = await response.json();
+    const message = payload?.choices?.[0]?.message?.content;
+    if (!message) {
+      throw new Error("OpenAI response missing content");
+    }
+
+    let jsonText = message.trim();
+    if (jsonText.startsWith("```")) {
+      jsonText = jsonText.replace(/^```json\n?/, "").replace(/```$/, "").trim();
+    }
+
+    const enhanced = JSON.parse(jsonText);
+
+    const validationSummary = { ambiguous: 0, missing: 0 };
+    const normalizedIngredients = (enhanced.ingredients || []).map(
+      (ingredient: any) => {
+        const match = foodLibrary.find(
+          (entry) => entry.code === ingredient.foodCode,
+        );
+        let status: "matched" | "ambiguous" | "missing" = "matched";
+        let suggestions: string[] | undefined;
+
+        if (!match) {
+          status = "missing";
+          validationSummary.missing += 1;
+          const nearby = foodLibrarySeed
+            .filter((entry) => entry.namespace === ingredient.foodCode?.split(".")[0])
+            .slice(0, 3)
+            .map((entry) => entry.code);
+          suggestions = nearby;
+        }
+
+        const ingredientValidation = ingredient.validation ?? {};
+        return {
+          ...ingredient,
+          validation: {
+            status,
+            suggestions: ingredientValidation.suggestions || suggestions,
+          },
+        };
+      },
+    );
+
+    const now = Date.now();
+    const encodingVersion = enhanced.encodingVersion || "URES-4.6";
+    const recipeData = {
+      recipeName: enhanced.recipeName,
+      description: enhanced.description,
+      ingredients: normalizedIngredients,
+      steps: enhanced.steps || [],
+      encodedSteps: enhanced.encodedSteps,
+      encodingVersion,
+      emojiTags: enhanced.emojiTags || [],
+      prepTimeMinutes: enhanced.prepTimeMinutes || 0,
+      cookTimeMinutes: enhanced.cookTimeMinutes || 0,
+      totalTimeMinutes: enhanced.totalTimeMinutes || 0,
+      servings: enhanced.servings || 4,
+      source: args.sourceType as SourceType,
+      sourceUrl: args.sourceUrl,
+      attribution:
+        enhanced.attribution ||
+        ({
+          source: args.sourceType,
+          sourceUrl: args.sourceUrl,
+          author: enhanced.author,
+          dateRetrieved: new Date().toISOString().slice(0, 10),
+        } as any),
+      imageUrls: enhanced.imageUrls || [],
+      createdAt: now,
+      updatedAt: now,
+      isPublic: false,
+      foodItemsAdded: enhanced.foodItemsAdded ?? [],
+    } satisfies Omit<Doc<"recipes">, "_id">;
+
+    const recipeId = await ctx.db.insert("recipes", recipeData);
+
+    const perServing = computeNutritionProfile(
+      normalizedIngredients,
+      recipeData.servings,
+      foodLibrary,
+    );
+
+    await ctx.runMutation(api.nutritionProfiles.upsertForRecipe, {
+      recipeId,
+      servings: recipeData.servings,
+      perServing,
+      encodingVersion,
+    });
+
+    // Store translation guide overrides when the model provides better phrasing
+    for (const guide of translationGuides) {
+      await ctx.runMutation(api.translationGuides.overrideTranslation, {
+        code: guide.code,
+        language: guide.language,
+        text: guide.text,
+        context: guide.context,
+        description: guide.description,
+      });
+    }
+
+    return { recipeId, encodingVersion, validationSummary };
   },
 });
 
@@ -282,6 +601,60 @@ Return valid JSON matching this schema:
       totalTimeMinutes: enhancedRecipe.totalTimeMinutes || 0,
       servings: enhancedRecipe.servings || 4,
     };
+  },
+});
+
+export const listIngredientValidationIssues = query({
+  args: {},
+  handler: async (ctx) => {
+    const recipes = await ctx.db.query("recipes").collect();
+    return recipes
+      .map((recipe) => ({
+        recipeId: recipe._id,
+        recipeName: recipe.recipeName,
+        issues: recipe.ingredients.filter(
+          (ingredient) =>
+            ingredient.validation?.status && ingredient.validation.status !== "matched",
+        ),
+      }))
+      .filter((entry) => entry.issues.length > 0);
+  },
+});
+
+export const overrideIngredientMatch = mutation({
+  args: {
+    recipeId: v.id("recipes"),
+    ingredientIndex: v.number(),
+    foodCode: v.string(),
+    varietyCode: v.optional(v.string()),
+    validationStatus: v.optional(
+      v.union(v.literal("matched"), v.literal("ambiguous"), v.literal("missing")),
+    ),
+  },
+  handler: async (ctx, args) => {
+    const recipe = await ctx.db.get(args.recipeId);
+    if (!recipe) {
+      throw new Error("Recipe not found");
+    }
+
+    const ingredients = [...recipe.ingredients];
+    const target = ingredients[args.ingredientIndex];
+    if (!target) {
+      throw new Error("Ingredient index out of range");
+    }
+
+    ingredients[args.ingredientIndex] = {
+      ...target,
+      foodCode: args.foodCode,
+      varietyCode: args.varietyCode,
+      validation: {
+        status: args.validationStatus ?? "matched",
+        suggestions: [],
+      },
+    } as any;
+
+    await ctx.db.patch(args.recipeId, { ingredients, updatedAt: Date.now() });
+    return args.recipeId;
   },
 });
 
