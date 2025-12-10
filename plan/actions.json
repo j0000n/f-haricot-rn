@@ -1,0 +1,166 @@
+{
+    "version": "4.6.0",
+    "description": "Complete recipe actions catalog for URES",
+    "last_updated": "2024-01-15",
+    "namespaces": {
+      "A.01": "Basic Actions",
+      "A.02": "Mixing Actions",
+      "A.03": "Heat Control",
+      "A.04": "Temperature Actions",
+      "A.05": "Special Actions",
+      "A.06": "Conditional Actions"
+    },
+    "actions": {
+      "A.01": {
+        "name": "Basic Actions",
+        "description": "Fundamental recipe operations",
+        "items": {
+          "A.01.001": {"name": "add", "description": "Add ingredient", "parameters": ["@what", "@to", "@quantity", "@when"]},
+          "A.01.002": {"name": "remove", "description": "Remove from heat/container", "parameters": ["@what", "@from"]},
+          "A.01.003": {"name": "transfer", "description": "Move between containers", "parameters": ["@what", "@from", "@to"]},
+          "A.01.004": {"name": "combine", "description": "Mix ingredients together", "parameters": ["@what", "@with", "@in"]},
+          "A.01.005": {"name": "separate", "description": "Divide into portions", "parameters": ["@what", "@into"]},
+          "A.01.006": {"name": "divide", "description": "Split into equal parts", "parameters": ["@what", "@into"]},
+          "A.01.007": {"name": "reserve", "description": "Set aside for later", "parameters": ["@what", "@quantity", "@label"]},
+          "A.01.008": {"name": "discard", "description": "Throw away", "parameters": ["@what"]},
+          "A.01.009": {"name": "drain", "description": "Remove liquid", "parameters": ["@what", "@reserve"]},
+          "A.01.010": {"name": "strain", "description": "Pass through strainer", "parameters": ["@what", "@through", "@reserve"]},
+          "A.01.011": {"name": "filter", "description": "Pass through filter", "parameters": ["@what", "@through"]},
+          "A.01.012": {"name": "pour", "description": "Transfer liquid", "parameters": ["@what", "@into", "@from"]},
+          "A.01.013": {"name": "sprinkle", "description": "Scatter over surface", "parameters": ["@what", "@over", "@quantity"]},
+          "A.01.014": {"name": "drizzle", "description": "Pour in thin stream", "parameters": ["@what", "@over", "@quantity"]},
+          "A.01.015": {"name": "layer", "description": "Arrange in layers", "parameters": ["@what", "@with", "@in"]},
+          "A.01.016": {"name": "arrange", "description": "Place in pattern", "parameters": ["@what", "@on", "@pattern"]},
+          "A.01.017": {"name": "stack", "description": "Place on top", "parameters": ["@what", "@on"]},
+          "A.01.018": {"name": "wrap", "description": "Cover with material", "parameters": ["@what", "@in"]},
+          "A.01.019": {"name": "cover", "description": "Place lid or covering", "parameters": ["@what", "@with"]},
+          "A.01.020": {"name": "uncover", "description": "Remove covering", "parameters": ["@what"]}
+        }
+      },
+      "A.02": {
+        "name": "Mixing Actions",
+        "description": "Actions related to mixing and combining",
+        "items": {
+          "A.02.001": {"name": "stir", "description": "Mix with implement", "parameters": ["@what", "@with", "@speed", "@time"]},
+          "A.02.002": {"name": "whisk", "description": "Beat with whisk", "parameters": ["@what", "@speed", "@until"]},
+          "A.02.003": {"name": "fold", "description": "Gently combine", "parameters": ["@what", "@into"]},
+          "A.02.004": {"name": "toss", "description": "Mix by throwing", "parameters": ["@what", "@with"]},
+          "A.02.005": {"name": "shake", "description": "Mix by shaking", "parameters": ["@what", "@time"]},
+          "A.02.006": {"name": "swirl", "description": "Mix in circular motion", "parameters": ["@what", "@in"]},
+          "A.02.007": {"name": "incorporate", "description": "Fully combine", "parameters": ["@what", "@into"]},
+          "A.02.008": {"name": "dissolve", "description": "Mix until dissolved", "parameters": ["@what", "@in"]},
+          "A.02.009": {"name": "suspend", "description": "Mix into suspension", "parameters": ["@what", "@in"]},
+          "A.02.010": {"name": "homogenize", "description": "Mix until uniform", "parameters": ["@what"]}
+        }
+      },
+      "A.03": {
+        "name": "Heat Control",
+        "description": "Actions for controlling heat",
+        "items": {
+          "A.03.001": {"name": "preheat", "description": "Heat before use", "parameters": ["@what", "@to", "@time"]},
+          "A.03.002": {"name": "heat", "description": "Apply heat", "parameters": ["@what", "@to", "@zone"]},
+          "A.03.003": {"name": "increase_heat", "description": "Raise temperature", "parameters": ["@to"]},
+          "A.03.004": {"name": "decrease_heat", "description": "Lower temperature", "parameters": ["@to"]},
+          "A.03.005": {"name": "maintain_heat", "description": "Keep at temperature", "parameters": ["@at", "@time"]},
+          "A.03.006": {"name": "turn_off", "description": "Stop heating", "parameters": ["@what"]},
+          "A.03.007": {"name": "ignite", "description": "Set on fire", "parameters": ["@what"]},
+          "A.03.008": {"name": "extinguish", "description": "Put out fire", "parameters": ["@what"]}
+        }
+      },
+      "A.04": {
+        "name": "Temperature Actions",
+        "description": "Actions related to temperature changes",
+        "items": {
+          "A.04.001": {"name": "cool", "description": "Allow to cool", "parameters": ["@what", "@to", "@time"]},
+          "A.04.002": {"name": "chill", "description": "Refrigerate", "parameters": ["@what", "@time", "@covered"]},
+          "A.04.003": {"name": "freeze", "description": "Freeze solid", "parameters": ["@what", "@time"]},
+          "A.04.004": {"name": "thaw", "description": "Defrost", "parameters": ["@what", "@where", "@time"]},
+          "A.04.005": {"name": "warm", "description": "Gently heat", "parameters": ["@what", "@to"]},
+          "A.04.006": {"name": "bring_to_room_temp", "description": "Let reach room temperature", "parameters": ["@what", "@time"]},
+          "A.04.007": {"name": "keep_warm", "description": "Maintain warm temperature", "parameters": ["@what", "@time"]},
+          "A.04.008": {"name": "reheat", "description": "Heat again", "parameters": ["@what", "@to", "@method"]},
+          "A.04.009": {"name": "flash_freeze", "description": "Freeze rapidly", "parameters": ["@what"]},
+          "A.04.010": {"name": "rest", "description": "Let sit after cooking", "parameters": ["@what", "@time", "@covered"]},
+          "A.04.011": {"name": "hold", "description": "Keep at temperature", "parameters": ["@what", "@at", "@time"]},
+          "A.04.012": {"name": "refrigerate", "description": "Store in refrigerator", "parameters": ["@what", "@time", "@covered"]}
+        }
+      },
+      "A.05": {
+        "name": "Special Actions",
+        "description": "Specialized cooking actions",
+        "items": {
+          "A.05.001": {"name": "deglaze", "description": "Loosen fond", "parameters": ["@with", "@quantity"]},
+          "A.05.002": {"name": "flambe", "description": "Ignite alcohol", "parameters": ["@what", "@with"]},
+          "A.05.003": {"name": "proof", "description": "Test yeast/let rise", "parameters": ["@what", "@time", "@until"]},
+          "A.05.004": {"name": "bloom", "description": "Hydrate", "parameters": ["@what", "@in", "@time"]},
+          "A.05.005": {"name": "clarify", "description": "Remove impurities", "parameters": ["@what", "@method"]},
+          "A.05.006": {"name": "skim", "description": "Remove from surface", "parameters": ["@what", "@from"]},
+          "A.05.007": {"name": "baste", "description": "Moisten with liquid", "parameters": ["@what", "@with", "@interval"]},
+          "A.05.008": {"name": "dust", "description": "Lightly coat", "parameters": ["@what", "@with"]},
+          "A.05.009": {"name": "brush", "description": "Apply with brush", "parameters": ["@what", "@with", "@where"]},
+          "A.05.010": {"name": "spray", "description": "Apply as spray", "parameters": ["@what", "@with"]},
+          "A.05.011": {"name": "inject", "description": "Insert with needle", "parameters": ["@what", "@with", "@where"]},
+          "A.05.012": {"name": "season", "description": "Add seasoning", "parameters": ["@what", "@with", "@taste"]},
+          "A.05.013": {"name": "garnish", "description": "Decorate", "parameters": ["@what", "@with"]},
+          "A.05.014": {"name": "plate", "description": "Arrange on plate", "parameters": ["@what", "@on"]},
+          "A.05.015": {"name": "serve", "description": "Present for eating", "parameters": ["@what", "@with", "@temp"]},
+          "A.05.016": {"name": "portion", "description": "Divide into servings", "parameters": ["@what", "@into"]},
+          "A.05.017": {"name": "measure", "description": "Determine quantity", "parameters": ["@what", "@quantity"]},
+          "A.05.018": {"name": "weigh", "description": "Determine weight", "parameters": ["@what"]},
+          "A.05.019": {"name": "taste", "description": "Sample for flavor", "parameters": ["@what"]},
+          "A.05.020": {"name": "adjust", "description": "Modify to taste", "parameters": ["@what", "@with"]}
+        }
+      },
+      "A.06": {
+        "name": "Conditional Actions",
+        "description": "Actions based on conditions",
+        "items": {
+          "A.06.001": {"name": "check", "description": "Verify condition", "parameters": ["@what", "@for", "@tool"]},
+          "A.06.002": {"name": "test", "description": "Perform test", "parameters": ["@what", "@method", "@target"]},
+          "A.06.003": {"name": "wait", "description": "Pause", "parameters": ["@time", "@until"]},
+          "A.06.004": {"name": "continue", "description": "Keep going", "parameters": ["@action", "@until"]},
+          "A.06.005": {"name": "repeat", "description": "Do again", "parameters": ["@action", "@times", "@until", "@max"]},
+          "A.06.006": {"name": "skip", "description": "Omit step", "parameters": ["@if", "@step"]},
+          "A.06.007": {"name": "stop", "description": "Cease action", "parameters": ["@when"]},
+          "A.06.008": {"name": "monitor", "description": "Watch continuously", "parameters": ["@what", "@for"]},
+          "A.06.009": {"name": "alternate", "description": "Switch between", "parameters": ["@between", "@interval"]},
+          "A.06.010": {"name": "synchronize", "description": "Time together", "parameters": ["@actions"]}
+        }
+      }
+    },
+    "parameter_definitions": {
+      "@what": "Target item or ingredient",
+      "@to": "Destination or target value",
+      "@from": "Source location",
+      "@with": "Accompanying item or tool",
+      "@in": "Container or medium",
+      "@into": "Destination container",
+      "@on": "Surface or base",
+      "@over": "Target surface",
+      "@quantity": "Amount to use",
+      "@time": "Duration",
+      "@until": "Endpoint condition",
+      "@when": "Timing condition",
+      "@speed": "Rate of action",
+      "@temp": "Temperature",
+      "@at": "Specific value",
+      "@where": "Location",
+      "@through": "Medium to pass through",
+      "@pattern": "Arrangement pattern",
+      "@covered": "Whether to cover",
+      "@reserve": "Whether to keep liquid",
+      "@label": "Identifier for later reference",
+      "@method": "Specific technique",
+      "@tool": "Implement to use",
+      "@for": "Purpose or target",
+      "@target": "Goal value",
+      "@times": "Number of repetitions",
+      "@max": "Maximum iterations",
+      "@if": "Condition to check",
+      "@step": "Step reference",
+      "@interval": "Frequency",
+      "@between": "Items to alternate",
+      "@actions": "Multiple actions",
+      "@taste": "Adjust to preference"
+    }
+  }
