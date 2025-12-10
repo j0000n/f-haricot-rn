@@ -329,12 +329,19 @@ export default function HomeScreen() {
     api.recipes.getById,
     createdRecipeId ? { id: createdRecipeId } : "skip",
   );
+  const translationGuides = useQuery(api.translationGuides.listAll, {});
   const createdRecipeSteps = useMemo(
     () =>
       createdRecipe
-        ? decodeEncodedSteps(createdRecipe.encodedSteps, language, "cards", createdRecipe.sourceSteps)
+        ? decodeEncodedSteps(
+            createdRecipe.encodedSteps,
+            language,
+            "cards",
+            createdRecipe.sourceSteps,
+            translationGuides ?? undefined,
+          )
         : [],
-    [createdRecipe, language],
+    [createdRecipe, language, translationGuides],
   );
 
   const userInventoryCodes = useMemo(() => {

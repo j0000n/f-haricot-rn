@@ -2,7 +2,7 @@ import { LocalizedRecipeText } from "../types/recipe";
 
 export interface TranslationGuideRow {
   code: string;
-  language: keyof LocalizedRecipeText;
+  language: string;
   text: string;
   context?: string;
   description?: string;
