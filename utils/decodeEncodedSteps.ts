@@ -1,5 +1,5 @@
 import { translationGuideSeed } from "../data/translationGuideSeed";
-import type { LocalizedRecipeText, RecipeStep } from "../types/recipe";
+import type { LocalizedRecipeText, RecipeSourceStep } from "../types/recipe";
 
 export type DecodingMode = "runner" | "cards" | "voice" | "shopping";
 
@@ -10,6 +10,7 @@ interface DecodedSegment {
 }
 
 export interface DecodedStepCard {
+  stepNumber: number;
   title: string;
   detail: string;
   cues?: string[];
@@ -69,15 +70,18 @@ export const decodeEncodedSteps = (
   encodedSteps: string | undefined,
   language: keyof LocalizedRecipeText,
   mode: DecodingMode = "cards",
-  fallbackSteps?: RecipeStep[],
+  fallbackSteps?: RecipeSourceStep[],
 ): DecodedStepCard[] => {
   if (!encodedSteps || !encodedSteps.trim()) {
-    return fallbackSteps?.map((step) => ({
-      title: step.instructions[language] ?? step.instructions.en,
-      detail: step.instructions[language] ?? step.instructions.en,
-      cues: [],
-      mode,
-    })) ?? [];
+    return (
+      fallbackSteps?.map((step, index) => ({
+        stepNumber: step.stepNumber ?? index + 1,
+        title: step.text,
+        detail: step.text,
+        cues: [],
+        mode,
+      })) ?? []
+    );
   }
 
   const segments = encodedSteps
@@ -86,7 +90,7 @@ export const decodeEncodedSteps = (
     .filter(Boolean)
     .map(parseSegment);
 
-  return segments.map((segment) => {
+  return segments.map((segment, index) => {
     const summary = translate(segment.code, language);
     const details = describeParameters(segment.parameters, language);
     const cues = Object.keys(segment.parameters)
@@ -94,17 +98,11 @@ export const decodeEncodedSteps = (
       .map((key) => translate(segment.parameters[key], language));
 
     return {
+      stepNumber: index + 1,
       title: summary,
       detail: details || summary,
       cues,
       mode,
     };
   });
-};
-
-export const localizedStepFallback = (
-  step: RecipeStep,
-  language: keyof LocalizedRecipeText,
-): string => {
-  return step.instructions[language] ?? step.instructions.en;
 };

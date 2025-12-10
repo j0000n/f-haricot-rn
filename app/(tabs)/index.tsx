@@ -16,6 +16,7 @@ import type { InventoryDisplayItem } from "@/types/food";
 import type { NutrientDish } from "@/types/nutrition";
 import type { Recipe } from "@/types/recipe";
 import type { Id } from "@/convex/_generated/dataModel";
+import { decodeEncodedSteps } from "@/utils/decodeEncodedSteps";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { Link, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
@@ -328,6 +329,13 @@ export default function HomeScreen() {
     api.recipes.getById,
     createdRecipeId ? { id: createdRecipeId } : "skip",
   );
+  const createdRecipeSteps = useMemo(
+    () =>
+      createdRecipe
+        ? decodeEncodedSteps(createdRecipe.encodedSteps, language, "cards", createdRecipe.sourceSteps)
+        : [],
+    [createdRecipe, language],
+  );
 
   const userInventoryCodes = useMemo(() => {
     const entries = inventoryEntries;
@@ -512,7 +520,7 @@ export default function HomeScreen() {
                   </Text>
                   <Text style={styles.ingestionCaption}>
                     {createdRecipe.ingredients?.length ?? 0} ingredients · {" "}
-                    {createdRecipe.steps?.length ?? 0} steps · {" "}
+                    {createdRecipeSteps.length} steps · {" "}
                     {createdRecipe.foodItemsAdded?.length ?? 0} new library entries
                   </Text>
                 </View>
