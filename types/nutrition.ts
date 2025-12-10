@@ -22,3 +22,15 @@ export interface NutrientDish {
   micronutrients: MicronutrientDetail[];
   imageUrl: string;
 }
+
+export interface NutritionFacts {
+  calories: number;
+  macronutrients: MacronutrientProfile;
+  micronutrients?: MicronutrientDetail[];
+}
+
+export interface DensityHints {
+  gramsPerMilliliter?: number;
+  gramsPerPiece?: number;
+  defaultUnit?: "g" | "ml" | "piece";
+}

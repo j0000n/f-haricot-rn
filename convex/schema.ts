@@ -184,6 +184,35 @@ const schema = defineSchema({
         defaultImageUrl: v.optional(v.string()),
       })
     ),
+    nutritionPer100g: v.object({
+      calories: v.number(),
+      macronutrients: v.object({
+        protein: v.number(),
+        carbohydrates: v.number(),
+        fat: v.number(),
+        fiber: v.optional(v.number()),
+        sugars: v.optional(v.number()),
+      }),
+      micronutrients: v.optional(
+        v.array(
+          v.object({
+            label: v.string(),
+            amount: v.number(),
+            unit: v.string(),
+            dailyValuePercent: v.optional(v.number()),
+          })
+        )
+      ),
+    }),
+    densityHints: v.optional(
+      v.object({
+        gramsPerMilliliter: v.optional(v.number()),
+        gramsPerPiece: v.optional(v.number()),
+        defaultUnit: v.optional(
+          v.union(v.literal("g"), v.literal("ml"), v.literal("piece"))
+        ),
+      })
+    ),
   })
     .index("by_code", ["code"])
     .index("by_namespace", ["namespace"]),
@@ -215,6 +244,23 @@ const schema = defineSchema({
         quantity: v.number(),
         unit: v.string(),
         preparation: v.optional(v.string()),
+        displayQuantity: v.optional(v.string()),
+        displayUnit: v.optional(v.string()),
+        normalizedQuantity: v.optional(v.number()),
+        normalizedUnit: v.optional(
+          v.union(v.literal("g"), v.literal("ml"), v.literal("count"))
+        ),
+        originalText: v.optional(v.string()),
+        validation: v.optional(
+          v.object({
+            status: v.union(
+              v.literal("matched"),
+              v.literal("ambiguous"),
+              v.literal("missing")
+            ),
+            suggestions: v.optional(v.array(v.string())),
+          })
+        ),
       })
     ),
     steps: v.array(
@@ -290,6 +336,41 @@ const schema = defineSchema({
     .index("by_emoji_tags", ["emojiTags"])
     .index("by_total_time", ["totalTimeMinutes"])
     .index("by_created_at", ["createdAt"]),
+  translationGuides: defineTable({
+    code: v.string(),
+    language: v.string(),
+    text: v.string(),
+    context: v.optional(v.string()),
+    description: v.optional(v.string()),
+  })
+    .index("by_code", ["code"])
+    .index("by_language", ["language"]),
+  nutritionProfiles: defineTable({
+    recipeId: v.id("recipes"),
+    servings: v.number(),
+    perServing: v.object({
+      calories: v.number(),
+      macronutrients: v.object({
+        protein: v.number(),
+        carbohydrates: v.number(),
+        fat: v.number(),
+        fiber: v.optional(v.number()),
+        sugars: v.optional(v.number()),
+      }),
+      micronutrients: v.optional(
+        v.array(
+          v.object({
+            label: v.string(),
+            amount: v.number(),
+            unit: v.string(),
+            dailyValuePercent: v.optional(v.number()),
+          })
+        )
+      ),
+    }),
+    encodingVersion: v.optional(v.string()),
+    computedAt: v.number(),
+  }).index("by_recipe", ["recipeId"]),
   tasks: defineTable({
     title: v.string(),
     description: v.string(),

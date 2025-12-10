@@ -4,10 +4,11 @@ import { api } from "@/convex/_generated/api";
 import { useQuery } from "convex/react";
 import type { Doc } from "@/convex/_generated/dataModel";
 
-import type {
-  InventoryDisplayItem,
-  SupportedLanguage,
-  UserInventoryEntry,
+import {
+  SUPPORTED_LANGUAGES,
+  type InventoryDisplayItem,
+  type SupportedLanguage,
+  type UserInventoryEntry,
 } from "@/types/food";
 
 const DEFAULT_LANGUAGE: SupportedLanguage = "en";
@@ -53,8 +54,7 @@ const normalizeLanguage = (language: string | undefined): SupportedLanguage => {
   }
 
   // Support the languages from types, fallback to en if not supported
-  const supported = ["en", "es", "zh", "fr", "ar"] as const;
-  if (supported.includes(language as SupportedLanguage)) {
+  if (SUPPORTED_LANGUAGES.includes(language as SupportedLanguage)) {
     return language as SupportedLanguage;
   }
 

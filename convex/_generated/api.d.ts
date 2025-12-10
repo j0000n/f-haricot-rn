@@ -18,11 +18,13 @@ import type * as households from "../households.js";
 import type * as http from "../http.js";
 import type * as images from "../images.js";
 import type * as inventory from "../inventory.js";
+import type * as nutritionProfiles from "../nutritionProfiles.js";
 import type * as promptGenerators from "../promptGenerators.js";
 import type * as recipes from "../recipes.js";
 import type * as tasks from "../tasks.js";
 import type * as testFunction from "../testFunction.js";
 import type * as testFunctionNode from "../testFunctionNode.js";
+import type * as translationGuides from "../translationGuides.js";
 import type * as users from "../users.js";
 import type * as world from "../world.js";
 
@@ -51,11 +53,13 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   images: typeof images;
   inventory: typeof inventory;
+  nutritionProfiles: typeof nutritionProfiles;
   promptGenerators: typeof promptGenerators;
   recipes: typeof recipes;
   tasks: typeof tasks;
   testFunction: typeof testFunction;
   testFunctionNode: typeof testFunctionNode;
+  translationGuides: typeof translationGuides;
   users: typeof users;
   world: typeof world;
 }>;
