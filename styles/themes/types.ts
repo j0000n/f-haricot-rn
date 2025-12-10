@@ -1,7 +1,7 @@
 // ImageSourcePropType is not available in strict mode, using compatible type
 type ImageSourcePropType = string | number | { uri: string } | Array<{ uri: string }>;
 
-export type AppTabKey = "home" | "kitchen" | "lists";
+export type AppTabKey = "home" | "kitchen" | "lists" | "creator" | "vendor";
 
 export type TabIconFamily = "Feather";
 
