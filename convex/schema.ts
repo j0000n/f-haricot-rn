@@ -263,27 +263,13 @@ const schema = defineSchema({
         ),
       })
     ),
-    steps: v.array(
-      v.object({
-        stepNumber: v.number(),
-        instructions: v.object({
-          en: v.string(),
-          es: v.string(),
-          zh: v.string(),
-          fr: v.string(),
-          ar: v.string(),
-          ja: v.string(),
-          vi: v.string(),
-          tl: v.string(),
-        }),
-        timeInMinutes: v.optional(v.number()),
-        temperature: v.optional(
-          v.object({
-            value: v.number(),
-            unit: v.union(v.literal("F"), v.literal("C")),
-          })
-        ),
-      })
+    sourceSteps: v.optional(
+      v.array(
+        v.object({
+          stepNumber: v.number(),
+          text: v.string(),
+        })
+      )
     ),
     emojiTags: v.array(v.string()),
     prepTimeMinutes: v.number(),
@@ -325,8 +311,8 @@ const schema = defineSchema({
     originalImageSmallStorageId: v.optional(v.id("_storage")),
     transparentImageLargeStorageId: v.optional(v.id("_storage")),
     transparentImageSmallStorageId: v.optional(v.id("_storage")),
-    encodedSteps: v.optional(v.string()),
-    encodingVersion: v.optional(v.string()),
+    encodedSteps: v.string(),
+    encodingVersion: v.string(),
     foodItemsAdded: v.optional(v.array(v.id("foodLibrary"))),
     createdAt: v.number(),
     updatedAt: v.number(),

@@ -226,7 +226,7 @@ export const seed = mutation({
         recipeName: recipe.recipeName,
         description: recipe.description,
         ingredients: recipe.ingredients,
-        steps: recipe.steps,
+        sourceSteps: recipe.sourceSteps,
         encodedSteps: recipe.encodedSteps,
         encodingVersion: recipe.encodingVersion,
         foodItemsAdded: recipe.foodItemsAdded,
@@ -606,13 +606,12 @@ Captured text: ${sourceSummary}`;
       enhanced.description?.en || "",
     );
     
-    // Normalize steps to ensure all required languages are present
-    const normalizedSteps = (enhanced.steps || []).map((step: any) => ({
-      ...step,
-      instructions: normalizeMultilingual(
-        step.instructions,
-        step.instructions?.en || "",
-      ),
+    const normalizedSourceSteps = (enhanced.steps || []).map((step: any, index: number) => ({
+      stepNumber: step.stepNumber ?? index + 1,
+      text:
+        (typeof step.instructions === "string"
+          ? step.instructions
+          : step.instructions?.en) ?? "",
     }));
     
     // Normalize encodedSteps: if it's an array, convert to JSON string; if string, use as-is; otherwise undefined
@@ -632,8 +631,8 @@ Captured text: ${sourceSummary}`;
       recipeName: normalizedRecipeName,
       description: normalizedDescription,
       ingredients: normalizedIngredients,
-      steps: normalizedSteps,
-      encodedSteps: normalizedEncodedSteps,
+      sourceSteps: normalizedSourceSteps,
+      encodedSteps: normalizedEncodedSteps ?? "",
       encodingVersion,
       emojiTags: enhanced.emojiTags || [],
       prepTimeMinutes: enhanced.prepTimeMinutes || 0,
@@ -774,33 +773,21 @@ export const enhanceRecipeWithAI = action({
         preparation: v.optional(v.string()),
       })
     ),
-    steps: v.array(
-      v.object({
-        stepNumber: v.number(),
-        instructions: v.object({
-          en: v.string(),
-          es: v.string(),
-          zh: v.string(),
-          fr: v.string(),
-          ar: v.string(),
-          ja: v.string(),
-          vi: v.string(),
-          tl: v.string(),
-        }),
-        timeInMinutes: v.optional(v.number()),
-        temperature: v.optional(
-          v.object({
-            value: v.number(),
-            unit: v.union(v.literal("F"), v.literal("C")),
-          })
-        ),
-      })
+    sourceSteps: v.optional(
+      v.array(
+        v.object({
+          stepNumber: v.number(),
+          text: v.string(),
+        })
+      )
     ),
     emojiTags: v.array(v.string()),
     prepTimeMinutes: v.number(),
     cookTimeMinutes: v.number(),
     totalTimeMinutes: v.number(),
     servings: v.number(),
+    encodedSteps: v.string(),
+    encodingVersion: v.string(),
   }),
   handler: async (ctx, args) => {
     const openAiKey = process.env.OPEN_AI_KEY;
@@ -884,16 +871,26 @@ Return valid JSON matching this schema:
     const enhancedRecipe = JSON.parse(jsonText);
 
     // Validate and return
+    const sourceSteps = (enhancedRecipe.steps || []).map((step: any, index: number) => ({
+      stepNumber: step.stepNumber ?? index + 1,
+      text:
+        (typeof step.instructions === "string"
+          ? step.instructions
+          : step.instructions?.en) ?? "",
+    }));
+
     return {
       recipeName: enhancedRecipe.recipeName,
       description: enhancedRecipe.description,
       ingredients: enhancedRecipe.ingredients || [],
-      steps: enhancedRecipe.steps || [],
+      sourceSteps,
       emojiTags: enhancedRecipe.emojiTags || [],
       prepTimeMinutes: enhancedRecipe.prepTimeMinutes || 0,
       cookTimeMinutes: enhancedRecipe.cookTimeMinutes || 0,
       totalTimeMinutes: enhancedRecipe.totalTimeMinutes || 0,
       servings: enhancedRecipe.servings || 4,
+      encodedSteps: enhancedRecipe.encodedSteps || "",
+      encodingVersion: enhancedRecipe.encodingVersion || "URES-4.6",
     };
   },
 });
@@ -984,27 +981,13 @@ export const createRecipeWithImage = action({
           preparation: v.optional(v.string()),
         })
       ),
-      steps: v.array(
-        v.object({
-          stepNumber: v.number(),
-          instructions: v.object({
-            en: v.string(),
-            es: v.string(),
-            zh: v.string(),
-            fr: v.string(),
-            ar: v.string(),
-            ja: v.string(),
-            vi: v.string(),
-            tl: v.string(),
-          }),
-          timeInMinutes: v.optional(v.number()),
-          temperature: v.optional(
-            v.object({
-              value: v.number(),
-              unit: v.union(v.literal("F"), v.literal("C")),
-            })
-          ),
-        })
+      sourceSteps: v.optional(
+        v.array(
+          v.object({
+            stepNumber: v.number(),
+            text: v.string(),
+          })
+        )
       ),
       emojiTags: v.array(v.string()),
       prepTimeMinutes: v.number(),
@@ -1044,6 +1027,8 @@ export const createRecipeWithImage = action({
       imageUrl: v.string(),
       imageUrls: v.optional(v.array(v.string())),
       transparentImageStorageId: v.optional(v.id("_storage")),
+      encodedSteps: v.string(),
+      encodingVersion: v.string(),
       isPublic: v.boolean(),
     }),
   },
@@ -1090,27 +1075,13 @@ export const create = mutation({
         preparation: v.optional(v.string()),
       })
     ),
-    steps: v.array(
-      v.object({
-        stepNumber: v.number(),
-        instructions: v.object({
-          en: v.string(),
-          es: v.string(),
-          zh: v.string(),
-          fr: v.string(),
-          ar: v.string(),
-          ja: v.string(),
-          vi: v.string(),
-          tl: v.string(),
-        }),
-        timeInMinutes: v.optional(v.number()),
-        temperature: v.optional(
-          v.object({
-            value: v.number(),
-            unit: v.union(v.literal("F"), v.literal("C")),
-          })
-        ),
-      })
+    sourceSteps: v.optional(
+      v.array(
+        v.object({
+          stepNumber: v.number(),
+          text: v.string(),
+        })
+      )
     ),
     emojiTags: v.array(v.string()),
     prepTimeMinutes: v.number(),
@@ -1150,6 +1121,16 @@ export const create = mutation({
     imageUrl: v.string(),
     imageUrls: v.optional(v.array(v.string())),
     transparentImageStorageId: v.optional(v.id("_storage")),
+    sourceSteps: v.optional(
+      v.array(
+        v.object({
+          stepNumber: v.number(),
+          text: v.string(),
+        })
+      )
+    ),
+    encodedSteps: v.string(),
+    encodingVersion: v.string(),
     createdAt: v.number(),
     updatedAt: v.number(),
     isPublic: v.boolean(),
@@ -1209,27 +1190,13 @@ export const insertFromIngestion = mutation({
           ),
         })
       ),
-      steps: v.array(
-        v.object({
-          stepNumber: v.number(),
-          instructions: v.object({
-            en: v.string(),
-            es: v.string(),
-            zh: v.string(),
-            fr: v.string(),
-            ar: v.string(),
-            ja: v.string(),
-            vi: v.string(),
-            tl: v.string(),
-          }),
-          timeInMinutes: v.optional(v.number()),
-          temperature: v.optional(
-            v.object({
-              value: v.number(),
-              unit: v.union(v.literal("F"), v.literal("C")),
-            })
-          ),
-        })
+      sourceSteps: v.optional(
+        v.array(
+          v.object({
+            stepNumber: v.number(),
+            text: v.string(),
+          })
+        )
       ),
       emojiTags: v.array(v.string()),
       prepTimeMinutes: v.number(),
@@ -1273,8 +1240,8 @@ export const insertFromIngestion = mutation({
       originalImageSmallStorageId: v.optional(v.id("_storage")),
       transparentImageLargeStorageId: v.optional(v.id("_storage")),
       transparentImageSmallStorageId: v.optional(v.id("_storage")),
-      encodedSteps: v.optional(v.string()),
-      encodingVersion: v.optional(v.string()),
+      encodedSteps: v.string(),
+      encodingVersion: v.string(),
       foodItemsAdded: v.optional(v.array(v.id("foodLibrary"))),
       createdAt: v.number(),
       updatedAt: v.number(),
@@ -1317,7 +1284,61 @@ export const migrateRemoveImageUrlFromRecipes = mutation({
         updated += 1;
       }
     }
-    
+
     return { updated, total: recipes.length };
+  },
+});
+
+export const migrateCollapseStepsToSourceSteps = mutation({
+  args: {},
+  returns: v.object({
+    updated: v.number(),
+    total: v.number(),
+    skipped: v.number(),
+  }),
+  handler: async (ctx) => {
+    const recipes = await ctx.db.query("recipes").collect();
+
+    let updated = 0;
+    let skipped = 0;
+
+    for (const recipe of recipes) {
+      const legacySteps = (recipe as any).steps as any[] | undefined;
+      const existingSourceSteps = (recipe as any).sourceSteps as any[] | undefined;
+
+      if ((!legacySteps || legacySteps.length === 0) && existingSourceSteps) {
+        skipped += 1;
+        continue;
+      }
+
+      if (!legacySteps || legacySteps.length === 0) {
+        skipped += 1;
+        continue;
+      }
+
+      const sourceSteps = existingSourceSteps ??
+        legacySteps.map((step, index) => ({
+          stepNumber: step.stepNumber ?? index + 1,
+          text:
+            (typeof step.instructions === "string"
+              ? step.instructions
+              : step.instructions?.en) ??
+            Object.values(step.instructions ?? {})[0] ??
+            "",
+        }));
+
+      const { steps, ...rest } = recipe as any;
+      const encodedSteps = (recipe as any).encodedSteps ?? "";
+
+      await ctx.db.replace(recipe._id, {
+        ...rest,
+        sourceSteps,
+        encodedSteps,
+      });
+
+      updated += 1;
+    }
+
+    return { updated, total: recipes.length, skipped };
   },
 });

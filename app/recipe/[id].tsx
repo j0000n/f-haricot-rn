@@ -13,6 +13,7 @@ import { useTranslation } from "@/i18n/useTranslation";
 import type { Recipe } from "@/types/recipe";
 import type { ThemeTokens } from "@/styles/themes/types";
 import { useThemedStyles } from "@/styles/tokens";
+import { decodeEncodedSteps } from "@/utils/decodeEncodedSteps";
 
 const createStyles = (tokens: ThemeTokens) =>
   StyleSheet.create({
@@ -138,6 +139,10 @@ export default function RecipeDetailScreen() {
   }
 
   const inventoryCodes = Array.isArray(userInventory) ? userInventory : [];
+  const decodedSteps = useMemo(
+    () => decodeEncodedSteps(recipe.encodedSteps, language, "cards", recipe.sourceSteps),
+    [language, recipe.encodedSteps, recipe.sourceSteps],
+  );
 
   const headerOptions = {
     title: "",
@@ -195,14 +200,12 @@ export default function RecipeDetailScreen() {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t("recipe.instructions")}</Text>
-          {recipe.steps.map((step) => (
+          {decodedSteps.map((step) => (
             <View key={step.stepNumber} style={styles.step}>
               <View style={styles.stepNumber}>
                 <Text style={styles.stepNumberText}>{step.stepNumber}</Text>
               </View>
-              <Text style={styles.stepText}>
-                {step.instructions[language] || step.instructions.en}
-              </Text>
+              <Text style={styles.stepText}>{step.detail || step.title}</Text>
             </View>
           ))}
         </View>

@@ -1,5 +1,9 @@
 import type { Doc } from "../convex/_generated/dataModel";
-import type { LocalizedRecipeText, RecipeIngredient, RecipeStep } from "../types/recipe";
+import type {
+  LocalizedRecipeText,
+  RecipeIngredient,
+  RecipeSourceStep,
+} from "../types/recipe";
 
 const SUPPORTED_LANGUAGES: Array<keyof LocalizedRecipeText> = [
   "en",
@@ -88,28 +92,22 @@ const pilafIngredients: RecipeIngredient[] = [
   },
 ];
 
-const pilafSteps: RecipeStep[] = [
+const pilafSteps: RecipeSourceStep[] = [
   {
     stepNumber: 1,
-    instructions: localize("Sweat diced onions in olive oil over medium heat until golden."),
-    timeInMinutes: 10,
+    text: "Sweat diced onions in olive oil over medium heat until golden.",
   },
   {
     stepNumber: 2,
-    instructions: localize("Stir in minced garlic until fragrant, about 2 minutes."),
-    timeInMinutes: 2,
+    text: "Stir in minced garlic until fragrant, about 2 minutes.",
   },
   {
     stepNumber: 3,
-    instructions: localize("Toast rinsed basmati rice in the pot to coat every grain."),
-    timeInMinutes: 2,
+    text: "Toast rinsed basmati rice in the pot to coat every grain.",
   },
   {
     stepNumber: 4,
-    instructions: localize(
-      "Add hot broth (ratio 1:1.8), nestle seared chicken, cover, and cook until rice is tender.",
-    ),
-    timeInMinutes: 18,
+    text: "Add hot broth (ratio 1:1.8), nestle seared chicken, cover, and cook until rice is tender.",
   },
 ];
 
@@ -165,21 +163,18 @@ const marinadeIngredients: RecipeIngredient[] = [
   },
 ];
 
-const marinadeSteps: RecipeStep[] = [
+const marinadeSteps: RecipeSourceStep[] = [
   {
     stepNumber: 1,
-    instructions: localize("Blend garlic, olive oil, salt, and lemon for a pourable marinade."),
-    timeInMinutes: 5,
+    text: "Blend garlic, olive oil, salt, and lemon for a pourable marinade.",
   },
   {
     stepNumber: 2,
-    instructions: localize("Massage marinade into chicken thighs and rest at least 30 minutes."),
-    timeInMinutes: 30,
+    text: "Massage marinade into chicken thighs and rest at least 30 minutes.",
   },
   {
     stepNumber: 3,
-    instructions: localize("Sear chicken with sliced onions until browned and cooked through."),
-    timeInMinutes: 16,
+    text: "Sear chicken with sliced onions until browned and cooked through.",
   },
 ];
 
@@ -190,7 +185,7 @@ export const recipesSeed: RecipeSeed[] = [
       "One-pot chicken and rice built from the URES pantry: alliums, olive oil, and controlled hydration for fluffy grains.",
     ),
     ingredients: pilafIngredients,
-    steps: pilafSteps,
+    sourceSteps: pilafSteps,
     encodedSteps:
       "1.11.003.form.diced@quantity:2pc@with:5.70.001.extra_virgin@heat:medium@until:cue.golden -> 1.11.007.form.minced@quantity:4clv@with:5.70.001@time:2m -> 4.60.003.basmati@quantity:360g@rinse:true@coat:oil -> A.01.combine@with:stock@ratio:1:1.8@time:16m@cover:true@add:2.20.001.boneless_skinless",
     encodingVersion: "URES-4.6",
@@ -224,7 +219,7 @@ export const recipesSeed: RecipeSeed[] = [
       "A high-impact marinade built from garlic, onions, and olive oil that translates cleanly across languages.",
     ),
     ingredients: marinadeIngredients,
-    steps: marinadeSteps,
+    sourceSteps: marinadeSteps,
     encodedSteps:
       "1.11.007.form.crushed@quantity:6clv -> A.02.emulsify@with:5.70.001.extra_virgin@until:cue.glossy -> A.03.coat@target:2.20.001.boneless_skinless@time:30m@temp:cold -> T.04.002.sear@with:1.11.003.form.sliced@until:cue.deep_brown",
     encodingVersion: "URES-4.6",

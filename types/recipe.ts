@@ -36,11 +36,9 @@ export interface RecipeStepTemperature {
   unit: TemperatureUnit;
 }
 
-export interface RecipeStep {
+export interface RecipeSourceStep {
   stepNumber: number;
-  instructions: LocalizedRecipeText;
-  timeInMinutes?: number;
-  temperature?: RecipeStepTemperature;
+  text: string;
 }
 
 export interface RecipeAttribution {
@@ -55,7 +53,7 @@ export interface Recipe {
   recipeName: LocalizedRecipeText;
   description: LocalizedRecipeText;
   ingredients: RecipeIngredient[];
-  steps: RecipeStep[];
+  sourceSteps?: RecipeSourceStep[];
   emojiTags: string[];
   prepTimeMinutes: number;
   cookTimeMinutes: number;
@@ -67,8 +65,8 @@ export interface Recipe {
   originalImageSmallStorageId?: Id<"_storage">;
   transparentImageLargeStorageId?: Id<"_storage">;
   transparentImageSmallStorageId?: Id<"_storage">;
-  encodedSteps?: string;
-  encodingVersion?: string;
+  encodedSteps: string;
+  encodingVersion: string;
   foodItemsAdded?: Id<"foodLibrary">[];
   createdAt: number;
   updatedAt: number;

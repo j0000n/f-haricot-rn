@@ -1,11 +1,11 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
-import type { TFunction } from "i18next";
 
 import { useTranslation } from "@/i18n/useTranslation";
 import type { Recipe } from "@/types/recipe";
 import type { ThemeTokens } from "@/styles/themes/types";
 import { useThemedStyles } from "@/styles/tokens";
+import { decodeEncodedSteps } from "@/utils/decodeEncodedSteps";
 
 interface RecipeRunnerProps {
   recipe: Recipe;
@@ -14,11 +14,6 @@ interface RecipeRunnerProps {
 }
 
 type Styles = ReturnType<typeof createStyles>;
-
-type TimerState = {
-  secondsRemaining: number;
-  isRunning: boolean;
-};
 
 const createStyles = (tokens: ThemeTokens) =>
   StyleSheet.create({
@@ -167,12 +162,24 @@ export const RecipeRunner: React.FC<RecipeRunnerProps> = ({ recipe, language, on
   const { t } = useTranslation();
   const [currentStep, setCurrentStep] = useState(0);
 
-  const step = recipe.steps[currentStep];
-  const isLastStep = currentStep === recipe.steps.length - 1;
+  const steps = decodeEncodedSteps(
+    recipe.encodedSteps,
+    language,
+    "runner",
+    recipe.sourceSteps,
+  );
+  const totalSteps = steps.length || 1;
+  const step = steps[currentStep] ?? {
+    stepNumber: currentStep + 1,
+    title: t("recipe.step"),
+    detail: t("recipe.step"),
+    mode: "runner" as const,
+  };
+  const isLastStep = currentStep === totalSteps - 1;
 
   const progress = useMemo(
-    () => `${Math.round(((currentStep + 1) / recipe.steps.length) * 100)}%`,
-    [currentStep, recipe.steps.length],
+    () => `${Math.round(((currentStep + 1) / Math.max(totalSteps, 1)) * 100)}%`,
+    [currentStep, totalSteps],
   );
 
   return (
@@ -182,7 +189,7 @@ export const RecipeRunner: React.FC<RecipeRunnerProps> = ({ recipe, language, on
           <Text style={styles.exitButtonText}>{t("common.exit")}</Text>
         </Pressable>
         <Text style={styles.progress}>
-          {currentStep + 1} / {recipe.steps.length} ({progress})
+          {currentStep + 1} / {totalSteps} ({progress})
         </Text>
       </View>
 
@@ -190,7 +197,7 @@ export const RecipeRunner: React.FC<RecipeRunnerProps> = ({ recipe, language, on
         <View
           style={[
             styles.progressFill,
-            { width: `${((currentStep + 1) / recipe.steps.length) * 100}%` },
+            { width: `${((currentStep + 1) / Math.max(totalSteps, 1)) * 100}%` },
           ]}
         />
       </View>
@@ -199,26 +206,7 @@ export const RecipeRunner: React.FC<RecipeRunnerProps> = ({ recipe, language, on
         <Text style={styles.stepNumber}>
           {t("recipe.step")} {step.stepNumber}
         </Text>
-        <Text style={styles.instruction}>
-          {step.instructions[language] || step.instructions.en}
-        </Text>
-
-        {step.timeInMinutes ? (
-          <TimerComponent
-            key={step.stepNumber}
-            minutes={step.timeInMinutes}
-            styles={styles}
-            t={t}
-          />
-        ) : null}
-
-        {step.temperature ? (
-          <View style={styles.temperature}>
-            <Text style={styles.temperatureText}>
-              🌡️ {step.temperature.value}°{step.temperature.unit}
-            </Text>
-          </View>
-        ) : null}
+        <Text style={styles.instruction}>{step.detail || step.title}</Text>
       </View>
 
       <View style={styles.navigation}>
@@ -236,7 +224,7 @@ export const RecipeRunner: React.FC<RecipeRunnerProps> = ({ recipe, language, on
             if (isLastStep) {
               onExit();
             } else {
-              setCurrentStep((prev) => Math.min(recipe.steps.length - 1, prev + 1));
+              setCurrentStep((prev) => Math.min(totalSteps - 1, prev + 1));
             }
           }}
         >
@@ -249,76 +237,3 @@ export const RecipeRunner: React.FC<RecipeRunnerProps> = ({ recipe, language, on
   );
 };
 
-interface TimerComponentProps {
-  minutes: number;
-  styles: Styles;
-  t: TFunction;
-}
-
-const TimerComponent: React.FC<TimerComponentProps> = ({ minutes, styles, t }) => {
-  const [state, setState] = useState<TimerState>({
-    secondsRemaining: minutes * 60,
-    isRunning: false,
-  });
-
-  useEffect(() => {
-    setState({ secondsRemaining: minutes * 60, isRunning: false });
-  }, [minutes]);
-
-  useEffect(() => {
-    if (!state.isRunning) {
-      return;
-    }
-
-    const interval = setInterval(() => {
-      setState((prev) => {
-        if (prev.secondsRemaining <= 1) {
-          clearInterval(interval);
-          return { secondsRemaining: 0, isRunning: false };
-        }
-
-        return {
-          ...prev,
-          secondsRemaining: prev.secondsRemaining - 1,
-        };
-      });
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [state.isRunning]);
-
-  const minutesRemaining = Math.floor(state.secondsRemaining / 60)
-    .toString()
-    .padStart(2, "0");
-  const secondsRemaining = (state.secondsRemaining % 60).toString().padStart(2, "0");
-
-  return (
-    <View style={styles.timer}>
-      <Text style={styles.timerLabel}>{t("recipe.timerLabel", { minutes })}</Text>
-      <Text style={styles.timerValue}>
-        {minutesRemaining}:{secondsRemaining}
-      </Text>
-      <View style={styles.timerControls}>
-        <Pressable
-          style={styles.timerButton}
-          onPress={() =>
-            setState((prev) => ({
-              ...prev,
-              isRunning: !prev.isRunning,
-            }))
-          }
-        >
-          <Text style={styles.timerButtonText}>
-            {state.isRunning ? t("recipe.timerPause") : t("recipe.timerStart")}
-          </Text>
-        </Pressable>
-        <Pressable
-          style={styles.timerButton}
-          onPress={() => setState({ secondsRemaining: minutes * 60, isRunning: false })}
-        >
-          <Text style={styles.timerButtonText}>{t("recipe.timerReset")}</Text>
-        </Pressable>
-      </View>
-    </View>
-  );
-};
