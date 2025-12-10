@@ -124,6 +124,7 @@ export default function RecipeDetailScreen() {
   const [isRunnerMode, setIsRunnerMode] = useState(false);
 
   const recipe = useQuery(api.recipes.getById, recipeId ? { id: recipeId } : "skip");
+  const translationGuides = useQuery(api.translationGuides.listAll, {});
   const userInventory = useQuery(api.users.getCurrentInventory, {});
 
   if (recipe === undefined) {
@@ -140,8 +141,15 @@ export default function RecipeDetailScreen() {
 
   const inventoryCodes = Array.isArray(userInventory) ? userInventory : [];
   const decodedSteps = useMemo(
-    () => decodeEncodedSteps(recipe.encodedSteps, language, "cards", recipe.sourceSteps),
-    [language, recipe.encodedSteps, recipe.sourceSteps],
+    () =>
+      decodeEncodedSteps(
+        recipe.encodedSteps,
+        language,
+        "cards",
+        recipe.sourceSteps,
+        translationGuides ?? undefined,
+      ),
+    [language, recipe.encodedSteps, recipe.sourceSteps, translationGuides],
   );
 
   const headerOptions = {
@@ -162,6 +170,7 @@ export default function RecipeDetailScreen() {
         <RecipeRunner
           recipe={recipe}
           language={language}
+          translationGuides={translationGuides ?? undefined}
           onExit={() => setIsRunnerMode(false)}
         />
       </>

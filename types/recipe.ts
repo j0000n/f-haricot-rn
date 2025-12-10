@@ -39,6 +39,8 @@ export interface RecipeStepTemperature {
 export interface RecipeSourceStep {
   stepNumber: number;
   text: string;
+  timeInMinutes?: number;
+  temperature?: RecipeStepTemperature;
 }
 
 export interface RecipeAttribution {

@@ -334,9 +334,9 @@ CRITICAL REQUIREMENTS:
 3. Extract complete attribution information including author name, website, and social media profiles
 4. Preserve the exact original text for each ingredient in the originalText field
 
-Use encoding guide from plan/encoding-guide.md and include encodedSteps plus encodingVersion.
+Use encoding guide from plan/encoding-guide.md and return both encodedSteps and encodingVersion.
 Use decoding guide at plan/decoding-guide.md to ensure qualifier order and deterministic cues.
-Preserve free-text steps for fallback while providing encodedSteps.
+Include a single-language fallback steps array for display resilience alongside encodedSteps.
 
 Available food library items (code: name):
 ${foodLibrary
@@ -377,9 +377,9 @@ Return JSON with fields:
   * displayUnit OPTIONAL - original unit display
   * normalizedQuantity OPTIONAL - converted to base unit
   * normalizedUnit OPTIONAL - MUST be "g", "ml", or "count" only
-- steps (ARRAY - include ALL steps in order):
+- steps (ARRAY - include ALL steps in order, single-language or raw text):
   * stepNumber REQUIRED - sequential number starting from 1
-  * instructions REQUIRED - object with 8 languages (en, es, zh, fr, ar, ja, vi, tl)
+  * text REQUIRED - plain-text instruction (single language is acceptable)
   * timeInMinutes OPTIONAL - extract if mentioned
   * temperature OPTIONAL - {value: number, unit: "F" or "C"} if mentioned
 - emojiTags - array of 3-5 relevant emojis
@@ -606,13 +606,35 @@ Captured text: ${sourceSummary}`;
       enhanced.description?.en || "",
     );
     
-    const normalizedSourceSteps = (enhanced.steps || []).map((step: any, index: number) => ({
-      stepNumber: step.stepNumber ?? index + 1,
-      text:
-        (typeof step.instructions === "string"
-          ? step.instructions
-          : step.instructions?.en) ?? "",
-    }));
+    const normalizedSourceSteps = (enhanced.steps || [])
+      .map((step: any, index: number) => {
+        const text =
+          typeof step === "string"
+            ? step
+            : step?.text ??
+              (typeof step?.instructions === "string"
+                ? step.instructions
+                : step?.instructions?.en) ??
+              "";
+
+        const timeInMinutes =
+          typeof step?.timeInMinutes === "number" ? step.timeInMinutes : undefined;
+
+        const temperature =
+          step?.temperature &&
+          typeof step.temperature.value === "number" &&
+          (step.temperature.unit === "F" || step.temperature.unit === "C")
+            ? { value: step.temperature.value, unit: step.temperature.unit }
+            : undefined;
+
+        return {
+          stepNumber: step?.stepNumber ?? index + 1,
+          text,
+          ...(timeInMinutes !== undefined ? { timeInMinutes } : {}),
+          ...(temperature ? { temperature } : {}),
+        };
+      })
+      .filter((step: { text: string }) => Boolean(step.text?.trim()));
     
     // Normalize encodedSteps: if it's an array, convert to JSON string; if string, use as-is; otherwise undefined
     let normalizedEncodedSteps: string | undefined;
@@ -871,13 +893,35 @@ Return valid JSON matching this schema:
     const enhancedRecipe = JSON.parse(jsonText);
 
     // Validate and return
-    const sourceSteps = (enhancedRecipe.steps || []).map((step: any, index: number) => ({
-      stepNumber: step.stepNumber ?? index + 1,
-      text:
-        (typeof step.instructions === "string"
-          ? step.instructions
-          : step.instructions?.en) ?? "",
-    }));
+    const sourceSteps = (enhancedRecipe.steps || [])
+      .map((step: any, index: number) => {
+        const text =
+          typeof step === "string"
+            ? step
+            : step?.text ??
+              (typeof step?.instructions === "string"
+                ? step.instructions
+                : step?.instructions?.en) ??
+              "";
+
+        const timeInMinutes =
+          typeof step?.timeInMinutes === "number" ? step.timeInMinutes : undefined;
+
+        const temperature =
+          step?.temperature &&
+          typeof step.temperature.value === "number" &&
+          (step.temperature.unit === "F" || step.temperature.unit === "C")
+            ? { value: step.temperature.value, unit: step.temperature.unit }
+            : undefined;
+
+        return {
+          stepNumber: step?.stepNumber ?? index + 1,
+          text,
+          ...(timeInMinutes !== undefined ? { timeInMinutes } : {}),
+          ...(temperature ? { temperature } : {}),
+        };
+      })
+      .filter((step: { text: string }) => Boolean(step.text?.trim()));
 
     return {
       recipeName: enhancedRecipe.recipeName,

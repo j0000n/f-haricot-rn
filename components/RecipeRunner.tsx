@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
 
+import type { TranslationGuideRow } from "@/data/translationGuideSeed";
 import { useTranslation } from "@/i18n/useTranslation";
 import type { Recipe } from "@/types/recipe";
 import type { ThemeTokens } from "@/styles/themes/types";
@@ -10,6 +11,7 @@ import { decodeEncodedSteps } from "@/utils/decodeEncodedSteps";
 interface RecipeRunnerProps {
   recipe: Recipe;
   language: keyof Recipe["recipeName"];
+  translationGuides?: TranslationGuideRow[];
   onExit: () => void;
 }
 
@@ -157,7 +159,12 @@ const createStyles = (tokens: ThemeTokens) =>
     },
   });
 
-export const RecipeRunner: React.FC<RecipeRunnerProps> = ({ recipe, language, onExit }) => {
+export const RecipeRunner: React.FC<RecipeRunnerProps> = ({
+  recipe,
+  language,
+  translationGuides,
+  onExit,
+}) => {
   const styles = useThemedStyles<Styles>(createStyles);
   const { t } = useTranslation();
   const [currentStep, setCurrentStep] = useState(0);
@@ -167,6 +174,7 @@ export const RecipeRunner: React.FC<RecipeRunnerProps> = ({ recipe, language, on
     language,
     "runner",
     recipe.sourceSteps,
+    translationGuides,
   );
   const totalSteps = steps.length || 1;
   const step = steps[currentStep] ?? {

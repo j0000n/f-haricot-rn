@@ -268,6 +268,13 @@ const schema = defineSchema({
         v.object({
           stepNumber: v.number(),
           text: v.string(),
+          timeInMinutes: v.optional(v.number()),
+          temperature: v.optional(
+            v.object({
+              value: v.number(),
+              unit: v.union(v.literal("F"), v.literal("C")),
+            }),
+          ),
         })
       )
     ),

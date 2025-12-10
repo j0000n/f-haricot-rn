@@ -11,7 +11,8 @@ The `recipes.ingestUniversal` Convex action ingests text, link, or oEmbed payloa
 
 ## Outputs
 - Inserts a recipe document containing:
-  - Localized `recipeName` / `description` and free-text `steps` as fallback.
+  - Localized `recipeName` / `description` and a single-language fallback `steps` array (with optional timing/temperature detai
+ls).
   - `encodedSteps` + `encodingVersion` to guarantee decoder determinism.
   - Structured ingredients with validation status, normalized metric quantities, and original display strings.
   - Timing fields (`prepTimeMinutes`, `cookTimeMinutes`, `totalTimeMinutes`) and temperatures when provided.
