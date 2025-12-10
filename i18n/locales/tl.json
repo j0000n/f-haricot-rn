@@ -150,7 +150,29 @@
     "home": "Home",
     "kitchen": "Kusina",
     "profile": "Profile",
-    "lists": "Mga Listahan"
+    "lists": "Mga Listahan",
+    "creator": "Creator",
+    "vendor": "Vendor"
+  },
+  "creator": {
+    "title": "Dashboard ng creator",
+    "description": "Tingnan ang mga feature ng creator at mga halimbawang detalye ng profile habang ginagawa pa ang iba pang tools.",
+    "profileHeading": "Snapshot ng profile",
+    "nameLabel": "Pangalan",
+    "emailLabel": "Email",
+    "userTypeLabel": "Uri ng user",
+    "missingField": "Hindi ibinigay",
+    "badge": "Creator account"
+  },
+  "vendor": {
+    "title": "Dashboard ng vendor",
+    "description": "Suriin ang impormasyon ng vendor na may pansamantalang detalye ng profile habang hinihintay ang live na data.",
+    "profileHeading": "Snapshot ng profile",
+    "nameLabel": "Pangalan",
+    "emailLabel": "Email",
+    "userTypeLabel": "Uri ng user",
+    "missingField": "Hindi ibinigay",
+    "badge": "Vendor account"
   },
   "home": {
     "title": "Home",

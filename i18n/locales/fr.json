@@ -266,7 +266,29 @@
     "home": "Accueil",
     "kitchen": "Cuisine",
     "profile": "Profil",
-    "lists": "Listes"
+    "lists": "Listes",
+    "creator": "Créateur",
+    "vendor": "Vendeur"
+  },
+  "creator": {
+    "title": "Tableau de bord créateur",
+    "description": "Accédez aux aperçus créateurs et à des données de profil fictives pendant que nous ajoutons de nouveaux outils.",
+    "profileHeading": "Aperçu du profil",
+    "nameLabel": "Nom",
+    "emailLabel": "E-mail",
+    "userTypeLabel": "Type d'utilisateur",
+    "missingField": "Non fourni",
+    "badge": "Compte créateur"
+  },
+  "vendor": {
+    "title": "Tableau de bord vendeur",
+    "description": "Consultez les informations pour vendeurs avec des détails de profil provisoires en attendant les données finales.",
+    "profileHeading": "Aperçu du profil",
+    "nameLabel": "Nom",
+    "emailLabel": "E-mail",
+    "userTypeLabel": "Type d'utilisateur",
+    "missingField": "Non fourni",
+    "badge": "Compte vendeur"
   },
   "home": {
     "title": "Accueil",

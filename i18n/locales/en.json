@@ -266,7 +266,29 @@
     "home": "Home",
     "kitchen": "Kitchen",
     "profile": "Profile",
-    "lists": "Lists"
+    "lists": "Lists",
+    "creator": "Creator",
+    "vendor": "Vendor"
+  },
+  "creator": {
+    "title": "Creator dashboard",
+    "description": "Access creator previews and stubbed profile data while we build more tools for you.",
+    "profileHeading": "Profile snapshot",
+    "nameLabel": "Name",
+    "emailLabel": "Email",
+    "userTypeLabel": "User type",
+    "missingField": "Not provided",
+    "badge": "Creator account"
+  },
+  "vendor": {
+    "title": "Vendor dashboard",
+    "description": "Review vendor-focused information with placeholder profile details until live data is ready.",
+    "profileHeading": "Profile snapshot",
+    "nameLabel": "Name",
+    "emailLabel": "Email",
+    "userTypeLabel": "User type",
+    "missingField": "Not provided",
+    "badge": "Vendor account"
   },
   "home": {
     "title": "Home",
