@@ -1121,14 +1121,6 @@ export const create = mutation({
     imageUrl: v.string(),
     imageUrls: v.optional(v.array(v.string())),
     transparentImageStorageId: v.optional(v.id("_storage")),
-    sourceSteps: v.optional(
-      v.array(
-        v.object({
-          stepNumber: v.number(),
-          text: v.string(),
-        })
-      )
-    ),
     encodedSteps: v.string(),
     encodingVersion: v.string(),
     createdAt: v.number(),
