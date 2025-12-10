@@ -4,7 +4,7 @@ The `recipes.ingestUniversal` Convex action ingests text, link, or oEmbed payloa
 
 ## Inputs
 - **sourceType** (required): one of `website | audio | text | photograph | instagram | tiktok | pinterest | youtube | cookbook | magazine | newspaper | recipe_card | handwritten | voice_note | video | facebook | twitter | reddit | blog | podcast | other`.
-- **sourceUrl** (optional): canonical URL for auditability.
+- **sourceUrl** (required): canonical URL for auditability and attribution; ingestion requests without a URL are rejected.
 - **rawText / extractedText** (optional): any already-extracted recipe body or OCR text.
 - **oembedPayload** (optional): raw oEmbed/OpenGraph JSON for the source.
 - **socialMetadata** (optional): `{ title?: string; description?: string }` used to disambiguate recipe intent.

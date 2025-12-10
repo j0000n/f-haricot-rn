@@ -138,6 +138,112 @@ const computeNutritionProfile = (
   return perServing;
 };
 
+const normalizeHost = (url?: string) => {
+  if (!url) return undefined;
+
+  try {
+    return new URL(url).host;
+  } catch (error) {
+    console.warn("Failed to derive host from url", url, error);
+    return undefined;
+  }
+};
+
+const normalizeSocialHandles = (social?: any) => {
+  if (!social || typeof social !== "object") return undefined;
+
+  const normalized: {
+    instagram?: string;
+    pinterest?: string;
+    youtube?: string;
+    facebook?: string;
+  } = {};
+
+  const setHandle = (key: keyof typeof normalized, value: unknown) => {
+    if (typeof value !== "string") return;
+    const trimmed = value.trim();
+    if (!trimmed) return;
+
+    normalized[key] = trimmed.startsWith("@") ? trimmed.slice(1) : trimmed;
+  };
+
+  setHandle("instagram", social.instagram);
+  setHandle("pinterest", social.pinterest);
+  setHandle("youtube", social.youtube);
+  setHandle("facebook", social.facebook);
+
+  return Object.keys(normalized).length > 0 ? normalized : undefined;
+};
+
+const parseLegacyAuthorAttribution = (author?: string) => {
+  if (!author) {
+    return { authorName: undefined, authorWebsite: undefined, authorSocial: undefined };
+  }
+
+  let mainAuthor = author.trim();
+  let metadata = "";
+  const parenMatch = mainAuthor.match(/^(.*?)\((.*)\)$/);
+
+  if (parenMatch) {
+    mainAuthor = parenMatch[1].trim();
+    metadata = parenMatch[2];
+  }
+
+  const socialCandidates: Record<string, string> = {};
+  let authorWebsite: string | undefined;
+
+  const processPart = (part: string) => {
+    const cleaned = part.trim();
+    if (!cleaned) return;
+
+    const [rawLabel, rawValue] = cleaned.split(/:\s*/);
+    const value = (rawValue ?? rawLabel).trim();
+    const label = rawValue ? rawLabel.toLowerCase() : undefined;
+
+    if (value.startsWith("http")) {
+      authorWebsite = authorWebsite ?? value;
+      return;
+    }
+
+    const lowerValue = value.toLowerCase();
+    const target = label ?? lowerValue;
+
+    if (target.includes("instagram")) {
+      socialCandidates.instagram = socialCandidates.instagram || value;
+      return;
+    }
+    if (target.includes("pinterest")) {
+      socialCandidates.pinterest = socialCandidates.pinterest || value;
+      return;
+    }
+    if (target.includes("youtube")) {
+      socialCandidates.youtube = socialCandidates.youtube || value;
+      return;
+    }
+    if (target.includes("facebook")) {
+      socialCandidates.facebook = socialCandidates.facebook || value;
+      return;
+    }
+
+    if (value.startsWith("@")) {
+      socialCandidates.instagram = socialCandidates.instagram || value;
+    }
+  };
+
+  if (metadata) {
+    metadata.split(/[,;]+/).forEach(processPart);
+  }
+
+  // Process main author segment for embedded links or handles
+  processPart(mainAuthor);
+
+  return {
+    authorName: mainAuthor || undefined,
+    authorWebsite,
+    authorSocial: normalizeSocialHandles(socialCandidates),
+  };
+};
+
 export const getById = query({
   args: {
     id: v.id("recipes"),
@@ -210,6 +316,96 @@ export const search = query({
   },
 });
 
+export const listBySourceHost = query({
+  args: {
+    host: v.string(),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const host = args.host.trim().toLowerCase();
+    const limit = args.limit ?? 25;
+
+    if (!host) {
+      return [] as const;
+    }
+
+    const recipes = await ctx.db
+      .query("recipes")
+      .withIndex("by_source_host", (q) => q.eq("sourceHost", host))
+      .collect();
+
+    return recipes.sort((a, b) => b.createdAt - a.createdAt).slice(0, limit);
+  },
+});
+
+export const listByAuthorName = query({
+  args: {
+    authorName: v.string(),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const authorName = args.authorName.trim().toLowerCase();
+    const limit = args.limit ?? 25;
+
+    if (!authorName) {
+      return [] as const;
+    }
+
+    const recipes = await ctx.db
+      .query("recipes")
+      .withIndex("by_author_name", (q) => q.eq("authorName", authorName))
+      .collect();
+
+    return recipes.sort((a, b) => b.createdAt - a.createdAt).slice(0, limit);
+  },
+});
+
+export const listBySocialHandle = query({
+  args: {
+    handle: v.string(),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const handle = args.handle.trim().replace(/^@/, "").toLowerCase();
+    const limit = args.limit ?? 25;
+
+    if (!handle) {
+      return [] as const;
+    }
+
+    const [instagram, pinterest, youtube, facebook] = await Promise.all([
+      ctx.db
+        .query("recipes")
+        .withIndex("by_author_instagram", (q) => q.eq("authorSocialInstagram", handle))
+        .collect(),
+      ctx.db
+        .query("recipes")
+        .withIndex("by_author_pinterest", (q) => q.eq("authorSocialPinterest", handle))
+        .collect(),
+      ctx.db
+        .query("recipes")
+        .withIndex("by_author_youtube", (q) => q.eq("authorSocialYoutube", handle))
+        .collect(),
+      ctx.db
+        .query("recipes")
+        .withIndex("by_author_facebook", (q) => q.eq("authorSocialFacebook", handle))
+        .collect(),
+    ]);
+
+    const seen = new Set<string>();
+    const combined = [...instagram, ...pinterest, ...youtube, ...facebook].filter(
+      (recipe) => {
+        const key = String(recipe._id);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      },
+    );
+
+    return combined.sort((a, b) => b.createdAt - a.createdAt).slice(0, limit);
+  },
+});
+
 export const seed = mutation({
   args: {},
   handler: async (ctx) => {
@@ -222,6 +418,15 @@ export const seed = mutation({
       );
 
       const now = Date.now();
+      const sourceUrl = (recipe as any).sourceUrl || recipe.attribution?.sourceUrl;
+      const seedSourceHost = normalizeHost(sourceUrl)?.toLowerCase();
+      const seedAuthorName =
+        (recipe as any).authorName || (recipe.attribution as any)?.authorName;
+      const seedAuthorWebsite =
+        (recipe as any).authorWebsite || (recipe.attribution as any)?.authorWebsite;
+      const seedAuthorSocial =
+        (recipe as any).authorSocial || (recipe.attribution as any)?.authorSocial;
+
       const recipeData = {
         recipeName: recipe.recipeName,
         description: recipe.description,
@@ -235,9 +440,27 @@ export const seed = mutation({
         cookTimeMinutes: recipe.cookTimeMinutes,
         totalTimeMinutes: recipe.totalTimeMinutes,
         servings: recipe.servings,
+        sourceHost: seedSourceHost,
+        authorName: seedAuthorName?.toLowerCase(),
+        authorWebsite: seedAuthorWebsite,
+        authorSocial: seedAuthorSocial,
+        authorSocialInstagram: (recipe as any).authorSocialInstagram,
+        authorSocialPinterest: (recipe as any).authorSocialPinterest,
+        authorSocialYoutube: (recipe as any).authorSocialYoutube,
+        authorSocialFacebook: (recipe as any).authorSocialFacebook,
         source: (recipe as any).source || "other",
-        sourceUrl: (recipe as any).sourceUrl,
-        attribution: recipe.attribution,
+        sourceUrl: sourceUrl || "",
+        attribution: {
+          ...recipe.attribution,
+          sourceUrl: recipe.attribution.sourceUrl ?? sourceUrl,
+          authorName: seedAuthorName || (recipe.attribution as any)?.authorName,
+          authorWebsite: seedAuthorWebsite,
+          authorSocial: seedAuthorSocial,
+          sourceHost:
+            (recipe as any).sourceHost ||
+            (recipe.attribution as any)?.sourceHost ||
+            seedSourceHost,
+        },
         imageUrls: recipe.imageUrls,
         createdAt: recipe.createdAt ?? now,
         updatedAt: now,
@@ -284,7 +507,7 @@ export const ingestUniversal = action({
       v.literal("podcast"),
       v.literal("other"),
     ),
-    sourceUrl: v.optional(v.string()),
+    sourceUrl: v.string(),
     rawText: v.optional(v.string()),
     extractedText: v.optional(v.string()),
     oembedPayload: v.optional(v.any()),
@@ -331,7 +554,7 @@ export const ingestUniversal = action({
 CRITICAL REQUIREMENTS:
 1. Extract ALL ingredients from the source - do not skip any, even if they seem optional or have notes
 2. Extract ALL steps from the source - include every instruction, even if they seem minor
-3. Extract complete attribution information including author name, website, and social media profiles
+3. Extract complete attribution information in structured fields (authorName, authorWebsite, authorSocial, sourceHost) without merging them into the author string
 4. Preserve the exact original text for each ingredient in the originalText field
 
 Use encoding guide from plan/encoding-guide.md and return both encodedSteps and encodingVersion.
@@ -360,8 +583,9 @@ STEP EXTRACTION RULES:
 
 ATTRIBUTION EXTRACTION:
 - Extract author name from the page (look for "by [name]", author bio, or site name)
-- Extract author website/social media (Instagram, Pinterest, YouTube, Facebook handles/links)
-- Include the full source URL
+- Extract author website/social media (Instagram, Pinterest, YouTube, Facebook handles/links) and place them in the structured fields
+- Include the full source URL (required)
+- Provide sourceHost as the hostname extracted from the URL
 - Extract date retrieved (use current date: ${new Date().toISOString().slice(0, 10)})
 
 Return JSON with fields: 
@@ -391,10 +615,12 @@ Return JSON with fields:
 - encodingVersion - default "URES-4.6"
 - attribution:
   * source REQUIRED - sourceType value
-  * sourceUrl REQUIRED - full URL
-  * author OPTIONAL - author name if found
+  * sourceUrl REQUIRED - full URL (do not leave blank)
+  * author OPTIONAL - legacy author string (do NOT append website or socials here)
+  * authorName OPTIONAL - structured author name
   * authorWebsite OPTIONAL - author website URL
-  * authorSocial OPTIONAL - object with instagram, pinterest, youtube, facebook handles/links
+  * authorSocial OPTIONAL - object with instagram, pinterest, youtube, facebook handles/links (no commas, one per field)
+  * sourceHost OPTIONAL - hostname derived from sourceUrl
   * dateRetrieved REQUIRED - current date
 - imageUrls - array of image URLs if found
 
@@ -649,6 +875,16 @@ Captured text: ${sourceSummary}`;
       }
     }
     
+    const rawAttribution = enhanced.attribution || {};
+    const authorSocial = normalizeSocialHandles(rawAttribution.authorSocial);
+    const sourceUrl = rawAttribution.sourceUrl || args.sourceUrl;
+    const sourceHost = rawAttribution.sourceHost || normalizeHost(sourceUrl);
+    const normalizedSourceHost = sourceHost?.toLowerCase();
+    const authorName = rawAttribution.authorName || rawAttribution.author || enhanced.author;
+    const normalizedAuthorName = authorName?.trim();
+    const authorNameLookup = normalizedAuthorName?.toLowerCase();
+    const authorWebsite = rawAttribution.authorWebsite?.trim();
+
     const recipeData = {
       recipeName: normalizedRecipeName,
       description: normalizedDescription,
@@ -661,63 +897,27 @@ Captured text: ${sourceSummary}`;
       cookTimeMinutes: enhanced.cookTimeMinutes || 0,
       totalTimeMinutes: enhanced.totalTimeMinutes || 0,
       servings: enhanced.servings || 4,
+      sourceHost: normalizedSourceHost,
+      authorName: authorNameLookup,
+      authorWebsite: authorWebsite || undefined,
+      authorSocial,
+      authorSocialInstagram: authorSocial?.instagram?.toLowerCase(),
+      authorSocialPinterest: authorSocial?.pinterest?.toLowerCase(),
+      authorSocialYoutube: authorSocial?.youtube?.toLowerCase(),
+      authorSocialFacebook: authorSocial?.facebook?.toLowerCase(),
       source: args.sourceType as SourceType,
-      sourceUrl: args.sourceUrl,
-      attribution: (() => {
-        // Build attribution from enhanced data or fallback
-        const rawAttribution = enhanced.attribution || {};
-        const baseAttribution = {
-          source: rawAttribution.source || args.sourceType,
-          sourceUrl: rawAttribution.sourceUrl || args.sourceUrl || undefined,
-          author: rawAttribution.author || enhanced.author || undefined,
-          dateRetrieved: rawAttribution.dateRetrieved || new Date().toISOString().slice(0, 10),
-        };
-        
-        // If enhanced.attribution has authorWebsite or authorSocial, include in author field
-        // Format: "Author Name (website: url, instagram: @handle)"
-        if (rawAttribution.authorWebsite || rawAttribution.authorSocial) {
-          let authorInfo = baseAttribution.author || "";
-          const parts: string[] = [];
-          
-          if (rawAttribution.authorWebsite) {
-            parts.push(`website: ${rawAttribution.authorWebsite}`);
-          }
-          if (rawAttribution.authorSocial?.instagram) {
-            parts.push(`instagram: ${rawAttribution.authorSocial.instagram}`);
-          }
-          if (rawAttribution.authorSocial?.pinterest) {
-            parts.push(`pinterest: ${rawAttribution.authorSocial.pinterest}`);
-          }
-          if (rawAttribution.authorSocial?.youtube) {
-            parts.push(`youtube: ${rawAttribution.authorSocial.youtube}`);
-          }
-          if (rawAttribution.authorSocial?.facebook) {
-            parts.push(`facebook: ${rawAttribution.authorSocial.facebook}`);
-          }
-          
-          if (parts.length > 0) {
-            authorInfo = authorInfo 
-              ? `${authorInfo} (${parts.join(", ")})`
-              : parts.join(", ");
-          }
-          
-          // Return only the fields allowed by the schema
-          return {
-            source: baseAttribution.source,
-            sourceUrl: baseAttribution.sourceUrl,
-            author: authorInfo || undefined,
-            dateRetrieved: baseAttribution.dateRetrieved,
-          };
-        }
-        
-        // Return only the fields allowed by the schema (remove any extra fields)
-        return {
-          source: baseAttribution.source,
-          sourceUrl: baseAttribution.sourceUrl,
-          author: baseAttribution.author,
-          dateRetrieved: baseAttribution.dateRetrieved,
-        };
-      })(),
+      sourceUrl,
+      attribution: {
+        source: rawAttribution.source || args.sourceType,
+        sourceUrl,
+        author: rawAttribution.author || enhanced.author || undefined,
+        authorName: normalizedAuthorName || undefined,
+        authorWebsite: authorWebsite || undefined,
+        authorSocial,
+        sourceHost: normalizedSourceHost,
+        dateRetrieved:
+          rawAttribution.dateRetrieved || new Date().toISOString().slice(0, 10),
+      },
       imageUrls: enhanced.imageUrls || [],
       createdAt: now,
       updatedAt: now,
@@ -1038,6 +1238,21 @@ export const createRecipeWithImage = action({
       cookTimeMinutes: v.number(),
       totalTimeMinutes: v.number(),
       servings: v.number(),
+      sourceHost: v.optional(v.string()),
+      authorName: v.optional(v.string()),
+      authorWebsite: v.optional(v.string()),
+      authorSocial: v.optional(
+        v.object({
+          instagram: v.optional(v.string()),
+          pinterest: v.optional(v.string()),
+          youtube: v.optional(v.string()),
+          facebook: v.optional(v.string()),
+        }),
+      ),
+      authorSocialInstagram: v.optional(v.string()),
+      authorSocialPinterest: v.optional(v.string()),
+      authorSocialYoutube: v.optional(v.string()),
+      authorSocialFacebook: v.optional(v.string()),
       source: v.optional(v.union(
         v.literal("website"),
         v.literal("audio"),
@@ -1061,11 +1276,22 @@ export const createRecipeWithImage = action({
         v.literal("podcast"),
         v.literal("other")
       )),
-      sourceUrl: v.optional(v.string()),
+      sourceUrl: v.string(),
       attribution: v.object({
         source: v.string(),
-        sourceUrl: v.optional(v.string()),
+        sourceUrl: v.string(),
         author: v.optional(v.string()),
+        authorName: v.optional(v.string()),
+        authorWebsite: v.optional(v.string()),
+        authorSocial: v.optional(
+          v.object({
+            instagram: v.optional(v.string()),
+            pinterest: v.optional(v.string()),
+            youtube: v.optional(v.string()),
+            facebook: v.optional(v.string()),
+          }),
+        ),
+        sourceHost: v.optional(v.string()),
         dateRetrieved: v.string(),
       }),
       imageUrl: v.string(),
@@ -1132,6 +1358,21 @@ export const create = mutation({
     cookTimeMinutes: v.number(),
     totalTimeMinutes: v.number(),
     servings: v.number(),
+    sourceHost: v.optional(v.string()),
+    authorName: v.optional(v.string()),
+    authorWebsite: v.optional(v.string()),
+    authorSocial: v.optional(
+      v.object({
+        instagram: v.optional(v.string()),
+        pinterest: v.optional(v.string()),
+        youtube: v.optional(v.string()),
+        facebook: v.optional(v.string()),
+      }),
+    ),
+    authorSocialInstagram: v.optional(v.string()),
+    authorSocialPinterest: v.optional(v.string()),
+    authorSocialYoutube: v.optional(v.string()),
+    authorSocialFacebook: v.optional(v.string()),
     source: v.optional(v.union(
       v.literal("website"),
       v.literal("audio"),
@@ -1155,11 +1396,22 @@ export const create = mutation({
       v.literal("podcast"),
       v.literal("other")
     )),
-    sourceUrl: v.optional(v.string()),
+    sourceUrl: v.string(),
     attribution: v.object({
       source: v.string(),
-      sourceUrl: v.optional(v.string()),
+      sourceUrl: v.string(),
       author: v.optional(v.string()),
+      authorName: v.optional(v.string()),
+      authorWebsite: v.optional(v.string()),
+      authorSocial: v.optional(
+        v.object({
+          instagram: v.optional(v.string()),
+          pinterest: v.optional(v.string()),
+          youtube: v.optional(v.string()),
+          facebook: v.optional(v.string()),
+        }),
+      ),
+      sourceHost: v.optional(v.string()),
       dateRetrieved: v.string(),
     }),
     imageUrl: v.string(),
@@ -1239,6 +1491,21 @@ export const insertFromIngestion = mutation({
       cookTimeMinutes: v.number(),
       totalTimeMinutes: v.number(),
       servings: v.number(),
+      sourceHost: v.optional(v.string()),
+      authorName: v.optional(v.string()),
+      authorWebsite: v.optional(v.string()),
+      authorSocial: v.optional(
+        v.object({
+          instagram: v.optional(v.string()),
+          pinterest: v.optional(v.string()),
+          youtube: v.optional(v.string()),
+          facebook: v.optional(v.string()),
+        }),
+      ),
+      authorSocialInstagram: v.optional(v.string()),
+      authorSocialPinterest: v.optional(v.string()),
+      authorSocialYoutube: v.optional(v.string()),
+      authorSocialFacebook: v.optional(v.string()),
       source: v.optional(
         v.union(
           v.literal("website"),
@@ -1264,11 +1531,22 @@ export const insertFromIngestion = mutation({
           v.literal("other")
         )
       ),
-      sourceUrl: v.optional(v.string()),
+      sourceUrl: v.string(),
       attribution: v.object({
         source: v.string(),
-        sourceUrl: v.optional(v.string()),
+        sourceUrl: v.string(),
         author: v.optional(v.string()),
+        authorName: v.optional(v.string()),
+        authorWebsite: v.optional(v.string()),
+        authorSocial: v.optional(
+          v.object({
+            instagram: v.optional(v.string()),
+            pinterest: v.optional(v.string()),
+            youtube: v.optional(v.string()),
+            facebook: v.optional(v.string()),
+          }),
+        ),
+        sourceHost: v.optional(v.string()),
         dateRetrieved: v.string(),
       }),
       imageUrls: v.optional(v.array(v.string())),
@@ -1288,6 +1566,81 @@ export const insertFromIngestion = mutation({
   returns: v.id("recipes"),
   handler: async (ctx, args) => {
     return await ctx.db.insert("recipes", args.recipeData);
+  },
+});
+
+export const migrateStructuredAttributionFields = mutation({
+  args: {},
+  returns: v.object({
+    updated: v.number(),
+    total: v.number(),
+  }),
+  handler: async (ctx) => {
+    const recipes = await ctx.db.query("recipes").collect();
+
+    let updated = 0;
+
+    for (const recipe of recipes) {
+      const doc = recipe as any;
+      const attribution = doc.attribution || {};
+      const sourceUrl: string = doc.sourceUrl || attribution.sourceUrl || "";
+      const normalizedSourceHost =
+        doc.sourceHost || attribution.sourceHost || normalizeHost(sourceUrl)?.toLowerCase();
+
+      const legacyParsed = parseLegacyAuthorAttribution(attribution.author);
+      const structuredAuthorName =
+        attribution.authorName || legacyParsed.authorName || doc.authorName;
+      const authorNameLookup = structuredAuthorName?.trim().toLowerCase();
+      const structuredAuthorWebsite =
+        doc.authorWebsite || attribution.authorWebsite || legacyParsed.authorWebsite;
+      const structuredAuthorSocial = normalizeSocialHandles(
+        doc.authorSocial || attribution.authorSocial || legacyParsed.authorSocial,
+      );
+
+      const newDoc = {
+        ...doc,
+        sourceUrl,
+        sourceHost: normalizedSourceHost,
+        authorName: authorNameLookup || undefined,
+        authorWebsite: structuredAuthorWebsite?.trim() || undefined,
+        authorSocial: structuredAuthorSocial,
+        authorSocialInstagram:
+          structuredAuthorSocial?.instagram?.toLowerCase() || doc.authorSocialInstagram,
+        authorSocialPinterest:
+          structuredAuthorSocial?.pinterest?.toLowerCase() || doc.authorSocialPinterest,
+        authorSocialYoutube:
+          structuredAuthorSocial?.youtube?.toLowerCase() || doc.authorSocialYoutube,
+        authorSocialFacebook:
+          structuredAuthorSocial?.facebook?.toLowerCase() || doc.authorSocialFacebook,
+        attribution: {
+          ...attribution,
+          sourceUrl,
+          sourceHost: normalizedSourceHost,
+          authorName: structuredAuthorName,
+          authorWebsite: structuredAuthorWebsite?.trim(),
+          authorSocial: structuredAuthorSocial,
+        },
+      };
+
+      const hasChange =
+        doc.sourceUrl !== newDoc.sourceUrl ||
+        doc.sourceHost !== newDoc.sourceHost ||
+        doc.authorName !== newDoc.authorName ||
+        doc.authorWebsite !== newDoc.authorWebsite ||
+        doc.authorSocialInstagram !== newDoc.authorSocialInstagram ||
+        doc.authorSocialPinterest !== newDoc.authorSocialPinterest ||
+        doc.authorSocialYoutube !== newDoc.authorSocialYoutube ||
+        doc.authorSocialFacebook !== newDoc.authorSocialFacebook ||
+        JSON.stringify(doc.authorSocial) !== JSON.stringify(newDoc.authorSocial) ||
+        JSON.stringify(attribution) !== JSON.stringify(newDoc.attribution);
+
+      if (hasChange) {
+        await ctx.db.replace(recipe._id, newDoc);
+        updated += 1;
+      }
+    }
+
+    return { updated, total: recipes.length };
   },
 });
 
