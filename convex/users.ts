@@ -61,15 +61,15 @@ function transformFoodLibraryItem(
   return {
     ...item,
     translations: transformTranslations(
-      item.translations as Record<string, string>,
+      item.translations as unknown as Record<string, string>,
     ) as Doc<"foodLibrary">["translations"],
     categoryTranslations: transformCategoryTranslations(
-      item.categoryTranslations as Record<string, string>,
+      item.categoryTranslations as unknown as Record<string, string>,
     ) as Doc<"foodLibrary">["categoryTranslations"],
     varieties: item.varieties.map((variety) => ({
       ...variety,
       translations: transformVarietyTranslations(
-        variety.translations as Record<string, string>,
+        variety.translations as unknown as Record<string, string>,
       ) as Doc<"foodLibrary">["varieties"][number]["translations"],
     })),
   } satisfies Omit<Doc<"foodLibrary">, "_id" | "_creationTime">;

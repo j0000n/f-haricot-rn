@@ -4,11 +4,11 @@ import { api } from "@/convex/_generated/api";
 import { useQuery } from "convex/react";
 import type { Doc } from "@/convex/_generated/dataModel";
 
-import type {
-  InventoryDisplayItem,
+import {
   SUPPORTED_LANGUAGES,
-  SupportedLanguage,
-  UserInventoryEntry,
+  type InventoryDisplayItem,
+  type SupportedLanguage,
+  type UserInventoryEntry,
 } from "@/types/food";
 
 const DEFAULT_LANGUAGE: SupportedLanguage = "en";

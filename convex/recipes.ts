@@ -29,6 +29,26 @@ type SourceType =
   | "podcast"
   | "other";
 
+const REQUIRED_LANGUAGES = ["en", "es", "zh", "fr", "ar", "ja", "vi", "tl"] as const;
+
+// Normalize multilingual object to ensure all required languages are present
+const normalizeMultilingual = (
+  obj: Record<string, string> | undefined,
+  fallback: string = "",
+): Record<typeof REQUIRED_LANGUAGES[number], string> => {
+  const result: Record<string, string> = {};
+  const source = obj || {};
+  
+  // Use English as primary fallback, then the provided fallback, then empty string
+  const englishFallback = source.en || fallback || "";
+  
+  for (const lang of REQUIRED_LANGUAGES) {
+    result[lang] = source[lang] || englishFallback;
+  }
+  
+  return result as Record<typeof REQUIRED_LANGUAGES[number], string>;
+};
+
 const normalizeToGrams = (
   ingredient: {
     normalizedQuantity?: number;
@@ -283,7 +303,14 @@ export const ingestUniversal = action({
       missing: v.number(),
     }),
   }),
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<{
+    recipeId: Id<"recipes">;
+    encodingVersion: string;
+    validationSummary: {
+      ambiguous: number;
+      missing: number;
+    };
+  }> => {
     const openAiKey = process.env.OPEN_AI_KEY;
     if (!openAiKey) {
       throw new Error("OPEN_AI_KEY is not configured on the server");
@@ -301,15 +328,75 @@ export const ingestUniversal = action({
 
     const prompt = `You are the Universal Recipe Encoding System (URES) ingestion agent. Produce strict JSON for Convex mutation.
 
+CRITICAL REQUIREMENTS:
+1. Extract ALL ingredients from the source - do not skip any, even if they seem optional or have notes
+2. Extract ALL steps from the source - include every instruction, even if they seem minor
+3. Extract complete attribution information including author name, website, and social media profiles
+4. Preserve the exact original text for each ingredient in the originalText field
+
 Use encoding guide from plan/encoding-guide.md and include encodedSteps plus encodingVersion.
 Use decoding guide at plan/decoding-guide.md to ensure qualifier order and deterministic cues.
 Preserve free-text steps for fallback while providing encodedSteps.
-The food library codes include: ${foodLibrary
-      .slice(0, 50)
-      .map((f: { code: string }) => f.code)
-      .join(", ")}. Codes outside the library must be flagged via validation.status=\"missing\" and suggestions referencing nearby codes.
 
-Return JSON with fields: recipeName (8 languages), description (8 languages), ingredients (foodCode, varietyCode?, quantity, unit, preparation?, displayQuantity?, displayUnit?, normalizedQuantity?, normalizedUnit?, originalText?, validation {status,suggestions}), steps (stepNumber, instructions 8 languages, timeInMinutes?, temperature {value, unit}), emojiTags, prepTimeMinutes, cookTimeMinutes, totalTimeMinutes, servings, encodedSteps, encodingVersion (default URES-4.6), attribution {source, sourceUrl?, author?, dateRetrieved}, imageUrls (optional array).
+Available food library items (code: name):
+${foodLibrary
+      .slice(0, 100)
+      .map((f: { code: string; name: string }) => `${f.code}: ${f.name}`)
+      .join(", ")}
+
+INGREDIENT EXTRACTION RULES:
+- Extract EVERY ingredient listed, including optional ones (mark preparation field if optional)
+- Include quantities exactly as written (e.g., "1/2 cup", "21 dates", "1.5 cups or 250g")
+- Preserve preparation notes in the preparation field (e.g., "pitted", "crushed", "chopped")
+- For ingredients with alternatives (e.g., "or 2 tsp cinnamon + ¾ tsp ginger"), include the primary option and note alternatives in originalText
+- Use foodCode from library when possible, or generate provisional codes like "provisional.coconut_sugar"
+
+STEP EXTRACTION RULES:
+- Extract ALL steps in order - do not combine or skip steps
+- Include sub-steps and detailed instructions
+- Preserve timing information (e.g., "4-5 minutes", "1-2 hours")
+- Preserve temperature information (e.g., "235–240°F")
+- Each major instruction should be a separate step
+
+ATTRIBUTION EXTRACTION:
+- Extract author name from the page (look for "by [name]", author bio, or site name)
+- Extract author website/social media (Instagram, Pinterest, YouTube, Facebook handles/links)
+- Include the full source URL
+- Extract date retrieved (use current date: ${new Date().toISOString().slice(0, 10)})
+
+Return JSON with fields: 
+- recipeName (8 languages: en, es, zh, fr, ar, ja, vi, tl) - translate the recipe title
+- description (8 languages) - translate the recipe description
+- ingredients (ARRAY - include ALL ingredients):
+  * foodCode REQUIRED - library code or "provisional.ingredient_name"
+  * originalText REQUIRED - exact text from source (e.g., "21 organic Medjool dates, pitted")
+  * quantity REQUIRED - numeric quantity
+  * unit REQUIRED - unit of measurement
+  * preparation OPTIONAL - preparation notes (e.g., "pitted", "crushed", "chopped")
+  * displayQuantity OPTIONAL - original display (e.g., "1/2" for 0.5)
+  * displayUnit OPTIONAL - original unit display
+  * normalizedQuantity OPTIONAL - converted to base unit
+  * normalizedUnit OPTIONAL - MUST be "g", "ml", or "count" only
+- steps (ARRAY - include ALL steps in order):
+  * stepNumber REQUIRED - sequential number starting from 1
+  * instructions REQUIRED - object with 8 languages (en, es, zh, fr, ar, ja, vi, tl)
+  * timeInMinutes OPTIONAL - extract if mentioned
+  * temperature OPTIONAL - {value: number, unit: "F" or "C"} if mentioned
+- emojiTags - array of 3-5 relevant emojis
+- prepTimeMinutes - extract from source or estimate
+- cookTimeMinutes - extract from source or estimate (0 if no-bake)
+- totalTimeMinutes - extract from source or calculate
+- servings - extract from source or default to 4
+- encodedSteps - as JSON string following URES encoding
+- encodingVersion - default "URES-4.6"
+- attribution:
+  * source REQUIRED - sourceType value
+  * sourceUrl REQUIRED - full URL
+  * author OPTIONAL - author name if found
+  * authorWebsite OPTIONAL - author website URL
+  * authorSocial OPTIONAL - object with instagram, pinterest, youtube, facebook handles/links
+  * dateRetrieved REQUIRED - current date
+- imageUrls - array of image URLs if found
 
 Source context: ${args.sourceType} ${args.sourceUrl ?? "(no url)"}
 Captured text: ${sourceSummary}`;
@@ -351,12 +438,38 @@ Captured text: ${sourceSummary}`;
 
     const enhanced = JSON.parse(jsonText);
 
+    // Validate that we extracted ingredients and steps
+    const ingredientCount = (enhanced.ingredients || []).length;
+    const stepCount = (enhanced.steps || []).length;
+    
+    console.log(`[ingestUniversal] Extracted ${ingredientCount} ingredients and ${stepCount} steps from source`);
+    
+    if (ingredientCount === 0) {
+      console.warn(`[ingestUniversal] WARNING: No ingredients extracted from source`);
+    }
+    if (stepCount === 0) {
+      console.warn(`[ingestUniversal] WARNING: No steps extracted from source`);
+    }
+
     const validationSummary = { ambiguous: 0, missing: 0 };
     const foodItemsAdded: Id<"foodLibrary">[] = [];
     const normalizedIngredients = await Promise.all(
       (enhanced.ingredients || []).map(async (ingredient: any) => {
+        // Ensure foodCode exists - generate a provisional one if missing
+        let foodCode = ingredient.foodCode;
+        if (!foodCode || typeof foodCode !== "string") {
+          // Generate a provisional code from the ingredient name
+          const ingredientName = ingredient.originalText || ingredient.displayText || "unknown";
+          const sanitized = ingredientName
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "_")
+            .replace(/^_+|_+$/g, "")
+            .slice(0, 30);
+          foodCode = `provisional.${sanitized}`;
+        }
+
         const match = foodLibrary.find(
-          (entry) => entry.code === ingredient.foodCode,
+          (entry: Doc<"foodLibrary">) => entry.code === foodCode,
         );
         let status: "matched" | "ambiguous" | "missing" = "matched";
         let suggestions: string[] | undefined;
@@ -364,40 +477,163 @@ Captured text: ${sourceSummary}`;
         if (!match) {
           status = "missing";
           validationSummary.missing += 1;
-          const nearby = foodLibrarySeed
-            .filter((entry) => entry.namespace === ingredient.foodCode?.split(".")[0])
+          
+          // Try to find similar items in the food library by name
+          const ingredientNameLower = (ingredient.originalText || ingredient.displayText || "").toLowerCase();
+          const similarItems = foodLibrary
+            .filter((entry) => 
+              entry.name.toLowerCase().includes(ingredientNameLower) ||
+              ingredientNameLower.includes(entry.name.toLowerCase())
+            )
             .slice(0, 3)
             .map((entry) => entry.code);
+          
+          const nearby = similarItems.length > 0 
+            ? similarItems
+            : foodLibrarySeed
+                .filter((entry) => entry.namespace === foodCode?.split(".")[0])
+                .slice(0, 3)
+                .map((entry) => entry.code);
           suggestions = nearby;
 
-          const createdId = await ctx.runMutation(api.foodLibrary.ensureProvisional, {
-            code: ingredient.foodCode,
-            name: ingredient.originalText || ingredient.foodCode,
-            namespace: ingredient.foodCode?.split(".")[0],
-            category: ingredient.category || "Provisional",
-          });
-          foodItemsAdded.push(createdId);
+          try {
+            const createdId = await ctx.runMutation(api.foodLibrary.ensureProvisional, {
+              code: foodCode,
+              name: ingredient.originalText || ingredient.displayText || foodCode,
+              namespace: foodCode.split(".")[0] || "provisional",
+              category: ingredient.category || "Provisional",
+            });
+            foodItemsAdded.push(createdId);
+          } catch (error) {
+            // If creation fails, log but continue - the ingredient will still be marked as missing
+            console.error(`Failed to create provisional food item for ${foodCode}:`, error);
+          }
         }
 
         const ingredientValidation = ingredient.validation ?? {};
-        return {
-          ...ingredient,
+        
+        // Normalize normalizedUnit to ensure it's one of the valid values or undefined
+        let normalizedUnit: "g" | "ml" | "count" | undefined = ingredient.normalizedUnit;
+        if (normalizedUnit && normalizedUnit !== "g" && normalizedUnit !== "ml" && normalizedUnit !== "count") {
+          // Invalid normalizedUnit - set to undefined
+          normalizedUnit = undefined;
+        }
+        
+        // Normalize displayQuantity to ensure it's a string or undefined
+        let displayQuantity: string | undefined;
+        const rawDisplayQuantity = ingredient.displayQuantity;
+        if (rawDisplayQuantity !== undefined && rawDisplayQuantity !== null) {
+          // Convert to string if it's a number
+          if (typeof rawDisplayQuantity === "number") {
+            displayQuantity = String(rawDisplayQuantity);
+          } else if (typeof rawDisplayQuantity === "string") {
+            displayQuantity = rawDisplayQuantity;
+          } else {
+            // If it's some other type, convert to string
+            displayQuantity = String(rawDisplayQuantity);
+          }
+        } else {
+          displayQuantity = undefined;
+        }
+        
+        // Normalize displayUnit to ensure it's a string or undefined
+        let displayUnit: string | undefined = ingredient.displayUnit;
+        if (displayUnit !== undefined && displayUnit !== null) {
+          if (typeof displayUnit !== "string") {
+            displayUnit = String(displayUnit);
+          }
+        } else {
+          displayUnit = undefined;
+        }
+        
+        // Normalize optional string fields - convert null to undefined
+        const normalizeOptionalString = (value: any): string | undefined => {
+          if (value === null || value === undefined) {
+            return undefined;
+          }
+          if (typeof value === "string") {
+            return value;
+          }
+          return String(value);
+        };
+        
+        // Normalize optional string fields first
+        const prep = normalizeOptionalString(ingredient.preparation);
+        const origText = normalizeOptionalString(ingredient.originalText);
+        
+        // Build the normalized ingredient object, explicitly handling null values
+        const normalizedIngredient: any = {
+          foodCode, // Ensure foodCode is always set
+          quantity: ingredient.quantity,
+          unit: ingredient.unit,
+          normalizedUnit, // Ensure normalizedUnit is valid or undefined
+          displayQuantity, // Ensure displayQuantity is a string or undefined
+          displayUnit, // Ensure displayUnit is a string or undefined
           validation: {
             status,
             suggestions: ingredientValidation.suggestions || suggestions,
           },
         };
+        
+        // Only include optional fields if they have valid values (not null/undefined)
+        if (prep !== undefined) {
+          normalizedIngredient.preparation = prep;
+        }
+        if (origText !== undefined) {
+          normalizedIngredient.originalText = origText;
+        }
+        if (ingredient.varietyCode !== undefined && ingredient.varietyCode !== null) {
+          normalizedIngredient.varietyCode = ingredient.varietyCode;
+        }
+        if (ingredient.normalizedQuantity !== undefined && ingredient.normalizedQuantity !== null) {
+          normalizedIngredient.normalizedQuantity = ingredient.normalizedQuantity;
+        }
+        
+        return normalizedIngredient;
       }),
     );
 
     const now = Date.now();
     const encodingVersion = enhanced.encodingVersion || "URES-4.6";
+    
+    // Normalize multilingual fields to ensure all required languages are present
+    const normalizedRecipeName = normalizeMultilingual(
+      enhanced.recipeName,
+      enhanced.recipeName?.en || "Recipe",
+    );
+    const normalizedDescription = normalizeMultilingual(
+      enhanced.description,
+      enhanced.description?.en || "",
+    );
+    
+    // Normalize steps to ensure all required languages are present
+    const normalizedSteps = (enhanced.steps || []).map((step: any) => ({
+      ...step,
+      instructions: normalizeMultilingual(
+        step.instructions,
+        step.instructions?.en || "",
+      ),
+    }));
+    
+    // Normalize encodedSteps: if it's an array, convert to JSON string; if string, use as-is; otherwise undefined
+    let normalizedEncodedSteps: string | undefined;
+    if (enhanced.encodedSteps !== undefined && enhanced.encodedSteps !== null) {
+      if (Array.isArray(enhanced.encodedSteps)) {
+        normalizedEncodedSteps = JSON.stringify(enhanced.encodedSteps);
+      } else if (typeof enhanced.encodedSteps === "string") {
+        normalizedEncodedSteps = enhanced.encodedSteps;
+      } else {
+        // If it's some other type, try to stringify it
+        normalizedEncodedSteps = JSON.stringify(enhanced.encodedSteps);
+      }
+    }
+    
     const recipeData = {
-      recipeName: enhanced.recipeName,
-      description: enhanced.description,
+      recipeName: normalizedRecipeName,
+      description: normalizedDescription,
       ingredients: normalizedIngredients,
-      steps: enhanced.steps || [],
-      encodedSteps: enhanced.encodedSteps,
+      steps: normalizedSteps,
+      encodedSteps: normalizedEncodedSteps,
       encodingVersion,
       emojiTags: enhanced.emojiTags || [],
       prepTimeMinutes: enhanced.prepTimeMinutes || 0,
@@ -406,14 +642,61 @@ Captured text: ${sourceSummary}`;
       servings: enhanced.servings || 4,
       source: args.sourceType as SourceType,
       sourceUrl: args.sourceUrl,
-      attribution:
-        enhanced.attribution ||
-        ({
-          source: args.sourceType,
-          sourceUrl: args.sourceUrl,
-          author: enhanced.author,
-          dateRetrieved: new Date().toISOString().slice(0, 10),
-        } as any),
+      attribution: (() => {
+        // Build attribution from enhanced data or fallback
+        const rawAttribution = enhanced.attribution || {};
+        const baseAttribution = {
+          source: rawAttribution.source || args.sourceType,
+          sourceUrl: rawAttribution.sourceUrl || args.sourceUrl || undefined,
+          author: rawAttribution.author || enhanced.author || undefined,
+          dateRetrieved: rawAttribution.dateRetrieved || new Date().toISOString().slice(0, 10),
+        };
+        
+        // If enhanced.attribution has authorWebsite or authorSocial, include in author field
+        // Format: "Author Name (website: url, instagram: @handle)"
+        if (rawAttribution.authorWebsite || rawAttribution.authorSocial) {
+          let authorInfo = baseAttribution.author || "";
+          const parts: string[] = [];
+          
+          if (rawAttribution.authorWebsite) {
+            parts.push(`website: ${rawAttribution.authorWebsite}`);
+          }
+          if (rawAttribution.authorSocial?.instagram) {
+            parts.push(`instagram: ${rawAttribution.authorSocial.instagram}`);
+          }
+          if (rawAttribution.authorSocial?.pinterest) {
+            parts.push(`pinterest: ${rawAttribution.authorSocial.pinterest}`);
+          }
+          if (rawAttribution.authorSocial?.youtube) {
+            parts.push(`youtube: ${rawAttribution.authorSocial.youtube}`);
+          }
+          if (rawAttribution.authorSocial?.facebook) {
+            parts.push(`facebook: ${rawAttribution.authorSocial.facebook}`);
+          }
+          
+          if (parts.length > 0) {
+            authorInfo = authorInfo 
+              ? `${authorInfo} (${parts.join(", ")})`
+              : parts.join(", ");
+          }
+          
+          // Return only the fields allowed by the schema
+          return {
+            source: baseAttribution.source,
+            sourceUrl: baseAttribution.sourceUrl,
+            author: authorInfo || undefined,
+            dateRetrieved: baseAttribution.dateRetrieved,
+          };
+        }
+        
+        // Return only the fields allowed by the schema (remove any extra fields)
+        return {
+          source: baseAttribution.source,
+          sourceUrl: baseAttribution.sourceUrl,
+          author: baseAttribution.author,
+          dateRetrieved: baseAttribution.dateRetrieved,
+        };
+      })(),
       imageUrls: enhanced.imageUrls || [],
       createdAt: now,
       updatedAt: now,
@@ -421,7 +704,7 @@ Captured text: ${sourceSummary}`;
       foodItemsAdded: [...foodItemsAdded, ...(enhanced.foodItemsAdded ?? [])],
     } satisfies Omit<Doc<"recipes">, "_id" | "_creationTime">;
 
-    const recipeId = await ctx.runMutation(api.recipes.insertFromIngestion, {
+    const recipeId: Id<"recipes"> = await ctx.runMutation(api.recipes.insertFromIngestion, {
       recipeData,
     });
 
