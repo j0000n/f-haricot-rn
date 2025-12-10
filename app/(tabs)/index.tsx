@@ -294,8 +294,8 @@ export default function HomeScreen() {
       return;
     }
 
-    if (!rawText.trim() && !sourceUrl.trim()) {
-      setIngestError("Please provide a URL, raw text, or both so we can ingest a recipe.");
+    if (!sourceUrl.trim()) {
+      setIngestError("Please provide a source URL so we can ingest attribution correctly.");
       return;
     }
 
@@ -304,7 +304,7 @@ export default function HomeScreen() {
       setIngestError(null);
       const response = await ingestUniversal({
         sourceType,
-        sourceUrl: sourceUrl.trim() || undefined,
+        sourceUrl: sourceUrl.trim(),
         rawText: rawText.trim() || undefined,
       });
 

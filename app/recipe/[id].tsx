@@ -115,6 +115,17 @@ const createStyles = (tokens: ThemeTokens) =>
 
 type Styles = ReturnType<typeof createStyles>;
 
+const getHostFromUrl = (url?: string) => {
+  if (!url) return undefined;
+
+  try {
+    return new URL(url).host;
+  } catch (error) {
+    console.warn("Unable to parse host from url", url, error);
+    return undefined;
+  }
+};
+
 export default function RecipeDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const recipeId = useMemo(() => (Array.isArray(id) ? id[0] : id), [id]);
@@ -151,6 +162,41 @@ export default function RecipeDetailScreen() {
       ),
     [language, recipe.encodedSteps, recipe.sourceSteps, translationGuides],
   );
+
+  const attributionDetails = useMemo(() => {
+    const authorName =
+      recipe.attribution.authorName ||
+      recipe.attribution.author ||
+      recipe.authorName;
+    const authorWebsite = recipe.attribution.authorWebsite || recipe.authorWebsite;
+    const authorSocial = recipe.attribution.authorSocial || recipe.authorSocial;
+    const sourceHost =
+      recipe.attribution.sourceHost ||
+      recipe.sourceHost ||
+      getHostFromUrl(recipe.sourceUrl || recipe.attribution.sourceUrl);
+
+    const socialParts: string[] = [];
+    if (authorSocial?.instagram) {
+      socialParts.push(`IG @${authorSocial.instagram}`);
+    }
+    if (authorSocial?.pinterest) {
+      socialParts.push(`Pinterest @${authorSocial.pinterest}`);
+    }
+    if (authorSocial?.youtube) {
+      socialParts.push(`YouTube ${authorSocial.youtube}`);
+    }
+    if (authorSocial?.facebook) {
+      socialParts.push(`Facebook ${authorSocial.facebook}`);
+    }
+
+    return {
+      sourceHost,
+      authorLine: authorName,
+      websiteLine: authorWebsite,
+      socialLine: socialParts.length > 0 ? socialParts.join(" · ") : undefined,
+      fallbackSource: recipe.attribution.source,
+    };
+  }, [recipe]);
 
   const headerOptions = {
     title: "",
@@ -221,8 +267,19 @@ export default function RecipeDetailScreen() {
 
         <View style={styles.attribution}>
           <Text style={styles.attributionText}>
-            {t("recipe.adaptedFrom")}: {recipe.attribution.source}
+            {t("recipe.adaptedFrom")}:
+            {" "}
+            {attributionDetails.sourceHost || attributionDetails.fallbackSource}
           </Text>
+          {attributionDetails.authorLine ? (
+            <Text style={styles.attributionText}>{attributionDetails.authorLine}</Text>
+          ) : null}
+          {attributionDetails.websiteLine ? (
+            <Text style={styles.attributionText}>{attributionDetails.websiteLine}</Text>
+          ) : null}
+          {attributionDetails.socialLine ? (
+            <Text style={styles.attributionText}>{attributionDetails.socialLine}</Text>
+          ) : null}
         </View>
 
         <Pressable

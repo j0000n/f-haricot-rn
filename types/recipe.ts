@@ -45,8 +45,17 @@ export interface RecipeSourceStep {
 
 export interface RecipeAttribution {
   source: string;
-  sourceUrl?: string;
+  sourceUrl: string;
   author?: string;
+  authorName?: string;
+  authorWebsite?: string;
+  authorSocial?: {
+    instagram?: string;
+    pinterest?: string;
+    youtube?: string;
+    facebook?: string;
+  };
+  sourceHost?: string;
   dateRetrieved: string;
 }
 
@@ -61,6 +70,16 @@ export interface Recipe {
   cookTimeMinutes: number;
   totalTimeMinutes: number;
   servings: number;
+  sourceHost?: string;
+  authorName?: string;
+  authorWebsite?: string;
+  authorSocial?: RecipeAttribution["authorSocial"];
+  authorSocialInstagram?: string;
+  authorSocialPinterest?: string;
+  authorSocialYoutube?: string;
+  authorSocialFacebook?: string;
+  source?: string;
+  sourceUrl: string;
   attribution: RecipeAttribution;
   imageUrls?: string[];
   originalImageLargeStorageId?: Id<"_storage">;

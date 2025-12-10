@@ -283,6 +283,21 @@ const schema = defineSchema({
     cookTimeMinutes: v.number(),
     totalTimeMinutes: v.number(),
     servings: v.number(),
+    sourceHost: v.optional(v.string()),
+    authorName: v.optional(v.string()),
+    authorWebsite: v.optional(v.string()),
+    authorSocial: v.optional(
+      v.object({
+        instagram: v.optional(v.string()),
+        pinterest: v.optional(v.string()),
+        youtube: v.optional(v.string()),
+        facebook: v.optional(v.string()),
+      }),
+    ),
+    authorSocialInstagram: v.optional(v.string()),
+    authorSocialPinterest: v.optional(v.string()),
+    authorSocialYoutube: v.optional(v.string()),
+    authorSocialFacebook: v.optional(v.string()),
     source: v.optional(v.union(
       v.literal("website"),
       v.literal("audio"),
@@ -306,11 +321,22 @@ const schema = defineSchema({
       v.literal("podcast"),
       v.literal("other")
     )),
-    sourceUrl: v.optional(v.string()),
+    sourceUrl: v.string(),
     attribution: v.object({
       source: v.string(),
-      sourceUrl: v.optional(v.string()),
+      sourceUrl: v.string(),
       author: v.optional(v.string()),
+      authorName: v.optional(v.string()),
+      authorWebsite: v.optional(v.string()),
+      authorSocial: v.optional(
+        v.object({
+          instagram: v.optional(v.string()),
+          pinterest: v.optional(v.string()),
+          youtube: v.optional(v.string()),
+          facebook: v.optional(v.string()),
+        }),
+      ),
+      sourceHost: v.optional(v.string()),
       dateRetrieved: v.string(),
     }),
     imageUrls: v.optional(v.array(v.string())),
@@ -328,7 +354,13 @@ const schema = defineSchema({
   })
     .index("by_emoji_tags", ["emojiTags"])
     .index("by_total_time", ["totalTimeMinutes"])
-    .index("by_created_at", ["createdAt"]),
+    .index("by_created_at", ["createdAt"])
+    .index("by_source_host", ["sourceHost"])
+    .index("by_author_name", ["authorName"])
+    .index("by_author_instagram", ["authorSocialInstagram"])
+    .index("by_author_pinterest", ["authorSocialPinterest"])
+    .index("by_author_youtube", ["authorSocialYoutube"])
+    .index("by_author_facebook", ["authorSocialFacebook"]),
   translationGuides: defineTable({
     code: v.string(),
     language: v.string(),
