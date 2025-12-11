@@ -418,6 +418,18 @@ const schema = defineSchema({
     descriptionVietnamese: v.optional(v.string()),
     descriptionArabic: v.optional(v.string()),
   }).index("by_user", ["userId"]),
+  qrEvents: defineTable({
+    userId: v.id("users"),
+    payload: v.string(),
+    latitude: v.number(),
+    longitude: v.number(),
+    accuracy: v.optional(v.number()),
+    scannedAt: v.number(),
+    pairedAt: v.optional(v.number()),
+    pairedWith: v.optional(v.id("qrEvents")),
+  })
+    .index("by_payload", ["payload"])
+    .index("by_user", ["userId"]),
   customThemes: defineTable({
     name: v.string(),
     shareCode: v.string(),
