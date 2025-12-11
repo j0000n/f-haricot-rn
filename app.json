@@ -526,6 +526,12 @@
           "photosPermission": "This app needs access to your photo library to attach images to tasks.",
           "cameraPermission": "This app needs access to your camera to take photos for tasks."
         }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "This app needs access to your camera to scan QR codes."
+        }
       ]
     ],
     "experiments": {
