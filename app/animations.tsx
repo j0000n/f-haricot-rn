@@ -1,413 +1,759 @@
-import { useMemo, useRef, useState, useEffect } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Animated,
   Easing,
-  LayoutAnimation,
-  Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
-  UIManager,
   View,
 } from "react-native";
+import { Polyline, Rect, Svg, Path } from "react-native-svg";
 
+import { ColorPicker } from "@/components/ThemeCreatorModal";
 import { useTokens } from "@/styles/tokens";
 import type { ThemeTokens } from "@/styles/tokens";
 
-type LayoutExampleItem = {
-  id: string;
-  label: string;
-  height: number;
+const CANVAS_SIZE = 280;
+const DEFAULT_COLORS = {
+  background: "#ccc",
+  logoPrimary: "#ffeace",
+  logoAccent: "#5e0e0c",
 };
 
-const DEFAULT_ITEMS: LayoutExampleItem[] = [
-  { id: "io-bound", label: "I/O bound render", height: 56 },
-  { id: "cpu-bound", label: "CPU bound render", height: 48 },
-  { id: "gpu-bound", label: "GPU bound render", height: 64 },
+type ColorWay = typeof DEFAULT_COLORS;
+type ShapeVariant = "one" | "two" | "three" | "four" | "five";
+
+type AnimationCardProps = {
+  title: string;
+  description: string;
+  children: React.ReactNode;
+  tokens: ThemeTokens;
+};
+
+type ColorPickerEntry = {
+  key: keyof ColorWay;
+  label: string;
+};
+
+const COLOR_ENTRIES: ColorPickerEntry[] = [
+  { key: "background", label: "Background fill" },
+  { key: "logoPrimary", label: "Logo base" },
+  { key: "logoAccent", label: "Logo accent" },
 ];
 
-export default function AnimationPlayground() {
-  const tokens = useTokens();
-  const styles = useMemo(() => createStyles(tokens), [tokens]);
+const HARICOT_PRIMARY_PATH =
+  "M69.93,79.83c1.2-24.67,21.58-44.31,46.56-44.31h0c25.74,0,46.61,20.87,46.61,46.61h0s.06,0,.06,0V0h-93.23v79.78s0,.04,0,.06Z";
+const HARICOT_OUTLINE_PATH =
+  "M229.63,6.88c-.33-.44-.68-.86-1.05-1.27-.18-.2-.37-.4-.57-.6-.58-.58-1.2-1.12-1.86-1.61-.66-.49-1.36-.94-2.08-1.34-.49-.26-.99-.5-1.5-.72-.77-.33-1.57-.6-2.39-.81-.27-.07-.55-.13-.83-.19-1.12-.23-2.27-.35-3.45-.35h-52.68v82.13h-.06c0,.49,0,.98-.03,1.47,0,.12,0,.23-.01.35-.02.41-.04.82-.06,1.24,0,.07,0,.15-.01.22-.07,1.03-.18,2.05-.31,3.06h0v.77h-.11c-.06.37-.12.74-.18,1.1-.02.12-.04.23-.07.35-.05.25-.09.5-.14.74-.03.14-.06.28-.09.42-.05.22-.09.44-.14.66-.03.15-.07.3-.1.44-.05.21-.1.42-.15.63-.04.15-.08.3-.12.45-.05.21-.11.41-.17.61-.04.15-.09.3-.13.45-.06.2-.12.41-.18.61-.04.15-.09.3-.14.44-.07.21-.13.41-.2.62-.05.14-.09.28-.14.42-.07.22-.15.43-.23.65-.05.13-.09.26-.14.38-.09.25-.19.49-.28.74-.04.09-.07.19-.11.28-.13.34-.27.67-.41,1.01-.03.06-.05.12-.08.18-.12.27-.23.54-.35.81-.05.12-.11.23-.16.35-.1.21-.19.42-.29.63-.06.13-.13.26-.19.39-.09.19-.19.39-.29.58-.07.14-.14.27-.21.4-.1.19-.19.37-.29.56-.07.14-.15.27-.22.4-.1.18-.2.36-.3.54-.08.13-.15.27-.23.4-.1.18-.21.36-.32.54-.08.13-.16.26-.23.39-.11.18-.23.37-.34.55-.08.12-.15.24-.23.36-.13.19-.25.39-.38.58-.07.11-.14.21-.21.32-.16.24-.33.47-.49.71-.04.06-.08.12-.12.17-.21.29-.42.58-.63.87-.06.08-.12.16-.18.24-.16.21-.31.41-.47.62-.08.11-.17.21-.25.31-.14.17-.28.35-.42.52-.09.11-.19.22-.28.33-.14.16-.27.33-.41.49-.1.11-.2.23-.3.34-.14.16-.27.31-.41.47-.1.11-.2.22-.31.34-.14.15-.28.3-.42.46-.1.11-.21.22-.31.33-.14.15-.29.3-.44.45-.1.11-.21.21-.31.32-.15.15-.31.3-.47.46-.1.1-.2.19-.3.29-.18.17-.35.33-.53.49-.08.08-.17.16-.25.23-.26.24-.53.48-.8.71h0c-.27.24-.54.47-.82.69-.09.07-.18.14-.26.21-.19.15-.38.31-.57.46-.11.09-.22.17-.33.26-.17.13-.35.27-.52.4-.12.09-.24.18-.36.26-.17.12-.34.25-.51.37-.12.09-.25.18-.37.26-.17.12-.34.24-.51.35-.13.09-.25.17-.38.26-.17.12-.35.23-.52.34-.13.08-.25.16-.38.24-.18.11-.36.23-.54.34-.12.08-.25.15-.37.23-.19.12-.39.23-.58.34-.12.07-.23.14-.35.2-.23.13-.46.26-.69.38-.08.05-.17.09-.25.14-.32.17-.63.34-.96.5-.06.03-.12.06-.18.09-.26.13-.52.26-.79.39-.11.05-.23.11-.34.16-.21.1-.42.2-.64.3-.13.06-.26.12-.39.18-.2.09-.4.18-.6.26-.14.06-.28.12-.42.18-.2.08-.39.16-.59.24-.14.06-.29.11-.43.17-.2.08-.39.15-.59.23-.14.05-.29.11-.43.16-.2.07-.4.14-.6.21-.14.05-.29.1-.43.15-.21.07-.42.14-.63.2-.14.04-.28.09-.41.13-.23.07-.45.14-.68.2-.12.04-.25.07-.37.11-.29.08-.58.16-.87.23-.07.02-.13.04-.2.05-.36.09-.72.18-1.08.26-.1.02-.19.04-.29.06-.26.06-.53.12-.79.17-.13.03-.27.05-.4.08-.23.05-.46.09-.69.13-.15.03-.3.05-.45.08-.22.04-.44.07-.66.11-.16.02-.31.05-.47.07-.22.03-.43.06-.65.09-.16.02-.32.04-.48.06-.22.03-.43.05-.65.07-.16.02-.32.03-.48.05-.22.02-.44.04-.67.06-.16.01-.31.03-.47.04-.23.02-.46.03-.7.04-.15,0-.29.02-.44.03-.26.01-.52.02-.78.03-.12,0-.24,0-.37.01-.38,0-.77.01-1.15.01h0c-25.74,0-46.61-20.87-46.61-46.61h0c0-.4,0-.79.01-1.18,0-.37.02-.75.04-1.12,0-.02,0-.04,0-.06V0H17.19c-3.84,0-7.39,1.27-10.25,3.4-.44.33-.86.68-1.27,1.05-.41.37-.79.76-1.16,1.16-.37.41-.72.83-1.05,1.27-1.15,1.54-2.05,3.28-2.63,5.16C.33,13.65.06,15.36.06,17.14v156.04h232.97V17.14c0-1.77-.27-3.49-.77-5.1-.58-1.88-1.48-3.62-2.63-5.16Z";
+const HARICOT_BASE_PATH =
+  "M0,173.18h0v149.68c0,3.25.91,6.29,2.48,8.89.43.71.91,1.38,1.43,2.01.7.85,1.48,1.62,2.32,2.32.42.35.86.68,1.32.99.68.46,1.4.88,2.15,1.24,2.25,1.08,4.77,1.69,7.43,1.69h52.74v-122.39h93.23v93.23h0v29.16h52.74c2.37,0,4.62-.48,6.67-1.35,1.54-.65,2.96-1.52,4.23-2.57.42-.35.83-.72,1.22-1.11.39-.39.76-.79,1.11-1.22.7-.85,1.32-1.76,1.84-2.73.4-.73.74-1.49,1.03-2.28.19-.52.36-1.06.5-1.61.35-1.37.54-2.8.54-4.28v-149.68H0Z";
+const HARICOT_POLYLINE_POINTS = "69.87 310.84 69.87 340 163.1 340 163.1 310.84 69.87 310.84";
 
-  const timingValue = useRef(new Animated.Value(0)).current;
-  const springValue = useRef(new Animated.Value(0)).current;
-
-  const [layoutItems, setLayoutItems] = useState<LayoutExampleItem[]>(DEFAULT_ITEMS);
-  const nextId = useRef(DEFAULT_ITEMS.length + 1);
-
-  useEffect(() => {
-    if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
-      UIManager.setLayoutAnimationEnabledExperimental(true);
-    }
-  }, []);
-
-  const runTimingSequence = () => {
-    timingValue.setValue(0);
-
-    Animated.sequence([
-      Animated.timing(timingValue, {
-        toValue: 1,
-        duration: 650,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      Animated.timing(timingValue, {
-        toValue: 0,
-        duration: 650,
-        easing: Easing.in(Easing.cubic),
-        useNativeDriver: true,
-      }),
-    ]).start();
-  };
-
-  const runSpring = () => {
-    springValue.setValue(0);
-
-    Animated.spring(springValue, {
-      toValue: 1,
-      velocity: 0.6,
-      tension: 140,
-      friction: 10,
-      useNativeDriver: true,
-    }).start(({ finished }: { finished?: boolean }) => {
-      if (finished) {
-        springValue.setValue(0.9);
-      }
-    });
-  };
-
-  const insertItem = () => {
-    LayoutAnimation.configureNext({
-      duration: 280,
-      create: { type: "easeInEaseOut", property: "scaleXY" },
-      update: { type: "easeInEaseOut" },
-      delete: { type: "easeInEaseOut", property: "opacity" },
-    });
-
-    const id = nextId.current++;
-
-    setLayoutItems((items) => [
-      {
-        id: `adaptive-${id}`,
-        label: `Adaptive card ${id}`,
-        height: 44 + (id % 3) * 6,
-      },
-      ...items,
-    ]);
-  };
-
-  const toggleOrder = () => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setLayoutItems((items) => [...items].reverse());
-  };
-
-  const removeLast = () => {
-    if (layoutItems.length === 0) {
-      return;
-    }
-
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.spring);
-    setLayoutItems((items) => items.slice(0, -1));
-  };
-
-  const timingTranslate = timingValue.interpolate({ inputRange: [0, 1], outputRange: [14, 0] });
-  const timingOpacity = timingValue.interpolate({ inputRange: [0, 1], outputRange: [0.2, 1] });
-  const springScale = springValue.interpolate({ inputRange: [0, 1], outputRange: [0.85, 1.08] });
-
-  return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.pageTitle}>Built-in animation APIs</Text>
-      <Text style={styles.lead}>Developer preview with verbose, technical notes.</Text>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Animated (core API)</Text>
-        <Text style={styles.sectionBody}>
-          {"Animated.Value drives imperative timelines in JS with optional native driver offload. " +
-            "Timing interpolations happen on the JS event loop, while useNativeDriver=true skips layout " +
-            "properties and pushes transform/opacity updates to the native compositor."}
-        </Text>
-        <Text style={styles.sectionBody}>
-          {"Below: a cubic timing sequence followed by a spring. The timing block animates opacity and translateY " +
-            "using interpolation; the spring uses a high-tension, moderate-friction configuration to illustrate " +
-            "frame-to-frame velocity dampening."}
-        </Text>
-
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Timing interpolation demo</Text>
-          <Text style={styles.cardBody}>
-            {"Animated.sequence(timing → timing) keeps the value in JS, but useNativeDriver=true pushes the transform " +
-              "and opacity nodes to the native layer. Interpolation maps 0→1 into physical units (px, opacity)."}
-          </Text>
-          <View style={styles.previewRow}>
-            <View style={styles.previewLabelColumn}>
-              <Text style={styles.previewLabel}>Transforms</Text>
-              <Text style={styles.previewDetail}>opacity + translateY</Text>
-              <Text style={styles.previewDetail}>duration: 650ms each</Text>
-              <Text style={styles.previewDetail}>easing: Easing.out/in cubic</Text>
-            </View>
-            <Animated.View
-              style={[
-                styles.animatedBox,
-                {
-                  opacity: timingOpacity,
-                  transform: [
-                    {
-                      translateY: timingTranslate,
-                    },
-                    {
-                      scale: 1,
-                    },
-                  ],
-                },
-              ]}
-            />
-          </View>
-          <Pressable onPress={runTimingSequence} style={styles.actionButton} accessibilityRole="button">
-            <Text style={styles.actionButtonText}>Run timing sequence</Text>
-          </Pressable>
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Spring demo</Text>
-          <Text style={styles.cardBody}>
-            {"Animated.spring uses a damped harmonic oscillator with tension/friction. Velocity biases the initial " +
-              "movement; here we explicitly set it to simulate a throw. Native driver keeps compositing off the JS thread."}
-          </Text>
-          <View style={styles.previewRow}>
-            <View style={styles.previewLabelColumn}>
-              <Text style={styles.previewLabel}>Transforms</Text>
-              <Text style={styles.previewDetail}>scale</Text>
-              <Text style={styles.previewDetail}>tension: 140</Text>
-              <Text style={styles.previewDetail}>friction: 10</Text>
-              <Text style={styles.previewDetail}>velocity: 0.6</Text>
-            </View>
-            <Animated.View
-              style={[
-                styles.animatedCircle,
-                {
-                  transform: [
-                    {
-                      scale: springScale,
-                    },
-                  ],
-                },
-              ]}
-            />
-          </View>
-          <Pressable onPress={runSpring} style={styles.actionButton} accessibilityRole="button">
-            <Text style={styles.actionButtonText}>Trigger spring</Text>
-          </Pressable>
-        </View>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>LayoutAnimation</Text>
-        <Text style={styles.sectionBody}>
-          {"LayoutAnimation wraps layout mutations (insert/remove/re-order) in a process-wide transaction. " +
-            "It measures before/after layout on the native side and interpolates intermediate positions without " +
-            "per-element Animated.Values. ConfigureNext applies to the next layout pass only."}
-        </Text>
-        <Text style={styles.sectionBody}>
-          {"Android requires UIManager.setLayoutAnimationEnabledExperimental(true); we enable it on mount. " +
-            "The controls below exercise create/update/delete phases with different presets."}
-        </Text>
-
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>List mutate demo</Text>
-          <Text style={styles.cardBody}>
-            {"Tap the controls to insert, reverse, or remove items. LayoutAnimation computes start/end rects " +
-              "and animates frame deltas using native interpolation, avoiding JS-bound per-frame work."}
-          </Text>
-          <View style={styles.layoutControls}>
-            <Pressable onPress={insertItem} style={styles.layoutButton} accessibilityRole="button">
-              <Text style={styles.layoutButtonText}>Insert</Text>
-            </Pressable>
-            <Pressable onPress={toggleOrder} style={styles.layoutButton} accessibilityRole="button">
-              <Text style={styles.layoutButtonText}>Reverse</Text>
-            </Pressable>
-            <Pressable onPress={removeLast} style={styles.layoutButton} accessibilityRole="button">
-              <Text style={styles.layoutButtonText}>Pop</Text>
-            </Pressable>
-          </View>
-          <View style={styles.listContainer}>
-            {layoutItems.map((item) => (
-              <View key={item.id} style={[styles.listItem, { height: item.height }]}>
-                <Text style={styles.listLabel}>{item.label}</Text>
-                <Text style={styles.listMeta}>{`${item.height}px height · key=${item.id}`}</Text>
-              </View>
-            ))}
-            {layoutItems.length === 0 ? (
-              <Text style={styles.emptyState}>List is empty; insert to trigger create animation.</Text>
-            ) : null}
-          </View>
-        </View>
-      </View>
-    </ScrollView>
-  );
-}
-
-const createStyles = (tokens: ThemeTokens) =>
-  StyleSheet.create({
+function createStyles(tokens: ThemeTokens) {
+  return StyleSheet.create({
     container: {
       flex: 1,
       backgroundColor: tokens.colors.background,
     },
     content: {
-      paddingHorizontal: tokens.spacing.lg,
-      paddingTop: tokens.spacing.lg,
-      paddingBottom: tokens.spacing.xl,
+      padding: tokens.padding.screen,
       gap: tokens.spacing.lg,
     },
-    pageTitle: {
-      fontSize: tokens.typography.display,
-      fontFamily: tokens.fontFamilies.bold,
+    header: {
+      gap: tokens.spacing.xs,
+    },
+    title: {
       color: tokens.colors.textPrimary,
+      fontSize: tokens.typography.title,
+      fontWeight: "700",
     },
-    lead: {
-      fontSize: tokens.typography.body,
-      fontFamily: tokens.fontFamilies.regular,
+    subtitle: {
       color: tokens.colors.textSecondary,
-      marginTop: tokens.spacing.xs,
+      fontSize: tokens.typography.body,
+      lineHeight: tokens.typography.body * 1.4,
     },
-    section: {
-      gap: tokens.spacing.sm,
+    controls: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: tokens.spacing.md,
+      alignItems: "center",
     },
-    sectionTitle: {
-      fontSize: tokens.typography.heading,
-      fontFamily: tokens.fontFamilies.semiBold,
+    pickerRow: {
+      alignItems: "center",
+      gap: tokens.spacing.xs,
+      flexDirection: "row",
+    },
+    pickerLabel: {
       color: tokens.colors.textPrimary,
-    },
-    sectionBody: {
-      fontSize: tokens.typography.body,
-      fontFamily: tokens.fontFamilies.regular,
-      color: tokens.colors.textSecondary,
-      lineHeight: tokens.typography.body * tokens.lineHeights.snug,
+      fontSize: tokens.typography.small,
+      fontWeight: "600",
     },
     card: {
       backgroundColor: tokens.colors.surface,
-      borderWidth: tokens.borderWidths.thin,
-      borderColor: tokens.colors.border,
       borderRadius: tokens.radii.lg,
-      padding: tokens.spacing.lg,
-      gap: tokens.spacing.md,
-      shadowColor: tokens.shadows.card.shadowColor,
-      shadowOffset: tokens.shadows.card.shadowOffset,
-      shadowOpacity: tokens.shadows.card.shadowOpacity,
-      shadowRadius: tokens.shadows.card.shadowRadius,
-      elevation: tokens.shadows.card.elevation,
+      padding: tokens.padding.card,
+      borderWidth: 1,
+      borderColor: tokens.colors.border,
+      gap: tokens.spacing.sm,
+      shadowColor: "#000",
+      shadowOpacity: 0.08,
+      shadowOffset: { width: 0, height: 4 },
+      shadowRadius: 10,
+      elevation: 4,
     },
     cardTitle: {
-      fontSize: tokens.typography.title,
-      fontFamily: tokens.fontFamilies.semiBold,
       color: tokens.colors.textPrimary,
+      fontSize: tokens.typography.heading,
+      fontWeight: "700",
     },
-    cardBody: {
-      fontSize: tokens.typography.body,
-      fontFamily: tokens.fontFamilies.regular,
+    cardDescription: {
       color: tokens.colors.textSecondary,
-      lineHeight: tokens.typography.body * tokens.lineHeights.snug,
-    },
-    previewRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: tokens.spacing.md,
-    },
-    previewLabelColumn: {
-      flex: 1,
-      gap: tokens.spacing.xs,
-    },
-    previewLabel: {
-      fontSize: tokens.typography.small,
-      fontFamily: tokens.fontFamilies.semiBold,
-      color: tokens.colors.textPrimary,
-    },
-    previewDetail: {
-      fontSize: tokens.typography.small,
-      fontFamily: tokens.fontFamilies.regular,
-      color: tokens.colors.textSecondary,
-    },
-    animatedBox: {
-      width: 96,
-      height: 96,
-      borderRadius: tokens.radii.md,
-      backgroundColor: tokens.colors.primary,
-      shadowColor: tokens.shadows.card.shadowColor,
-      shadowOffset: tokens.shadows.card.shadowOffset,
-      shadowOpacity: tokens.shadows.card.shadowOpacity,
-      shadowRadius: tokens.shadows.card.shadowRadius,
-      elevation: tokens.shadows.card.elevation,
-    },
-    animatedCircle: {
-      width: 96,
-      height: 96,
-      borderRadius: 48,
-      backgroundColor: tokens.colors.accent,
-      justifyContent: "center",
-      alignItems: "center",
-      shadowColor: tokens.shadows.card.shadowColor,
-      shadowOffset: tokens.shadows.card.shadowOffset,
-      shadowOpacity: tokens.shadows.card.shadowOpacity,
-      shadowRadius: tokens.shadows.card.shadowRadius,
-      elevation: tokens.shadows.card.elevation,
-    },
-    actionButton: {
-      alignSelf: "flex-start",
-      backgroundColor: tokens.colors.primary,
-      paddingHorizontal: tokens.spacing.md,
-      paddingVertical: tokens.spacing.sm,
-      borderRadius: tokens.radii.md,
-    },
-    actionButtonText: {
-      color: tokens.colors.onPrimary,
-      fontFamily: tokens.fontFamilies.semiBold,
       fontSize: tokens.typography.body,
+      lineHeight: tokens.typography.body * 1.35,
     },
-    layoutControls: {
-      flexDirection: "row",
-      gap: tokens.spacing.sm,
-    },
-    layoutButton: {
-      paddingHorizontal: tokens.spacing.md,
-      paddingVertical: tokens.spacing.sm,
-      borderRadius: tokens.radii.sm,
-      backgroundColor: tokens.colors.muted,
-      borderWidth: tokens.borderWidths.hairline,
-      borderColor: tokens.colors.border,
-    },
-    layoutButtonText: {
-      color: tokens.colors.textPrimary,
-      fontFamily: tokens.fontFamilies.semiBold,
-      fontSize: tokens.typography.small,
-    },
-    listContainer: {
-      marginTop: tokens.spacing.md,
-      gap: tokens.spacing.sm,
-    },
-    listItem: {
-      backgroundColor: tokens.colors.surfaceSubdued,
-      borderRadius: tokens.radii.md,
+    previewShell: {
+      backgroundColor: tokens.colors.surfaceMuted,
+      borderRadius: tokens.radii.lg,
       padding: tokens.spacing.md,
-      borderWidth: tokens.borderWidths.hairline,
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 1,
       borderColor: tokens.colors.border,
+    },
+    canvas: {
+      width: CANVAS_SIZE,
+      height: CANVAS_SIZE,
+      alignItems: "center",
       justifyContent: "center",
     },
-    listLabel: {
-      fontSize: tokens.typography.body,
-      fontFamily: tokens.fontFamilies.semiBold,
-      color: tokens.colors.textPrimary,
-    },
-    listMeta: {
-      marginTop: tokens.spacing.xs,
-      fontSize: tokens.typography.small,
-      fontFamily: tokens.fontFamilies.regular,
-      color: tokens.colors.textSecondary,
-    },
-    emptyState: {
-      fontSize: tokens.typography.small,
-      fontFamily: tokens.fontFamilies.regular,
-      color: tokens.colors.textSecondary,
+    logoLayer: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      alignItems: "center",
+      justifyContent: "center",
+      pointerEvents: "none",
     },
   });
+}
 
+function HaricotLogo({ primary, accent, size = 148 }: { primary: string; accent: string; size?: number }) {
+  return (
+    <Svg viewBox="0 0 233.03 340" width={size} height={(size / 233.03) * 340}>
+      <Path d={HARICOT_PRIMARY_PATH} fill={primary} />
+      <Path d={HARICOT_OUTLINE_PATH} fill={accent} />
+      <Path d={HARICOT_BASE_PATH} fill={primary} />
+      <Polyline points={HARICOT_POLYLINE_POINTS} fill={accent} />
+    </Svg>
+  );
+}
+
+function BackgroundShape({ variant, color, size = CANVAS_SIZE }: { variant: ShapeVariant; color: string; size?: number }) {
+  switch (variant) {
+    case "one":
+      return (
+        <Svg viewBox="0 0 482.12 482.12" width={size} height={size}>
+          <Rect
+            x="70.61"
+            y="70.61"
+            width="340.91"
+            height="340.91"
+            transform="translate(241.06 -99.85) rotate(45)"
+            fill={color}
+          />
+        </Svg>
+      );
+    case "two":
+      return (
+        <Svg viewBox="0 0 451.43 451.43" width={size} height={size}>
+          <Rect
+            x="55.26"
+            y="55.26"
+            width="340.91"
+            height="340.91"
+            rx="37.04"
+            ry="37.04"
+            transform="translate(225.72 -93.49) rotate(45)"
+            fill={color}
+          />
+        </Svg>
+      );
+    case "three":
+      return (
+        <Svg viewBox="0 0 425.73 425.73" width={size} height={size}>
+          <Rect
+            x="42.41"
+            y="42.41"
+            width="340.91"
+            height="340.91"
+            rx="68.07"
+            ry="68.07"
+            transform="translate(212.87 -88.17) rotate(45)"
+            fill={color}
+          />
+        </Svg>
+      );
+    case "four":
+      return (
+        <Svg viewBox="0 0 385.23 385.23" width={size} height={size}>
+          <Rect
+            x="22.16"
+            y="22.16"
+            width="340.91"
+            height="340.91"
+            rx="116.95"
+            ry="116.95"
+            transform="translate(192.62 -79.78) rotate(45)"
+            fill={color}
+          />
+        </Svg>
+      );
+    case "five":
+    default:
+      return (
+        <Svg viewBox="0 0 340.91 340.91" width={size} height={size}>
+          <Rect
+            x="0"
+            y="0"
+            width="340.91"
+            height="340.91"
+            rx="170.46"
+            ry="170.46"
+            transform="translate(170.46 -70.61) rotate(45)"
+            fill={color}
+          />
+        </Svg>
+      );
+  }
+}
+
+function AnimationCard({ title, description, children, tokens }: AnimationCardProps) {
+  const styles = useMemo(() => createStyles(tokens), [tokens]);
+
+  return (
+    <View style={styles.card}>
+      <Text style={styles.cardTitle}>{title}</Text>
+      <Text style={styles.cardDescription}>{description}</Text>
+      <View style={styles.previewShell}>{children}</View>
+    </View>
+  );
+}
+
+function useInfiniteTiming(duration: number, easing = Easing.linear) {
+  const animated = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    animated.setValue(0);
+    const loop = Animated.loop(
+      Animated.timing(animated, {
+        toValue: 1,
+        duration,
+        easing,
+        useNativeDriver: true,
+      }),
+    );
+
+    loop.start();
+    return () => loop.stop();
+  }, [animated, duration, easing]);
+
+  return animated;
+}
+
+function VersionOne({ colors, tokens }: { colors: ColorWay; tokens: ThemeTokens }) {
+  const styles = useMemo(() => createStyles(tokens), [tokens]);
+  const [index, setIndex] = useState(0);
+  const direction = useRef(1);
+  const opacity = useRef(new Animated.Value(1)).current;
+  const shapes: ShapeVariant[] = ["one", "two", "three", "four", "five"];
+
+  useEffect(() => {
+    let mounted = true;
+    const step = () => {
+      Animated.sequence([
+        Animated.delay(320),
+        Animated.timing(opacity, {
+          toValue: 0.25,
+          duration: 220,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        if (!mounted) return;
+
+        setIndex((current) => {
+          let next = current + direction.current;
+          if (next >= shapes.length - 1) {
+            direction.current = -1;
+            next = shapes.length - 1;
+          } else if (next <= 0) {
+            direction.current = 1;
+            next = 0;
+          }
+          return next;
+        });
+
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: 220,
+          useNativeDriver: true,
+        }).start(() => {
+          if (mounted) {
+            step();
+          }
+        });
+      });
+    };
+
+    step();
+    return () => {
+      mounted = false;
+      opacity.stopAnimation();
+    };
+  }, [opacity, shapes.length]);
+
+  return (
+    <View style={styles.canvas}>
+      <Animated.View style={{ opacity }}>
+        <BackgroundShape variant={shapes[index]} color={colors.background} />
+      </Animated.View>
+      <View style={styles.logoLayer}>
+        <HaricotLogo primary={colors.logoPrimary} accent={colors.logoAccent} />
+      </View>
+    </View>
+  );
+}
+
+function VersionTwo({ colors, tokens }: { colors: ColorWay; tokens: ThemeTokens }) {
+  const styles = useMemo(() => createStyles(tokens), [tokens]);
+  const spin = useInfiniteTiming(5000);
+  const rotate = spin.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "360deg"] });
+
+  return (
+    <View style={styles.canvas}>
+      <Animated.View style={{ transform: [{ rotate }] }}>
+        <BackgroundShape variant="one" color={colors.background} />
+      </Animated.View>
+      <View style={styles.logoLayer}>
+        <HaricotLogo primary={colors.logoPrimary} accent={colors.logoAccent} />
+      </View>
+    </View>
+  );
+}
+
+function VersionThree({ colors, tokens }: { colors: ColorWay; tokens: ThemeTokens }) {
+  const styles = useMemo(() => createStyles(tokens), [tokens]);
+  const mech = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    mech.setValue(0);
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(mech, {
+          toValue: 1,
+          duration: 460,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(mech, {
+          toValue: -1,
+          duration: 420,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+
+    loop.start();
+    return () => loop.stop();
+  }, [mech]);
+
+  const rotate = mech.interpolate({ inputRange: [-1, 1], outputRange: ["-12deg", "12deg"] });
+  const translateY = mech.interpolate({ inputRange: [-1, 0, 1], outputRange: [-14, 6, -14] });
+
+  return (
+    <View style={styles.canvas}>
+      <Animated.View style={{ transform: [{ translateY }, { rotate }] }}>
+        <BackgroundShape variant="three" color={colors.background} />
+      </Animated.View>
+      <View style={styles.logoLayer}>
+        <HaricotLogo primary={colors.logoPrimary} accent={colors.logoAccent} />
+      </View>
+    </View>
+  );
+}
+
+function VersionFour({ colors, tokens }: { colors: ColorWay; tokens: ThemeTokens }) {
+  const styles = useMemo(() => createStyles(tokens), [tokens]);
+  const pulse = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    pulse.setValue(0);
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, {
+          toValue: 1,
+          duration: 780,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulse, {
+          toValue: 0,
+          duration: 620,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+
+    loop.start();
+    return () => loop.stop();
+  }, [pulse]);
+
+  const rotate = pulse.interpolate({ inputRange: [0, 1], outputRange: ["-10deg", "14deg"] });
+  const scale = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1.08] });
+
+  return (
+    <View style={styles.canvas}>
+      <Animated.View style={{ transform: [{ rotate }, { scale }] }}>
+        <BackgroundShape variant="four" color={colors.background} />
+      </Animated.View>
+      <View style={styles.logoLayer}>
+        <HaricotLogo primary={colors.logoPrimary} accent={colors.logoAccent} />
+      </View>
+    </View>
+  );
+}
+
+function VersionFive({ colors, tokens }: { colors: ColorWay; tokens: ThemeTokens }) {
+  const styles = useMemo(() => createStyles(tokens), [tokens]);
+  const pulse = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    pulse.setValue(0);
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, {
+          toValue: 1,
+          duration: 680,
+          easing: Easing.out(Easing.sin),
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulse, {
+          toValue: 0,
+          duration: 680,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+
+    loop.start();
+    return () => loop.stop();
+  }, [pulse]);
+
+  const scale = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.94, 1.1] });
+  const opacity = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.85, 1] });
+
+  return (
+    <View style={styles.canvas}>
+      <Animated.View style={{ transform: [{ scale }], opacity }}>
+        <BackgroundShape variant="five" color={colors.background} />
+      </Animated.View>
+      <View style={styles.logoLayer}>
+        <HaricotLogo primary={colors.logoPrimary} accent={colors.logoAccent} />
+      </View>
+    </View>
+  );
+}
+
+function VersionSix({ colors, tokens }: { colors: ColorWay; tokens: ThemeTokens }) {
+  const styles = useMemo(() => createStyles(tokens), [tokens]);
+  const slowSpin = useInfiniteTiming(7200);
+  const fastSpin = useInfiniteTiming(3600);
+  const outerRotate = slowSpin.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "360deg"] });
+  const innerRotate = fastSpin.interpolate({ inputRange: [0, 1], outputRange: ["360deg", "0deg"] });
+
+  return (
+    <View style={styles.canvas}>
+      <Animated.View style={{ transform: [{ rotate: outerRotate }, { scale: 1.08 }] }}>
+        <BackgroundShape variant="one" color={colors.background} />
+      </Animated.View>
+      <Animated.View style={{ position: "absolute", transform: [{ rotate: innerRotate }, { scale: 0.7 }] }}>
+        <BackgroundShape variant="five" color={colors.logoAccent} />
+      </Animated.View>
+      <View style={styles.logoLayer}>
+        <HaricotLogo primary={colors.logoPrimary} accent={colors.logoAccent} />
+      </View>
+    </View>
+  );
+}
+
+function VersionSeven({ colors, tokens }: { colors: ColorWay; tokens: ThemeTokens }) {
+  const styles = useMemo(() => createStyles(tokens), [tokens]);
+  const orbit = useInfiniteTiming(5400);
+  const spin = orbit.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "360deg"] });
+  const translate = orbit.interpolate({ inputRange: [0, 1], outputRange: [12, -12] });
+
+  return (
+    <View style={styles.canvas}>
+      <BackgroundShape variant="two" color={colors.background} />
+      <Animated.View
+        style={{
+          position: "absolute",
+          transform: [{ rotate: spin }, { translateX: translate }, { rotate: spin }],
+        }}
+      >
+        <BackgroundShape variant="three" color={colors.logoPrimary} size={CANVAS_SIZE * 0.7} />
+      </Animated.View>
+      <View style={styles.logoLayer}>
+        <HaricotLogo primary={colors.logoPrimary} accent={colors.logoAccent} />
+      </View>
+    </View>
+  );
+}
+
+function VersionEight({ colors, tokens }: { colors: ColorWay; tokens: ThemeTokens }) {
+  const styles = useMemo(() => createStyles(tokens), [tokens]);
+  const ripple = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    ripple.setValue(0);
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(ripple, {
+          toValue: 1,
+          duration: 700,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.delay(120),
+        Animated.timing(ripple, {
+          toValue: 0,
+          duration: 520,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+
+    loop.start();
+    return () => loop.stop();
+  }, [ripple]);
+
+  const scale = ripple.interpolate({ inputRange: [0, 1], outputRange: [0.8, 1.05] });
+  const opacity = ripple.interpolate({ inputRange: [0, 1], outputRange: [0.4, 0.9] });
+
+  return (
+    <View style={styles.canvas}>
+      <Animated.View style={{ opacity, transform: [{ scale }] }}>
+        <BackgroundShape variant="four" color={colors.logoPrimary} />
+      </Animated.View>
+      <Animated.View style={{ position: "absolute", transform: [{ scale: 0.72 }, { rotate: "15deg" }] }}>
+        <BackgroundShape variant="one" color={colors.background} />
+      </Animated.View>
+      <View style={styles.logoLayer}>
+        <HaricotLogo primary={colors.logoPrimary} accent={colors.logoAccent} />
+      </View>
+    </View>
+  );
+}
+
+function VersionNine({ colors, tokens }: { colors: ColorWay; tokens: ThemeTokens }) {
+  const styles = useMemo(() => createStyles(tokens), [tokens]);
+  const tilt = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    tilt.setValue(0);
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(tilt, {
+          toValue: 1,
+          duration: 520,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(tilt, {
+          toValue: -1,
+          duration: 520,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+
+    loop.start();
+    return () => loop.stop();
+  }, [tilt]);
+
+  const rotate = tilt.interpolate({ inputRange: [-1, 1], outputRange: ["-8deg", "8deg"] });
+  const translateY = tilt.interpolate({ inputRange: [-1, 1], outputRange: [10, -10] });
+
+  return (
+    <View style={styles.canvas}>
+      <Animated.View style={{ transform: [{ rotate }, { translateY }] }}>
+        <BackgroundShape variant="four" color={colors.logoAccent} />
+      </Animated.View>
+      <Animated.View style={{ position: "absolute", transform: [{ scale: 0.82 }] }}>
+        <BackgroundShape variant="two" color={colors.background} />
+      </Animated.View>
+      <View style={styles.logoLayer}>
+        <HaricotLogo primary={colors.logoPrimary} accent={colors.logoAccent} />
+      </View>
+    </View>
+  );
+}
+
+function VersionTen({ colors, tokens }: { colors: ColorWay; tokens: ThemeTokens }) {
+  const styles = useMemo(() => createStyles(tokens), [tokens]);
+  const halo = useInfiniteTiming(4200, Easing.inOut(Easing.quad));
+  const glowScale = halo.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0.9, 1.12, 0.9] });
+  const glowOpacity = halo.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0.2, 0.7, 0.2] });
+  const spin = halo.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "-360deg"] });
+
+  return (
+    <View style={styles.canvas}>
+      <Animated.View style={{ opacity: glowOpacity, transform: [{ scale: glowScale }, { rotate: spin }] }}>
+        <BackgroundShape variant="five" color={colors.logoPrimary} />
+      </Animated.View>
+      <Animated.View style={{ position: "absolute", transform: [{ scale: 0.78 }] }}>
+        <BackgroundShape variant="three" color={colors.background} />
+      </Animated.View>
+      <View style={styles.logoLayer}>
+        <HaricotLogo primary={colors.logoPrimary} accent={colors.logoAccent} />
+      </View>
+    </View>
+  );
+}
+
+export default function AnimationPlayground() {
+  const tokens = useTokens();
+  const styles = useMemo(() => createStyles(tokens), [tokens]);
+  const [colorWay, setColorWay] = useState<ColorWay>(DEFAULT_COLORS);
+
+  const pickerColors = useMemo(
+    () => ({
+      background: tokens.colors.background,
+      surface: tokens.colors.surface,
+      overlay: tokens.colors.overlay,
+      textPrimary: tokens.colors.textPrimary,
+      textSecondary: tokens.colors.textSecondary,
+      textMuted: tokens.colors.textMuted,
+      border: tokens.colors.border,
+      accent: tokens.colors.accent,
+      accentOnPrimary: tokens.colors.accentOnPrimary,
+      success: tokens.colors.success,
+      danger: tokens.colors.danger,
+      info: tokens.colors.info,
+      logoFill: tokens.colors.logoFill,
+    }),
+    [tokens.colors],
+  );
+
+  return (
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <View style={styles.header}>
+        <Text style={styles.title}>Haricot animations</Text>
+        <Text style={styles.subtitle}>
+          Ten logo treatments built from the base vector files. Tweak the three key colors and pick the
+          motion style you like best.
+        </Text>
+      </View>
+
+      <View style={styles.controls}>
+        {COLOR_ENTRIES.map(({ key, label }) => (
+          <View key={key} style={styles.pickerRow}>
+            <Text style={styles.pickerLabel}>{label}</Text>
+            <ColorPicker
+              value={colorWay[key]}
+              onChange={(value) => setColorWay((prev) => ({ ...prev, [key]: value }))}
+              colors={pickerColors}
+              tokens={tokens}
+            />
+          </View>
+        ))}
+      </View>
+
+      <AnimationCard
+        title="Version 1 — Sequential stack"
+        description="Cycles through backgrounds 1→5 and back while the logo stays pinned to center."
+        tokens={tokens}
+      >
+        <VersionOne colors={colorWay} tokens={tokens} />
+      </AnimationCard>
+
+      <AnimationCard
+        title="Version 2 — Spinning square"
+        description="The sharp-corner square spins smoothly behind the static logomark."
+        tokens={tokens}
+      >
+        <VersionTwo colors={colorWay} tokens={tokens} />
+      </AnimationCard>
+
+      <AnimationCard
+        title="Version 3 — Mechanical bounce"
+        description="Rounded square (#3) rocks back and forth with a light spring under the logo."
+        tokens={tokens}
+      >
+        <VersionThree colors={colorWay} tokens={tokens} />
+      </AnimationCard>
+
+      <AnimationCard
+        title="Version 4 — Pulse + rotate"
+        description="Pillowed square (#4) grows and rotates in a soft breathing rhythm."
+        tokens={tokens}
+      >
+        <VersionFour colors={colorWay} tokens={tokens} />
+      </AnimationCard>
+
+      <AnimationCard
+        title="Version 5 — Circle pulse"
+        description="Circle (#5) scales up and down to create a simple halo behind the mark."
+        tokens={tokens}
+      >
+        <VersionFive colors={colorWay} tokens={tokens} />
+      </AnimationCard>
+
+      <AnimationCard
+        title="Version 6 — Dual spinners"
+        description="Layered square and circle rotate in opposite directions for extra energy."
+        tokens={tokens}
+      >
+        <VersionSix colors={colorWay} tokens={tokens} />
+      </AnimationCard>
+
+      <AnimationCard
+        title="Version 7 — Orbiting slab"
+        description="A smaller rounded slab orbits the soft square to imply motion."
+        tokens={tokens}
+      >
+        <VersionSeven colors={colorWay} tokens={tokens} />
+      </AnimationCard>
+
+      <AnimationCard
+        title="Version 8 — Ripple stack"
+        description="Layered shapes pulse outward with a secondary ripple behind the logo."
+        tokens={tokens}
+      >
+        <VersionEight colors={colorWay} tokens={tokens} />
+      </AnimationCard>
+
+      <AnimationCard
+        title="Version 9 — Tilt shuffle"
+        description="Two backplates tilt against one another to create a mechanical shuffle."
+        tokens={tokens}
+      >
+        <VersionNine colors={colorWay} tokens={tokens} />
+      </AnimationCard>
+
+      <AnimationCard
+        title="Version 10 — Halo spin"
+        description="A glowing circle rotates slowly while a soft square anchors the backdrop."
+        tokens={tokens}
+      >
+        <VersionTen colors={colorWay} tokens={tokens} />
+      </AnimationCard>
+    </ScrollView>
+  );
+}
