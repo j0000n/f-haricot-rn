@@ -1,4 +1,5 @@
 import { BrandLogo } from "@/components/BrandLogo";
+import { Header } from "@/components/Header";
 import { PageHeader } from "@/components/PageHeader";
 import { Rail } from "@/components/Rail";
 import { RecipeRail } from "@/components/RecipeRail";
@@ -398,6 +399,7 @@ export default function HomeScreen() {
             </Text>
           </View>
         ) : null}
+        <Header text="HELLO WORLD" textAlign="spread" color="pink" fontSize={25} />
         <View style={styles.worldEntry}>
           <Link href="/globe" asChild>
             <Pressable style={styles.worldButton} accessibilityRole="button">
