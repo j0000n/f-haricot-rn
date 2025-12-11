@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from "react";
-import { LayoutChangeEvent, StyleSheet, Text, TextStyle, View } from "react-native";
+import React, { useMemo } from "react";
+import { StyleSheet, Text, TextStyle, View } from "react-native";
 import { useTheme } from "@/styles/tokens";
 import type { ThemeTokens } from "@/styles/themes/types";
 
@@ -42,36 +42,6 @@ export const Header: React.FC<HeaderProps> = ({
   style,
 }) => {
   const { tokens } = useTheme();
-  const [containerWidth, setContainerWidth] = useState<number | null>(null);
-
-  const handleLayout = (event: LayoutChangeEvent) => {
-    setContainerWidth(event.nativeEvent.layout.width);
-  };
-
-  const letterSpacing = useMemo(() => {
-    if (textAlign !== "spread" || !containerWidth) {
-      return undefined;
-    }
-
-    const baseFontSize = fontSize ?? tokens.typography.heading;
-    const effectiveText = text.replace(/\s+/g, "");
-    const visibleLength = Math.max(effectiveText.length, 1);
-
-    if (visibleLength <= 1) {
-      return undefined;
-    }
-
-    const estimatedCharWidth = baseFontSize * 0.55;
-    const estimatedTextWidth = estimatedCharWidth * visibleLength;
-    const availableSpacing = containerWidth - estimatedTextWidth;
-
-    if (availableSpacing <= 0) {
-      return 0;
-    }
-
-    return Math.min(availableSpacing / (visibleLength - 1), baseFontSize * 1.5);
-  }, [containerWidth, fontSize, text, textAlign, tokens.typography.heading]);
-
   const textDecorationLine = useMemo(() => {
     const decorations: Array<"underline" | "line-through"> = [];
 
@@ -85,22 +55,43 @@ export const Header: React.FC<HeaderProps> = ({
     return decorations.length > 0 ? decorations.join(" ") : undefined;
   }, [textDecorations]);
 
+  const resolvedText = useMemo(() => {
+    return textDecorations.includes("uppercase") ? text.toUpperCase() : text;
+  }, [text, textDecorations]);
+
   const textStyle: TextStyle = {
     color: color ?? tokens.colors.textPrimary,
     fontFamily: tokens.fontFamilies[font],
     fontSize: fontSize ?? tokens.typography.heading,
-    textAlign: textAlign === "spread" ? "center" : textAlign,
-    letterSpacing,
+    textAlign: textAlign === "spread" ? undefined : textAlign,
     fontWeight: textDecorations.includes("bold") ? "700" : undefined,
     fontStyle: textDecorations.includes("italic") ? "italic" : undefined,
     textDecorationLine,
     textTransform: textDecorations.includes("uppercase") ? "uppercase" : undefined,
   };
 
+  if (textAlign === "spread") {
+    const characters = resolvedText.split("");
+
+    return (
+      <View
+        accessibilityRole="header"
+        accessibilityLabel={resolvedText}
+        style={[styles.container, styles.spreadContainer]}
+      >
+        {characters.map((char, index) => (
+          <Text key={`${char}-${index}`} style={[textStyle, style]}>
+            {char === " " ? "\u00A0" : char}
+          </Text>
+        ))}
+      </View>
+    );
+  }
+
   return (
-    <View onLayout={handleLayout} style={styles.container}>
+    <View style={styles.container}>
       <Text style={[textStyle, style]} accessibilityRole="header">
-        {text}
+        {resolvedText}
       </Text>
     </View>
   );
@@ -109,6 +100,11 @@ export const Header: React.FC<HeaderProps> = ({
 const styles = StyleSheet.create({
   container: {
     width: "100%",
+  },
+  spreadContainer: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    justifyContent: "space-between",
   },
 });
 
