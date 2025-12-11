@@ -419,6 +419,16 @@ export default function HomeScreen() {
           </Link>
         </View>
         <View style={styles.worldEntry}>
+          <Link href="/qr-scanner" asChild>
+            <Pressable style={styles.worldButton} accessibilityRole="button">
+              <Text style={styles.worldButtonTitle}>QR pairing</Text>
+              <Text style={styles.worldButtonSubtitle}>
+                Launch the QR scanner to validate two nearby devices on the server.
+              </Text>
+            </Pressable>
+          </Link>
+        </View>
+        <View style={styles.worldEntry}>
           <Link href="/animations" asChild>
             <Pressable style={styles.worldButton} accessibilityRole="button">
               <Text style={styles.worldButtonTitle}>Built-in animations walkthrough</Text>

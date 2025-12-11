@@ -19,6 +19,7 @@ import type * as http from "../http.js";
 import type * as images from "../images.js";
 import type * as inventory from "../inventory.js";
 import type * as nutritionProfiles from "../nutritionProfiles.js";
+import type * as qrEvents from "../qrEvents.js";
 import type * as promptGenerators from "../promptGenerators.js";
 import type * as recipes from "../recipes.js";
 import type * as tasks from "../tasks.js";
@@ -54,6 +55,7 @@ declare const fullApi: ApiFromModules<{
   images: typeof images;
   inventory: typeof inventory;
   nutritionProfiles: typeof nutritionProfiles;
+  qrEvents: typeof qrEvents;
   promptGenerators: typeof promptGenerators;
   recipes: typeof recipes;
   tasks: typeof tasks;
