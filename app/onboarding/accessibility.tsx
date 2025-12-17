@@ -152,7 +152,12 @@ export default function AccessibilityPreferencesScreen() {
   };
 
   const handleBack = () => {
-    router.back();
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+
+    router.replace("/(tabs)");
   };
 
   const handleContinue = async () => {

@@ -121,7 +121,10 @@
       "hideCalories": "Hide calorie totals",
       "warnings": "Warnings vs suggestions",
       "mealCount": "Meals per day",
-      "trainingHelper": "We’ll adjust for training vs rest days automatically."
+      "trainingHelper": "We’ll adjust for training vs rest days automatically.",
+      "advancedToggle": "Advanced",
+      "advancedShow": "Show optional numbers",
+      "advancedHide": "Hide advanced metrics"
     },
     "partnerOnboarding": {
       "creatorIntroTitle": "مرحبًا أيها المنشئ",

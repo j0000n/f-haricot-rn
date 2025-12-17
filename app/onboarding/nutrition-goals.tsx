@@ -56,6 +56,7 @@ export default function NutritionGoalsScreen() {
   const [displayPreferences, setDisplayPreferences] = useState(
     createEmptyNutritionGoals().displayPreferences
   );
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const currentGoals: NutritionGoals = useMemo(
     () => ({
@@ -363,41 +364,63 @@ export default function NutritionGoalsScreen() {
                 defaultValue: "Track these only if they’re relevant to your plan.",
               })}
             </Text>
-            {SECONDARY_METRICS.map((metric) => {
-              const isActive = trackedMetrics.includes(metric.key);
-              const fieldKey = SECONDARY_FIELDS[metric.key];
-              return (
-                <View key={metric.key} style={{ gap: 8 }}>
-                  <View style={onboardingStyles.inlineInputRow}>
-                    <Pressable
-                      onPress={() => toggleMetric(metric.key)}
-                      style={[
-                        onboardingStyles.optionButton,
-                        isActive ? onboardingStyles.optionSelected : null,
-                        { flex: 1 },
-                      ]}
-                    >
-                      <View style={{ flex: 1 }}>
-                        <Text style={onboardingStyles.optionText}>{metric.label}</Text>
-                        <Text style={onboardingStyles.helperText}>{metric.helper}</Text>
+            <Pressable
+              onPress={() => setShowAdvanced((current) => !current)}
+              style={onboardingStyles.optionButton}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={onboardingStyles.optionText}>
+                  {t("onboarding.nutritionGoals.advancedToggle", { defaultValue: "Advanced" })}
+                </Text>
+                <Text style={onboardingStyles.helperText}>
+                  {showAdvanced
+                    ? t("onboarding.nutritionGoals.advancedHide", {
+                        defaultValue: "Hide advanced metrics",
+                      })
+                    : t("onboarding.nutritionGoals.advancedShow", {
+                        defaultValue: "Show optional numbers",
+                      })}
+                </Text>
+              </View>
+              <Text style={onboardingStyles.optionText}>{showAdvanced ? "–" : "+"}</Text>
+            </Pressable>
+            {showAdvanced
+              ? SECONDARY_METRICS.map((metric) => {
+                  const isActive = trackedMetrics.includes(metric.key);
+                  const fieldKey = SECONDARY_FIELDS[metric.key];
+                  return (
+                    <View key={metric.key} style={{ gap: 8 }}>
+                      <View style={onboardingStyles.inlineInputRow}>
+                        <Pressable
+                          onPress={() => toggleMetric(metric.key)}
+                          style={[
+                            onboardingStyles.optionButton,
+                            isActive ? onboardingStyles.optionSelected : null,
+                            { flex: 1 },
+                          ]}
+                        >
+                          <View style={{ flex: 1 }}>
+                            <Text style={onboardingStyles.optionText}>{metric.label}</Text>
+                            <Text style={onboardingStyles.helperText}>{metric.helper}</Text>
+                          </View>
+                          {isActive ? (
+                            <Text style={onboardingStyles.optionText}>✓</Text>
+                          ) : null}
+                        </Pressable>
+                        {isActive ? (
+                          <TextInput
+                            value={targets[fieldKey] ?? ""}
+                            onChangeText={(value) => handleTargetChange(fieldKey, value)}
+                            keyboardType="numeric"
+                            style={[onboardingStyles.textField, { width: 120 }]}
+                            placeholder="Target"
+                          />
+                        ) : null}
                       </View>
-                      {isActive ? (
-                        <Text style={onboardingStyles.optionText}>✓</Text>
-                      ) : null}
-                    </Pressable>
-                    {isActive ? (
-                      <TextInput
-                        value={targets[fieldKey] ?? ""}
-                        onChangeText={(value) => handleTargetChange(fieldKey, value)}
-                        keyboardType="numeric"
-                        style={[onboardingStyles.textField, { width: 120 }]}
-                        placeholder="Target"
-                      />
-                    ) : null}
-                  </View>
-                </View>
-              );
-            })}
+                    </View>
+                  );
+                })
+              : null}
           </View>
 
           <View style={onboardingStyles.suggestionGroup}>
@@ -527,42 +550,45 @@ export default function NutritionGoalsScreen() {
                   }
                 />
               </Pressable>
-              <View style={onboardingStyles.inlineInputRow}>
-                <View style={[onboardingStyles.inputGroup, { flex: 1 }]}>
-                  <Text style={onboardingStyles.inputLabel}>
-                    {t("onboarding.nutritionGoals.mealCount", {
-                      defaultValue: "Meals per day",
-                    })}
-                  </Text>
-                  <TextInput
-                    value={String(displayPreferences.mealCount ?? "")}
-                    onChangeText={(value) =>
-                      setDisplayPreferences((current) => ({
-                        ...current,
-                        mealCount: Number.parseInt(value || "0", 10) || current.mealCount,
-                      }))
-                    }
-                    keyboardType="numeric"
-                    style={onboardingStyles.textField}
-                    placeholder="3"
-                  />
+              {showAdvanced ? (
+                <View style={onboardingStyles.inlineInputRow}>
+                  <View style={[onboardingStyles.inputGroup, { flex: 1 }]}>
+                    <Text style={onboardingStyles.inputLabel}>
+                      {t("onboarding.nutritionGoals.mealCount", {
+                        defaultValue: "Meals per day",
+                      })}
+                    </Text>
+                    <TextInput
+                      value={String(displayPreferences.mealCount ?? "")}
+                      onChangeText={(value) =>
+                        setDisplayPreferences((current) => ({
+                          ...current,
+                          mealCount:
+                            Number.parseInt(value || "0", 10) || current.mealCount,
+                        }))
+                      }
+                      keyboardType="numeric"
+                      style={onboardingStyles.textField}
+                      placeholder="3"
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={onboardingStyles.helperText}>
+                      {perMealPreview.calories
+                        ? `${perMealPreview.calories} kcal/meal`
+                        : ""}
+                      {perMealPreview.protein
+                        ? `  ·  ${perMealPreview.protein} g protein/meal`
+                        : ""}
+                    </Text>
+                    <Text style={onboardingStyles.helperText}>
+                      {t("onboarding.nutritionGoals.trainingHelper", {
+                        defaultValue: "We’ll adjust for training vs rest days automatically.",
+                      })}
+                    </Text>
+                  </View>
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={onboardingStyles.helperText}>
-                    {perMealPreview.calories
-                      ? `${perMealPreview.calories} kcal/meal`
-                      : ""}
-                    {perMealPreview.protein
-                      ? `  ·  ${perMealPreview.protein} g protein/meal`
-                      : ""}
-                  </Text>
-                  <Text style={onboardingStyles.helperText}>
-                    {t("onboarding.nutritionGoals.trainingHelper", {
-                      defaultValue: "We’ll adjust for training vs rest days automatically.",
-                    })}
-                  </Text>
-                </View>
-              </View>
+              ) : null}
             </View>
           </View>
 
@@ -577,7 +603,7 @@ export default function NutritionGoalsScreen() {
       <OnboardingNavigation
         backLabel={t("onboarding.back")}
         busyLabel={t("onboarding.saving")}
-        continueLabel={t("onboarding.continue")}
+        continueLabel={t("onboarding.next")}
         isBusy={isSubmitting}
         onBack={handleBack}
         onContinue={handleSave}

@@ -55,7 +55,15 @@ export const CATEGORY_BUCKETS: { title: string; options: string[] }[] = [
   },
   {
     title: "Lifestyle / preference",
-    options: ["High-protein", "Low-carb / keto-leaning", "Plant-forward", "Time-restricted eating"],
+    options: [
+      "High-protein",
+      "Low-carb / keto-leaning",
+      "Plant-forward",
+      "Time-restricted eating",
+      "We eat it all",
+      "Healthier choices, flavor first",
+      "Subtle changes only",
+    ],
   },
 ];
 
