@@ -70,8 +70,11 @@ const createSignInStyles = (tokens: ThemeTokens) =>
     codeInputsRow: {
       flexDirection: "row",
       justifyContent: "center",
+      alignSelf: "center",
       gap: tokens.spacing.sm,
       marginBottom: tokens.spacing.md,
+      width: tokens.widths.full,
+      maxWidth: tokens.layout.maxFormWidth,
     },
     codeInput: {
       width: 52,

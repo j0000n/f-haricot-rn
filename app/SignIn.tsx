@@ -78,6 +78,9 @@ export default function SignIn() {
     resetCodeInputs();
     const formData = new FormData();
     formData.append("email", email.trim().toLowerCase());
+    if (i18n.language) {
+      formData.append("preferredLanguage", i18n.language);
+    }
 
     if (userTypeSelection) {
       await savePendingUserType(userTypeSelection);
@@ -227,8 +230,8 @@ export default function SignIn() {
                     value={digit}
                     onChangeText={(value) => handleCodeChange(value, index)}
                     keyboardType="number-pad"
-                    maxLength={1}
                     autoFocus={index === 0}
+                    inputMode="numeric"
                     placeholderTextColor={tokens.colors.textMuted}
                     returnKeyType="done"
                     onSubmitEditing={Keyboard.dismiss}

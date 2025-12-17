@@ -3,6 +3,24 @@ import { convexAuth } from "@convex-dev/auth/server";
 import { getSignInEmailContent } from "../i18n/emails/signInCodeEmail";
 import type { EmailLocale } from "../i18n/emails/types";
 
+const isEmailLocale = (value: string): value is EmailLocale => {
+  return ["en", "es", "fr", "zh", "tl", "vi", "ar"].includes(value);
+};
+
+const extractRequestedLocale = (ctx: any): EmailLocale | undefined => {
+  const possibleLocale =
+    ctx?.args?.params?.preferredLanguage ??
+    ctx?.params?.preferredLanguage ??
+    ctx?.request?.body?.preferredLanguage ??
+    ctx?.preferredLanguage;
+
+  if (typeof possibleLocale === "string" && isEmailLocale(possibleLocale)) {
+    return possibleLocale;
+  }
+
+  return undefined;
+};
+
 const inferLocaleFromEmail = (email: string): EmailLocale => {
   const domain = email.split("@")[1]?.toLowerCase() ?? "";
   const tld = domain.split(".").pop();
@@ -85,7 +103,9 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
           throw new Error(`Invalid email address: ${cleanEmail}`);
         }
 
-        const localePreference = await getPreferredLocale(ctx, cleanEmail);
+        const requestedLocale = extractRequestedLocale(ctx);
+        const localePreference =
+          requestedLocale ?? (await getPreferredLocale(ctx, cleanEmail));
         const locale = localePreference ?? inferLocaleFromEmail(cleanEmail);
         const emailContent = getSignInEmailContent(locale, token, cleanEmail);
 
