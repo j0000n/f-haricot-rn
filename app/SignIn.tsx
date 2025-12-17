@@ -4,7 +4,7 @@ import createSignInStyles from "@/styles/signInStyles";
 import { useTheme, useThemedStyles } from "@/styles/tokens";
 import { clearPendingUserType, savePendingUserType, getPendingUserType } from "@/utils/pendingUserType";
 import { useAuthActions } from "@convex-dev/auth/react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Alert,
   Keyboard,
@@ -19,10 +19,13 @@ import {
 import type { UserTypeSelection } from "@/utils/pendingUserType";
 
 export default function SignIn() {
+  const CODE_LENGTH = 6;
   const [step, setStep] = useState<"signIn" | "codeSent">("signIn");
   const { signIn } = useAuthActions();
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
+  const [codeDigits, setCodeDigits] = useState<string[]>(Array(CODE_LENGTH).fill(""));
+  const codeInputRefs = useRef<Array<TextInput | null>>([]);
   const [submitting, setSubmitting] = useState(false);
   const [userTypeSelection, setUserTypeSelection] = useState<UserTypeSelection | null>(
     null
@@ -30,6 +33,23 @@ export default function SignIn() {
   const styles = useThemedStyles(createSignInStyles);
   const { tokens } = useTheme();
   const { t, i18n } = useTranslation();
+
+  const focusInput = (index: number) => {
+    const ref = codeInputRefs.current[index];
+    if (ref) {
+      ref.focus();
+    }
+  };
+
+  const resetCodeInputs = () => {
+    setCodeDigits(Array(CODE_LENGTH).fill(""));
+    setCode("");
+    focusInput(0);
+  };
+
+  useEffect(() => {
+    setCode(codeDigits.join(""));
+  }, [codeDigits]);
 
   useEffect(() => {
     const loadPendingUserType = async () => {
@@ -55,9 +75,12 @@ export default function SignIn() {
 
   const handleSendCode = async () => {
     setSubmitting(true);
-    setCode(""); // Clear any existing code
+    resetCodeInputs();
     const formData = new FormData();
     formData.append("email", email.trim().toLowerCase());
+    if (i18n.language) {
+      formData.append("preferredLanguage", i18n.language);
+    }
 
     if (userTypeSelection) {
       await savePendingUserType(userTypeSelection);
@@ -92,7 +115,7 @@ export default function SignIn() {
     } catch (error) {
       console.error("Verification error:", error);
       setSubmitting(false);
-      setCode(""); // Clear the code input
+      resetCodeInputs();
       Alert.alert(
         t("auth.invalidCodeTitle"),
         t("auth.invalidCodeMessage"),
@@ -105,6 +128,42 @@ export default function SignIn() {
   const isCreatorMode = userTypeSelection === "creator";
   const isVendorMode = userTypeSelection === "vendor";
   const isSpecialSignUp = isCreatorMode || isVendorMode;
+
+  const handleCodeChange = (value: string, index: number) => {
+    const sanitized = value.replace(/\D/g, "");
+
+    setCodeDigits((prev) => {
+      const next = [...prev];
+
+      if (!sanitized) {
+        next[index] = "";
+        return next;
+      }
+
+      const chars = sanitized.split("").slice(0, CODE_LENGTH - index);
+      chars.forEach((char, offset) => {
+        next[index + offset] = char;
+      });
+
+      return next;
+    });
+
+    const nextIndex = index + sanitized.length;
+    if (nextIndex < CODE_LENGTH) {
+      setTimeout(() => focusInput(nextIndex), 50);
+    }
+  };
+
+  const handleCodeKeyPress = (index: number, key: string) => {
+    if (key === "Backspace" && !codeDigits[index] && index > 0) {
+      setCodeDigits((prev) => {
+        const next = [...prev];
+        next[index - 1] = "";
+        return next;
+      });
+      focusInput(index - 1);
+    }
+  };
 
   const content = (
     <View style={styles.wrapper}>
@@ -160,18 +219,29 @@ export default function SignIn() {
               <Text style={styles.description}>
                 {t('auth.codeSentTo', { email })}
               </Text>
-              <TextInput
-                style={styles.input}
-                placeholder={t('auth.codePlaceholder')}
-                value={code}
-                onChangeText={setCode}
-                keyboardType="number-pad"
-                maxLength={6}
-                autoFocus
-                placeholderTextColor={tokens.colors.textMuted}
-                returnKeyType="done"
-                onSubmitEditing={Keyboard.dismiss}
-              />
+              <View style={styles.codeInputsRow}>
+                {codeDigits.map((digit, index) => (
+                  <TextInput
+                    key={`code-${languageKey}-${index}`}
+                    ref={(ref) => {
+                      codeInputRefs.current[index] = ref;
+                    }}
+                    style={styles.codeInput}
+                    value={digit}
+                    onChangeText={(value) => handleCodeChange(value, index)}
+                    keyboardType="number-pad"
+                    autoFocus={index === 0}
+                    inputMode="numeric"
+                    placeholderTextColor={tokens.colors.textMuted}
+                    returnKeyType="done"
+                    onSubmitEditing={Keyboard.dismiss}
+                    textAlign="center"
+                    onKeyPress={({ nativeEvent }) =>
+                      handleCodeKeyPress(index, nativeEvent.key)
+                    }
+                  />
+                ))}
+              </View>
               <Pressable
                 style={[styles.button, submitting && styles.buttonDisabled]}
                 onPress={handleVerifyCode}
@@ -189,7 +259,7 @@ export default function SignIn() {
                 <Pressable
                   onPress={() => {
                     setStep("signIn");
-                    setCode("");
+                    resetCodeInputs();
                   }}
                   disabled={submitting}
                 >
