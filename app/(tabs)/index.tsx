@@ -21,7 +21,7 @@ import { decodeEncodedSteps } from "@/utils/decodeEncodedSteps";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { Link, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
-import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { LinkPreviewRail } from "@/components/LinkPreviewRail";
 import { useLinkPreviews, createFallbackImage } from "@/hooks/useLinkPreviews";
 import type { LinkPreviewData } from "@/utils/linkPreview";
@@ -369,7 +369,14 @@ export default function HomeScreen() {
 
 
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        Platform.OS === "web" && {
+          height: "100vh",
+        },
+      ]}
+    >
       <PageHeader
         leftElement={
           <BrandLogo
@@ -382,7 +389,13 @@ export default function HomeScreen() {
       />
 
       <ScrollView
-        style={styles.tasksContainer}
+        style={[
+          styles.tasksContainer,
+          Platform.OS === "web" && {
+            overflow: "auto",
+            height: "100%",
+          },
+        ]}
         contentContainerStyle={styles.scrollContent}
       >
         {userType ? (

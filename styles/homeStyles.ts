@@ -1,4 +1,4 @@
-import { StyleSheet } from "react-native";
+import { Platform, StyleSheet } from "react-native";
 import type { ThemeTokens } from "./tokens";
 
 const createHomeStyles = (tokens: ThemeTokens) =>
