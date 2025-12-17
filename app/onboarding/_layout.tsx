@@ -14,6 +14,7 @@ export default function OnboardingLayout() {
       <Stack.Screen name="household" />
       <Stack.Screen name="cuisines" />
       <Stack.Screen name="cooking-styles" />
+      <Stack.Screen name="nutrition-goals" />
       <Stack.Screen name="meal-preferences" />
       <Stack.Screen name="vendor/index" />
       <Stack.Screen name="vendor/profile" />

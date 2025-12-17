@@ -62,7 +62,7 @@ export default function ThemeSelectionScreen() {
 
           <View style={onboardingStyles.footer}>
             <Text style={onboardingStyles.progressText}>
-              {t("onboarding.stepIndicator", { current: 2, total: 9 })}
+              {t("onboarding.stepIndicator", { current: 2, total: 10 })}
             </Text>
           </View>
         </View>

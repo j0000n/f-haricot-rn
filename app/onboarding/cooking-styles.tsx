@@ -106,7 +106,7 @@ export default function CookingStylesScreen() {
     try {
       setIsSubmitting(true);
       await updateProfile({ cookingStylePreferences: selectedOptions });
-      router.push("/onboarding/meal-preferences");
+      router.push("/onboarding/nutrition-goals");
     } catch (error) {
       console.error("Failed to save cooking style preferences", error);
       Alert.alert(
@@ -169,7 +169,7 @@ export default function CookingStylesScreen() {
 
           <View style={onboardingStyles.footer}>
             <Text style={onboardingStyles.progressText}>
-              {t("onboarding.stepIndicator", { current: 8, total: 9 })}
+              {t("onboarding.stepIndicator", { current: 8, total: 10 })}
             </Text>
           </View>
         </View>

@@ -22,6 +22,17 @@ import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { useTranslation } from "@/i18n/useTranslation";
 import { createDisplayEntries } from "@/utils/formatting";
+import {
+  CATEGORY_BUCKETS,
+  GOAL_PRESETS,
+  SECONDARY_METRICS,
+  createEmptyNutritionGoals,
+  derivePerMealTargets,
+  mergePresetDefaults,
+  sanitizeNumber,
+  type NutritionGoals,
+  type NutritionMetric,
+} from "@/utils/nutritionGoals";
 
 const TEXT_SIZE_OPTIONS: {
   value: BaseTextSize;
@@ -80,6 +91,8 @@ type HouseholdMessage = {
 const HIDDEN_USER_FIELDS = new Set(["householdId", "pendingHouseholdId"]);
 
 const sanitizeAllergy = (value: string) => value.trim();
+const formatNumber = (value: number | null | undefined) =>
+  typeof value === "number" && Number.isFinite(value) ? String(value) : "";
 
 export default function ProfileScreen() {
   const user = useQuery(api.users.getCurrentUser);
@@ -126,6 +139,12 @@ export default function ProfileScreen() {
   const [pendingAllergy, setPendingAllergy] = useState("");
   const [isSavingAllergies, setIsSavingAllergies] = useState(false);
   const [allergyMessage, setAllergyMessage] = useState<HouseholdMessage | null>(null);
+  const [nutritionGoals, setNutritionGoals] = useState<NutritionGoals>(
+    createEmptyNutritionGoals()
+  );
+  const [nutritionTargetsInput, setNutritionTargetsInput] = useState<Record<string, string>>({});
+  const [nutritionMessage, setNutritionMessage] = useState<HouseholdMessage | null>(null);
+  const [isSavingNutritionGoals, setIsSavingNutritionGoals] = useState(false);
   const [newChildName, setNewChildName] = useState("");
   const [newChildAllergyInput, setNewChildAllergyInput] = useState("");
   const [newChildAllergies, setNewChildAllergies] = useState<string[]>([]);
@@ -183,6 +202,41 @@ export default function ProfileScreen() {
     } else {
       setAllergies([]);
     }
+
+    const storedGoals = (user as { nutritionGoals?: NutritionGoals | null })
+      .nutritionGoals;
+    if (storedGoals) {
+      const mergedGoals = {
+        ...createEmptyNutritionGoals(),
+        ...storedGoals,
+        displayPreferences:
+          storedGoals.displayPreferences ?? createEmptyNutritionGoals().displayPreferences,
+      };
+      setNutritionGoals(mergedGoals);
+      setNutritionTargetsInput({
+        calories: formatNumber(mergedGoals.targets?.calories),
+        protein: formatNumber(mergedGoals.targets?.protein),
+        fat: formatNumber(mergedGoals.targets?.fat),
+        carbohydrates: formatNumber(mergedGoals.targets?.carbohydrates),
+        fiber: formatNumber(mergedGoals.targets?.fiber),
+        addedSugar: formatNumber(mergedGoals.targets?.addedSugar),
+        saturatedFat: formatNumber(mergedGoals.targets?.saturatedFat),
+        sodium: formatNumber(mergedGoals.targets?.sodium),
+      });
+    } else {
+      const defaultGoals = GOAL_PRESETS[0]?.defaults ?? createEmptyNutritionGoals();
+      setNutritionGoals(defaultGoals);
+      setNutritionTargetsInput({
+        calories: formatNumber(defaultGoals.targets?.calories),
+        protein: formatNumber(defaultGoals.targets?.protein),
+        fat: formatNumber(defaultGoals.targets?.fat),
+        carbohydrates: formatNumber(defaultGoals.targets?.carbohydrates),
+        fiber: formatNumber(defaultGoals.targets?.fiber),
+        addedSugar: formatNumber(defaultGoals.targets?.addedSugar),
+        saturatedFat: formatNumber(defaultGoals.targets?.saturatedFat),
+        sodium: formatNumber(defaultGoals.targets?.sodium),
+      });
+    }
   }, [user]);
 
   useEffect(() => {
@@ -208,6 +262,50 @@ export default function ProfileScreen() {
     pendingMembers.length > 0
       ? Math.max(...pendingMembers.map((member) => member.requestedAt))
       : null;
+
+  const normalizedNutritionGoals = useMemo((): NutritionGoals => {
+    const displayPreferences =
+      nutritionGoals.displayPreferences ?? createEmptyNutritionGoals().displayPreferences;
+    const trackedMetrics = Array.from(
+      new Set(nutritionGoals.trackedMetrics ?? [])
+    ) as NutritionMetric[];
+
+    return {
+      ...nutritionGoals,
+      preset: nutritionGoals.preset ?? null,
+      categories: Array.from(new Set(nutritionGoals.categories ?? [])),
+      trackedMetrics,
+      displayPreferences,
+      targets: {
+        ...nutritionGoals.targets,
+        calories: sanitizeNumber(nutritionTargetsInput.calories),
+        protein: sanitizeNumber(nutritionTargetsInput.protein),
+        fat: sanitizeNumber(nutritionTargetsInput.fat),
+        carbohydrates: sanitizeNumber(nutritionTargetsInput.carbohydrates),
+        fiber: trackedMetrics.includes("fiber")
+          ? sanitizeNumber(nutritionTargetsInput.fiber)
+          : undefined,
+        addedSugar: trackedMetrics.includes("addedSugar")
+          ? sanitizeNumber(nutritionTargetsInput.addedSugar)
+          : undefined,
+        saturatedFat: trackedMetrics.includes("saturatedFat")
+          ? sanitizeNumber(nutritionTargetsInput.saturatedFat)
+          : undefined,
+        sodium: trackedMetrics.includes("sodium")
+          ? sanitizeNumber(nutritionTargetsInput.sodium)
+          : undefined,
+      },
+    };
+  }, [nutritionGoals, nutritionTargetsInput]);
+
+  const perMealNutritionPreview = useMemo(
+    () =>
+      derivePerMealTargets(
+        normalizedNutritionGoals.targets,
+        normalizedNutritionGoals.displayPreferences.mealCount
+      ),
+    [normalizedNutritionGoals]
+  );
 
   useEffect(() => {
     if (!isHouseholdMember || pendingMembers.length === 0) {
@@ -244,6 +342,18 @@ export default function ProfileScreen() {
     }, 3000);
     return () => clearTimeout(timeout);
   }, [allergyMessage]);
+
+  useEffect(() => {
+    if (!nutritionMessage) {
+      return;
+    }
+
+    const timeout = setTimeout(() => {
+      setNutritionMessage(null);
+    }, 3000);
+
+    return () => clearTimeout(timeout);
+  }, [nutritionMessage]);
 
   useEffect(() => {
     if (!childMessage) {
@@ -521,6 +631,98 @@ export default function ProfileScreen() {
       });
     } finally {
       setIsSavingAllergies(false);
+    }
+  };
+
+  const updateNutritionTargetsFromGoals = (goals: NutritionGoals) => {
+    setNutritionTargetsInput({
+      calories: formatNumber(goals.targets?.calories),
+      protein: formatNumber(goals.targets?.protein),
+      fat: formatNumber(goals.targets?.fat),
+      carbohydrates: formatNumber(goals.targets?.carbohydrates),
+      fiber: formatNumber(goals.targets?.fiber),
+      addedSugar: formatNumber(goals.targets?.addedSugar),
+      saturatedFat: formatNumber(goals.targets?.saturatedFat),
+      sodium: formatNumber(goals.targets?.sodium),
+    });
+  };
+
+  const handleSelectNutritionPreset = (presetId: string) => {
+    const merged = mergePresetDefaults(presetId, normalizedNutritionGoals);
+    setNutritionGoals(merged);
+    updateNutritionTargetsFromGoals(merged);
+  };
+
+  const handleToggleNutritionCategory = (value: string) => {
+    setNutritionGoals((current) => ({
+      ...current,
+      categories: current.categories.includes(value)
+        ? current.categories.filter((entry) => entry !== value)
+        : [...current.categories, value],
+    }));
+  };
+
+  const handleToggleNutritionMetric = (metric: NutritionMetric) => {
+    setNutritionGoals((current) => ({
+      ...current,
+      trackedMetrics: current.trackedMetrics.includes(metric)
+        ? current.trackedMetrics.filter((entry) => entry !== metric)
+        : [...current.trackedMetrics, metric],
+    }));
+  };
+
+  const handleNutritionTargetChange = (key: string, value: string) => {
+    setNutritionTargetsInput((current) => ({ ...current, [key]: value }));
+  };
+
+  const handleNutritionPreferenceToggle = (
+    key: keyof NutritionGoals["displayPreferences"],
+    value: boolean
+  ) => {
+    setNutritionGoals((current) => ({
+      ...current,
+      displayPreferences: {
+        ...(current.displayPreferences ?? createEmptyNutritionGoals().displayPreferences),
+        [key]: value,
+      },
+    }));
+  };
+
+  const handleNutritionMealCountChange = (value: string) => {
+    const parsed = Number.parseInt(value || "0", 10);
+    if (Number.isNaN(parsed) || parsed <= 0) {
+      return;
+    }
+
+    setNutritionGoals((current) => ({
+      ...current,
+      displayPreferences: {
+        ...(current.displayPreferences ?? createEmptyNutritionGoals().displayPreferences),
+        mealCount: parsed,
+      },
+    }));
+  };
+
+  const handleSaveNutritionGoals = async () => {
+    if (isSavingNutritionGoals) {
+      return;
+    }
+
+    try {
+      setIsSavingNutritionGoals(true);
+      await updateProfile({ nutritionGoals: normalizedNutritionGoals });
+      setNutritionMessage({
+        tone: "success",
+        text: t("profile.nutritionSaveSuccess"),
+      });
+    } catch (error) {
+      console.error("Failed to save nutrition goals", error);
+      setNutritionMessage({
+        tone: "error",
+        text: t("profile.nutritionSaveError"),
+      });
+    } finally {
+      setIsSavingNutritionGoals(false);
     }
   };
 
@@ -1301,6 +1503,258 @@ export default function ProfileScreen() {
               ) : null}
             </>
           )}
+        </View>
+
+        <View style={styles.goalsCard}>
+          <Text style={styles.appearanceTitle}>{t("profile.nutritionTitle")}</Text>
+          <Text style={styles.appearanceDescription}>{t("profile.nutritionDesc")}</Text>
+
+          <View style={styles.goalSection}>
+            <Text style={styles.goalLabel}>{t("profile.nutritionStarter")}</Text>
+            <View style={styles.goalOptionList}>
+              {GOAL_PRESETS.map((preset) => {
+                const isActive = normalizedNutritionGoals.preset === preset.id;
+                return (
+                  <Pressable
+                    key={preset.id}
+                    style={[
+                      styles.goalOption,
+                      isActive ? styles.goalOptionActive : null,
+                    ]}
+                    onPress={() => handleSelectNutritionPreset(preset.id)}
+                  >
+                    <View style={{ flex: 1, gap: 4 }}>
+                      <Text style={styles.goalOptionTitle}>{preset.title}</Text>
+                      <Text style={styles.goalOptionHelper}>{preset.description}</Text>
+                    </View>
+                    {isActive ? <Text style={styles.goalOptionTitle}>✓</Text> : null}
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+
+          <View style={styles.goalSection}>
+            <Text style={styles.goalLabel}>{t("profile.nutritionCategories")}</Text>
+            <Text style={styles.goalHelper}>{t("profile.nutritionCategoriesHelper")}</Text>
+            {CATEGORY_BUCKETS.map((bucket) => (
+              <View key={bucket.title} style={styles.goalBucketRow}>
+                <Text style={styles.goalHelper}>{bucket.title}</Text>
+                <View style={styles.goalChipRow}>
+                  {bucket.options.map((option) => {
+                    const isActive = normalizedNutritionGoals.categories.includes(option);
+                    return (
+                      <Pressable
+                        key={option}
+                        onPress={() => handleToggleNutritionCategory(option)}
+                        style={[
+                          styles.goalChip,
+                          isActive ? styles.goalChipActive : null,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.goalChipText,
+                            isActive ? styles.goalChipTextActive : null,
+                          ]}
+                        >
+                          {option}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+            ))}
+          </View>
+
+          <View style={styles.goalSection}>
+            <Text style={styles.goalLabel}>{t("profile.nutritionTargets")}</Text>
+            <View style={styles.goalInputRow}>
+              <View style={styles.goalInputGroup}>
+                <Text style={styles.manageLabel}>{t("onboarding.nutritionGoals.calories")}</Text>
+                <TextInput
+                  value={nutritionTargetsInput.calories ?? ""}
+                  onChangeText={(value) => handleNutritionTargetChange("calories", value)}
+                  style={styles.goalInput}
+                  placeholder="2000"
+                  placeholderTextColor={tokens.colors.textMuted}
+                  keyboardType="numeric"
+                />
+              </View>
+              <View style={styles.goalInputGroup}>
+                <Text style={styles.manageLabel}>{t("onboarding.nutritionGoals.protein")}</Text>
+                <TextInput
+                  value={nutritionTargetsInput.protein ?? ""}
+                  onChangeText={(value) => handleNutritionTargetChange("protein", value)}
+                  style={styles.goalInput}
+                  placeholder="150"
+                  placeholderTextColor={tokens.colors.textMuted}
+                  keyboardType="numeric"
+                />
+              </View>
+            </View>
+            <View style={styles.goalInputRow}>
+              <View style={styles.goalInputGroup}>
+                <Text style={styles.manageLabel}>{t("onboarding.nutritionGoals.fat")}</Text>
+                <TextInput
+                  value={nutritionTargetsInput.fat ?? ""}
+                  onChangeText={(value) => handleNutritionTargetChange("fat", value)}
+                  style={styles.goalInput}
+                  placeholder="70"
+                  placeholderTextColor={tokens.colors.textMuted}
+                  keyboardType="numeric"
+                />
+              </View>
+              <View style={styles.goalInputGroup}>
+                <Text style={styles.manageLabel}>{t("onboarding.nutritionGoals.carbs")}</Text>
+                <TextInput
+                  value={nutritionTargetsInput.carbohydrates ?? ""}
+                  onChangeText={(value) => handleNutritionTargetChange("carbohydrates", value)}
+                  style={styles.goalInput}
+                  placeholder="230"
+                  placeholderTextColor={tokens.colors.textMuted}
+                  keyboardType="numeric"
+                />
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.goalSection}>
+            <Text style={styles.goalLabel}>{t("profile.nutritionSecondary")}</Text>
+            {SECONDARY_METRICS.map((metric) => {
+              const isActive = normalizedNutritionGoals.trackedMetrics.includes(metric.key);
+              const valueKey = metric.key as keyof typeof nutritionTargetsInput;
+              return (
+                <View key={metric.key} style={styles.goalOptionList}>
+                  <View style={styles.goalOptionRow}>
+                    <Pressable
+                      style={styles.goalOptionPressable}
+                      onPress={() => handleToggleNutritionMetric(metric.key)}
+                    >
+                      <Text style={styles.goalOptionTitle}>{metric.label}</Text>
+                      <Text style={styles.goalOptionHelper}>{metric.helper}</Text>
+                    </Pressable>
+                    <Switch
+                      value={isActive}
+                      onValueChange={(value) => handleToggleNutritionMetric(metric.key)}
+                      thumbColor={tokens.colors.accentOnPrimary}
+                      trackColor={{ false: tokens.colors.border, true: tokens.colors.accent }}
+                    />
+                  </View>
+                  {isActive ? (
+                    <TextInput
+                      value={nutritionTargetsInput[valueKey] ?? ""}
+                      onChangeText={(value) => handleNutritionTargetChange(valueKey, value)}
+                      style={styles.goalInput}
+                      placeholder="Target"
+                      placeholderTextColor={tokens.colors.textMuted}
+                      keyboardType="numeric"
+                    />
+                  ) : null}
+                </View>
+              );
+            })}
+          </View>
+
+          <View style={styles.goalSection}>
+            <Text style={styles.goalLabel}>{t("profile.nutritionDisplay")}</Text>
+            <View style={styles.goalOptionRow}>
+              <Text style={styles.goalOptionTitle}>{t("onboarding.nutritionGoals.perMeal")}</Text>
+              <Switch
+                value={normalizedNutritionGoals.displayPreferences.showPerMealTargets}
+                onValueChange={(value) =>
+                  handleNutritionPreferenceToggle("showPerMealTargets", value)
+                }
+                thumbColor={tokens.colors.accentOnPrimary}
+                trackColor={{ false: tokens.colors.border, true: tokens.colors.accent }}
+              />
+            </View>
+            <View style={styles.goalOptionRow}>
+              <Text style={styles.goalOptionTitle}>{t("onboarding.nutritionGoals.proteinOnly")}</Text>
+              <Switch
+                value={normalizedNutritionGoals.displayPreferences.showProteinOnly}
+                onValueChange={(value) =>
+                  handleNutritionPreferenceToggle("showProteinOnly", value)
+                }
+                thumbColor={tokens.colors.accentOnPrimary}
+                trackColor={{ false: tokens.colors.border, true: tokens.colors.accent }}
+              />
+            </View>
+            <View style={styles.goalOptionRow}>
+              <Text style={styles.goalOptionTitle}>{t("onboarding.nutritionGoals.hideCalories")}</Text>
+              <Switch
+                value={normalizedNutritionGoals.displayPreferences.hideCalories}
+                onValueChange={(value) => handleNutritionPreferenceToggle("hideCalories", value)}
+                thumbColor={tokens.colors.accentOnPrimary}
+                trackColor={{ false: tokens.colors.border, true: tokens.colors.accent }}
+              />
+            </View>
+            <View style={styles.goalOptionRow}>
+              <Text style={styles.goalOptionTitle}>{t("onboarding.nutritionGoals.warnings")}</Text>
+              <Switch
+                value={normalizedNutritionGoals.displayPreferences.showWarnings}
+                onValueChange={(value) => handleNutritionPreferenceToggle("showWarnings", value)}
+                thumbColor={tokens.colors.accentOnPrimary}
+                trackColor={{ false: tokens.colors.border, true: tokens.colors.accent }}
+              />
+            </View>
+
+            <View style={styles.goalInputRow}>
+              <View style={styles.goalInputGroup}>
+                <Text style={styles.manageLabel}>{t("onboarding.nutritionGoals.mealCount")}</Text>
+                <TextInput
+                  value={String(
+                    normalizedNutritionGoals.displayPreferences.mealCount ?? ""
+                  )}
+                  onChangeText={handleNutritionMealCountChange}
+                  style={styles.goalInput}
+                  placeholder="3"
+                  placeholderTextColor={tokens.colors.textMuted}
+                  keyboardType="numeric"
+                />
+              </View>
+              <View style={styles.goalInputGroup}>
+                <Text style={styles.goalHelper}>
+                  {t("profile.nutritionPreview", {
+                    calories: perMealNutritionPreview.calories ?? "—",
+                    protein: perMealNutritionPreview.protein ?? "—",
+                  })}
+                </Text>
+                <Text style={styles.goalHelper}>{t("profile.nutritionTrainingHint")}</Text>
+              </View>
+            </View>
+          </View>
+
+          {nutritionMessage ? (
+            <Text
+              style={[
+                styles.householdMessage,
+                nutritionMessage.tone === "info" ? styles.householdMessageInfo : null,
+                nutritionMessage.tone === "success" ? styles.householdMessageSuccess : null,
+                nutritionMessage.tone === "error" ? styles.householdMessageError : null,
+              ]}
+            >
+              {nutritionMessage.text}
+            </Text>
+          ) : null}
+
+          <View style={styles.goalActions}>
+            <Pressable
+              onPress={handleSaveNutritionGoals}
+              style={[
+                styles.managePrimaryButton,
+                isSavingNutritionGoals ? styles.disabledControl : null,
+              ]}
+              disabled={isSavingNutritionGoals}
+            >
+              <Text style={styles.managePrimaryText}>
+                {isSavingNutritionGoals
+                  ? t("onboarding.saving")
+                  : t("profile.saveNutritionGoals")}
+              </Text>
+            </Pressable>
+          </View>
         </View>
 
         <View style={styles.appearanceCard}>
