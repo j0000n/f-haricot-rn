@@ -49,6 +49,20 @@ const inferLocaleFromEmail = (email: string): EmailLocale => {
   return "en";
 };
 
+const getPreferredLocale = async (
+  ctx: any,
+  email: string
+): Promise<EmailLocale | undefined> => {
+  if (!ctx?.db) return undefined;
+
+  const existingUser = await ctx.db
+    .query("users")
+    .withIndex("email", (q: any) => q.eq("email", email))
+    .first();
+
+  return existingUser?.preferredLanguage as EmailLocale | undefined;
+};
+
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   providers: [
     Resend({
@@ -58,12 +72,12 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
         // Generate a 6-digit numeric code
         return Math.floor(100000 + Math.random() * 900000).toString();
       },
-      async sendVerificationRequest({ identifier: email, token }) {
+      async sendVerificationRequest({ identifier: email, token }, ctx) {
         const { Resend: ResendAPI } = await import("resend");
         const resend = new ResendAPI(process.env.AUTH_RESEND_KEY);
 
         // Clean the email address of any whitespace or special characters
-        const cleanEmail = email.trim();
+        const cleanEmail = email.trim().toLowerCase();
 
         // Validate email format
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -71,7 +85,8 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
           throw new Error(`Invalid email address: ${cleanEmail}`);
         }
 
-        const locale = inferLocaleFromEmail(cleanEmail);
+        const localePreference = await getPreferredLocale(ctx, cleanEmail);
+        const locale = localePreference ?? inferLocaleFromEmail(cleanEmail);
         const emailContent = getSignInEmailContent(locale, token, cleanEmail);
 
         await resend.emails.send({

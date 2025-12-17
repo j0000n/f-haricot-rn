@@ -224,11 +224,10 @@ export default function SignIn() {
                       codeInputRefs.current[index] = ref;
                     }}
                     style={styles.codeInput}
-                    placeholder={t('auth.codePlaceholder')}
                     value={digit}
                     onChangeText={(value) => handleCodeChange(value, index)}
                     keyboardType="number-pad"
-                    maxLength={CODE_LENGTH}
+                    maxLength={1}
                     autoFocus={index === 0}
                     placeholderTextColor={tokens.colors.textMuted}
                     returnKeyType="done"

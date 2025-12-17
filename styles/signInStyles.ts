@@ -83,6 +83,8 @@ const createSignInStyles = (tokens: ThemeTokens) =>
       fontFamily: tokens.fontFamilies.semiBold,
       color: tokens.colors.textPrimary,
       backgroundColor: tokens.colors.surface,
+      textAlign: "center",
+      textAlignVertical: "center",
     },
     link: {
       color: tokens.colors.info,
