@@ -202,7 +202,7 @@ export default function AllergiesScreen() {
 
           <View style={onboardingStyles.footer}>
             <Text style={onboardingStyles.progressText}>
-              {t("onboarding.stepIndicator", { current: 4, total: 9 })}
+              {t("onboarding.stepIndicator", { current: 4, total: 10 })}
             </Text>
           </View>
         </View>

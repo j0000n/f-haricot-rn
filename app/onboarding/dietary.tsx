@@ -238,7 +238,7 @@ export default function DietaryRestrictionsScreen() {
 
           <View style={onboardingStyles.footer}>
             <Text style={onboardingStyles.progressText}>
-              {t("onboarding.stepIndicator", { current: 3, total: 9 })}
+              {t("onboarding.stepIndicator", { current: 3, total: 10 })}
             </Text>
           </View>
         </View>

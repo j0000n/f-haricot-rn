@@ -176,6 +176,37 @@ export const updateProfile = mutation({
         v.literal("ar")
       )
     ),
+    nutritionGoals: v.optional(
+      v.object({
+        preset: v.optional(v.union(v.string(), v.null())),
+        categories: v.array(v.string()),
+        targets: v.object({
+          calories: v.optional(v.union(v.number(), v.null())),
+          protein: v.optional(v.union(v.number(), v.null())),
+          fat: v.optional(v.union(v.number(), v.null())),
+          carbohydrates: v.optional(v.union(v.number(), v.null())),
+          fiber: v.optional(v.union(v.number(), v.null())),
+          addedSugar: v.optional(v.union(v.number(), v.null())),
+          saturatedFat: v.optional(v.union(v.number(), v.null())),
+          sodium: v.optional(v.union(v.number(), v.null())),
+        }),
+        trackedMetrics: v.array(
+          v.union(
+            v.literal("fiber"),
+            v.literal("addedSugar"),
+            v.literal("saturatedFat"),
+            v.literal("sodium")
+          )
+        ),
+        displayPreferences: v.object({
+          showPerMealTargets: v.boolean(),
+          showProteinOnly: v.boolean(),
+          hideCalories: v.boolean(),
+          showWarnings: v.boolean(),
+          mealCount: v.number(),
+        }),
+      })
+    ),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -244,6 +275,9 @@ export const updateProfile = mutation({
     }
     if (args.preferredLanguage !== undefined) {
       updates.preferredLanguage = args.preferredLanguage;
+    }
+    if (args.nutritionGoals !== undefined) {
+      updates.nutritionGoals = args.nutritionGoals;
     }
 
     if (Object.keys(updates).length === 0) {
