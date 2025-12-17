@@ -67,6 +67,23 @@ const createSignInStyles = (tokens: ThemeTokens) =>
       textAlign: "center",
       color: tokens.colors.textPrimary,
     },
+    codeInputsRow: {
+      flexDirection: "row",
+      justifyContent: "center",
+      gap: tokens.spacing.sm,
+      marginBottom: tokens.spacing.md,
+    },
+    codeInput: {
+      width: 52,
+      height: 60,
+      borderWidth: tokens.borderWidths.thin,
+      borderColor: tokens.colors.border,
+      borderRadius: tokens.radii.md,
+      fontSize: tokens.typography.heading,
+      fontFamily: tokens.fontFamilies.semiBold,
+      color: tokens.colors.textPrimary,
+      backgroundColor: tokens.colors.surface,
+    },
     link: {
       color: tokens.colors.info,
       fontSize: tokens.typography.body,
