@@ -7,6 +7,7 @@ import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { IngredientsList } from "@/components/IngredientsList";
 import { LoadingScreen } from "@/components/LoadingScreen";
+import { NutritionLabel } from "@/components/NutritionLabel";
 import { RecipeHeader } from "@/components/RecipeHeader";
 import { RecipeRunner } from "@/components/RecipeRunner";
 import { useTranslation } from "@/i18n/useTranslation";
@@ -223,6 +224,68 @@ export default function RecipeDetailScreen() {
     );
   }
 
+  const nutritionFacts = useMemo(
+    () => ({
+      servingPerContainer: "1",
+      servingSize: "1 Package",
+      calories: 150,
+      nutrients: [
+        { key: "totalFat", label: "Total Fat", amount: "7 g", percentDailyValue: 10, isHeader: true },
+        { key: "saturatedFat", label: "Saturated Fat", amount: "1 g", percentDailyValue: 5, isSubItem: true },
+        { key: "transFat", label: "Trans Fat", amount: "0 g", isSubItem: true },
+        { key: "cholesterol", label: "Cholesterol", amount: "0 mg", percentDailyValue: 0, isHeader: true },
+        { key: "sodium", label: "Sodium", amount: "160 mg", percentDailyValue: 7, isHeader: true },
+        { key: "totalCarbohydrate", label: "Total Carbohydrate", amount: "18 g", percentDailyValue: 6, isHeader: true },
+        { key: "dietaryFiber", label: "Dietary Fiber", amount: "1 g", percentDailyValue: 5, isSubItem: true },
+        { key: "totalSugars", label: "Total Sugars", amount: "< 1 g", isSubItem: true },
+        { key: "protein", label: "Protein", amount: "2 g", isHeader: true },
+        { key: "vitaminD", label: "Vitamin D", amount: "0 mcg", percentDailyValue: 0, isHeader: true },
+        { key: "calcium", label: "Calcium", amount: "40 mg", percentDailyValue: 2, isHeader: true },
+        { key: "iron", label: "Iron", amount: "0.3 mg", percentDailyValue: 0, isHeader: true },
+        { key: "potassium", label: "Potassium", amount: "100 mg", percentDailyValue: 2, isHeader: true },
+      ],
+      notes: [
+        "Not a significant source of added sugars.",
+        "* The % Daily Value (DV) tells you how much a nutrient in a serving of food contributes to a daily diet. 2,000 Calories a day is used for general nutrition advice.",
+      ],
+      caloriesPerGram: {
+        fat: 9,
+        carbohydrate: 4,
+        protein: 4,
+      },
+    }),
+    [],
+  );
+
+  const dailyValues = useMemo(
+    () => ({
+      default: {
+        totalFat: 78,
+        saturatedFat: 20,
+        cholesterol: 300,
+        sodium: 2300,
+        totalCarbohydrate: 275,
+        dietaryFiber: 28,
+        protein: 50,
+        vitaminD: 20,
+        calcium: 1300,
+        iron: 18,
+        potassium: 4700,
+      },
+      user: {
+        totalFat: 70,
+        saturatedFat: 15,
+        sodium: 2000,
+      },
+      family: {
+        totalFat: 90,
+        saturatedFat: 22,
+        sodium: 2400,
+      },
+    }),
+    [],
+  );
+
   return (
     <SafeAreaView style={styles.screen}>
       <Stack.Screen options={headerOptions} />
@@ -263,6 +326,16 @@ export default function RecipeDetailScreen() {
               <Text style={styles.stepText}>{step.detail || step.title}</Text>
             </View>
           ))}
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t("recipe.nutrition", { defaultValue: "Nutrition" })}</Text>
+          <NutritionLabel
+            facts={nutritionFacts}
+            goalContext="user"
+            dailyValues={dailyValues}
+            showGoalContextLabel
+          />
         </View>
 
         <View style={styles.attribution}>
