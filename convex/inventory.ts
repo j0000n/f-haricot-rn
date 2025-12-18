@@ -291,10 +291,6 @@ export const mapSpeechToInventory = action({
     }
 
     // Create provisional entries for unmatched items
-    const warnings = Array.isArray(parsed.warnings)
-      ? parsed.warnings.filter((entry) => typeof entry === "string" && entry.trim().length > 0)
-      : [];
-
     if (unmatchedItems.length > 0) {
       // Try to extract names from transcript for unmatched items
       // For now, use the item code as the name
