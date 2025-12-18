@@ -16,7 +16,7 @@ import {
 import { useQuery } from "convex/react";
 import { useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
-import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Alert, Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 
 type ViewMode = "list" | "detailed";
 
@@ -41,12 +41,15 @@ export default function ListsScreen() {
   const tokens = useTokens();
   const router = useRouter();
   const { t, i18n } = useTranslation();
-  const { allLists } = useRecipeLists();
+  const { allLists, createList } = useRecipeLists();
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [sortOption, setSortOption] = useState<SortOption>("ready");
   const [filterOption, setFilterOption] = useState<FilterOption>("all");
   const [showSortMenu, setShowSortMenu] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newListName, setNewListName] = useState("");
+  const [newListEmoji, setNewListEmoji] = useState("");
 
   const allRecipeIds = useMemo(() => {
     const ids = new Set<Recipe["_id"]>();
@@ -222,6 +225,21 @@ export default function ListsScreen() {
     [t],
   );
 
+  const handleCreateList = useCallback(() => {
+    const trimmedName = newListName.trim();
+    if (!trimmedName) {
+      Alert.alert(t("lists.createListErrorTitle"), t("lists.createListErrorNameRequired"));
+      return;
+    }
+
+    const newList = createList(trimmedName, newListEmoji.trim() || undefined);
+    setShowCreateModal(false);
+    setNewListName("");
+    setNewListEmoji("");
+    // Navigate to the new list
+    router.push(`/lists/${newList.id}`);
+  }, [createList, newListName, newListEmoji, router, t]);
+
   if (isLoading) {
     return <LoadingScreen />;
   }
@@ -246,6 +264,15 @@ export default function ListsScreen() {
             returnKeyType="search"
           />
         </View>
+
+        <Pressable
+          onPress={() => setShowCreateModal(true)}
+          style={styles.createButton}
+          accessibilityRole="button"
+          accessibilityLabel={t("lists.createList")}
+        >
+          <Text style={styles.createButtonText}>{t("lists.createList")}</Text>
+        </Pressable>
 
         <View style={styles.controlsRow}>
           <View style={styles.sortControl}>
@@ -420,6 +447,59 @@ export default function ListsScreen() {
           })
         )}
       </ScrollView>
+
+      <Modal
+        visible={showCreateModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowCreateModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>{t("lists.createList")}</Text>
+            
+            <Text style={styles.modalLabel}>{t("lists.listName")}</Text>
+            <TextInput
+              value={newListName}
+              onChangeText={setNewListName}
+              placeholder={t("lists.listNamePlaceholder")}
+              placeholderTextColor={tokens.colors.textMuted}
+              style={styles.modalInput}
+              autoFocus={true}
+              returnKeyType="next"
+            />
+
+            <Text style={styles.modalLabel}>{t("lists.listEmoji")} ({t("lists.optional")})</Text>
+            <TextInput
+              value={newListEmoji}
+              onChangeText={setNewListEmoji}
+              placeholder={t("lists.listEmojiPlaceholder")}
+              placeholderTextColor={tokens.colors.textMuted}
+              style={styles.modalInput}
+              maxLength={2}
+            />
+
+            <View style={styles.modalButtons}>
+              <Pressable
+                onPress={() => {
+                  setShowCreateModal(false);
+                  setNewListName("");
+                  setNewListEmoji("");
+                }}
+                style={[styles.modalButton, styles.modalButtonCancel]}
+              >
+                <Text style={styles.modalButtonCancelText}>{t("common.cancel")}</Text>
+              </Pressable>
+              <Pressable
+                onPress={handleCreateList}
+                style={[styles.modalButton, styles.modalButtonCreate]}
+              >
+                <Text style={styles.modalButtonCreateText}>{t("common.create")}</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }

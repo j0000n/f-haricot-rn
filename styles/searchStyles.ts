@@ -17,6 +17,113 @@ const createSearchStyles = (tokens: ThemeTokens) =>
     header: {
       gap: tokens.spacing.xs,
     },
+    headerTop: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "flex-start",
+      gap: tokens.spacing.md,
+    },
+    headerText: {
+      flex: 1,
+      gap: tokens.spacing.xs,
+    },
+    sortRow: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: tokens.spacing.xs,
+    },
+    sortChip: {
+      paddingVertical: tokens.spacing.xxs,
+      paddingHorizontal: tokens.spacing.sm,
+      borderRadius: tokens.radii.sm,
+      borderWidth: tokens.borderWidths.thin,
+      borderColor: tokens.colors.border,
+      backgroundColor: tokens.colors.surface,
+    },
+    sortChipActive: {
+      backgroundColor: tokens.colors.accent,
+      borderColor: tokens.colors.accent,
+    },
+    sortChipText: {
+      fontSize: tokens.typography.small,
+      fontFamily: tokens.fontFamilies.medium,
+      color: tokens.colors.textSecondary,
+    },
+    sortChipTextActive: {
+      color: tokens.colors.accentOnPrimary,
+    },
+    filterButton: {
+      paddingVertical: tokens.spacing.xs,
+      paddingHorizontal: tokens.spacing.md,
+      borderRadius: tokens.radii.md,
+      backgroundColor: tokens.colors.surface,
+      borderWidth: tokens.borderWidths.thin,
+      borderColor: tokens.colors.border,
+    },
+    filterButtonActive: {
+      backgroundColor: tokens.colors.accent,
+      borderColor: tokens.colors.accent,
+    },
+    filterButtonText: {
+      fontSize: tokens.typography.small,
+      fontFamily: tokens.fontFamilies.medium,
+      color: tokens.colors.textSecondary,
+    },
+    filterButtonTextActive: {
+      color: tokens.colors.accentOnPrimary,
+    },
+    filtersSection: {
+      backgroundColor: tokens.colors.surface,
+      borderRadius: tokens.radii.md,
+      borderWidth: tokens.borderWidths.thin,
+      borderColor: tokens.colors.border,
+      padding: tokens.spacing.md,
+      gap: tokens.spacing.md,
+    },
+    filterSectionTitle: {
+      fontSize: tokens.typography.small,
+      fontFamily: tokens.fontFamilies.semiBold,
+      color: tokens.colors.textPrimary,
+      textTransform: "uppercase",
+      letterSpacing: tokens.letterSpacing.tight,
+    },
+    filterChips: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: tokens.spacing.xs,
+    },
+    filterChip: {
+      paddingVertical: tokens.spacing.xxs,
+      paddingHorizontal: tokens.spacing.sm,
+      borderRadius: tokens.radii.sm,
+      borderWidth: tokens.borderWidths.thin,
+      borderColor: tokens.colors.border,
+      backgroundColor: tokens.colors.background,
+    },
+    filterChipActive: {
+      backgroundColor: tokens.colors.accent,
+      borderColor: tokens.colors.accent,
+    },
+    filterChipText: {
+      fontSize: tokens.typography.small,
+      fontFamily: tokens.fontFamilies.medium,
+      color: tokens.colors.textSecondary,
+    },
+    filterChipTextActive: {
+      color: tokens.colors.accentOnPrimary,
+    },
+    clearFiltersButton: {
+      alignSelf: "flex-start",
+      paddingVertical: tokens.spacing.xs,
+      paddingHorizontal: tokens.spacing.md,
+      borderRadius: tokens.radii.md,
+    },
+    clearFiltersText: {
+      fontSize: tokens.typography.small,
+      fontFamily: tokens.fontFamilies.medium,
+      color: tokens.colors.textSecondary,
+      textDecorationLine: "underline",
+    },
     title: {
       fontFamily: tokens.fontFamilies.semiBold,
       fontSize: tokens.typography.heading,

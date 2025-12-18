@@ -93,4 +93,19 @@ export interface Recipe {
   updatedAt: number;
   createdBy?: Id<"users">;
   isPublic: boolean;
+  dietaryTags?: string[];
+  cuisineTags?: string[];
+  cookingStyleTags?: string[];
+  allergenTags?: string[];
+  mealTypeTags?: string[];
+  difficultyLevel?: "easy" | "medium" | "hard";
+  nutritionProfile?: {
+    caloriesPerServing: number;
+    proteinPerServing: number;
+    carbsPerServing: number;
+    fatPerServing: number;
+    fiberPerServing?: number;
+    sugarsPerServing?: number;
+    sodiumPerServing?: number;
+  };
 }

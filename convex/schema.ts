@@ -244,6 +244,12 @@ const schema = defineSchema({
         ),
       })
     ),
+    allergenTags: v.optional(v.array(v.string())),
+    dietaryCompatibility: v.optional(v.array(v.string())),
+    standardizedName: v.optional(v.string()),
+    aliases: v.optional(v.array(v.string())),
+    isProvisional: v.optional(v.boolean()),
+    createdBy: v.optional(v.id("users")),
   })
     .index("by_code", ["code"])
     .index("by_namespace", ["namespace"]),
@@ -382,6 +388,25 @@ const schema = defineSchema({
     updatedAt: v.number(),
     createdBy: v.optional(v.id("users")),
     isPublic: v.boolean(),
+    dietaryTags: v.optional(v.array(v.string())),
+    cuisineTags: v.optional(v.array(v.string())),
+    cookingStyleTags: v.optional(v.array(v.string())),
+    allergenTags: v.optional(v.array(v.string())),
+    mealTypeTags: v.optional(v.array(v.string())),
+    difficultyLevel: v.optional(
+      v.union(v.literal("easy"), v.literal("medium"), v.literal("hard"))
+    ),
+    nutritionProfile: v.optional(
+      v.object({
+        caloriesPerServing: v.number(),
+        proteinPerServing: v.number(),
+        carbsPerServing: v.number(),
+        fatPerServing: v.number(),
+        fiberPerServing: v.optional(v.number()),
+        sugarsPerServing: v.optional(v.number()),
+        sodiumPerServing: v.optional(v.number()),
+      })
+    ),
   })
     .index("by_emoji_tags", ["emojiTags"])
     .index("by_total_time", ["totalTimeMinutes"])
@@ -603,6 +628,22 @@ const schema = defineSchema({
     .index("by_slug", ["slug"])
     .index("by_country", ["countryId"])
     .index("by_subregion", ["subregionId"]),
+  userPersonalizedRecipes: defineTable({
+    userId: v.id("users"),
+    railType: v.union(
+      v.literal("forYou"),
+      v.literal("readyToCook"),
+      v.literal("quickEasy"),
+      v.literal("cuisines"),
+      v.literal("dietaryFriendly"),
+      v.literal("householdCompatible")
+    ),
+    recipeIds: v.array(v.id("recipes")),
+    computedAt: v.number(),
+    expiresAt: v.number(),
+  })
+    .index("by_user_and_type", ["userId", "railType"])
+    .index("by_expires_at", ["expiresAt"]),
 });
 
 export default schema;

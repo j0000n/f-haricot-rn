@@ -2,6 +2,8 @@ import Resend from "@auth/core/providers/resend";
 import { convexAuth } from "@convex-dev/auth/server";
 import { getSignInEmailContent } from "../i18n/emails/signInCodeEmail";
 import type { EmailLocale } from "../i18n/emails/types";
+import type { EmailConfig } from "@auth/core/providers/email";
+import type { Theme } from "@auth/core/types";
 
 const isEmailLocale = (value: string): value is EmailLocale => {
   return ["en", "es", "fr", "zh", "tl", "vi", "ar"].includes(value);
@@ -90,7 +92,18 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
         // Generate a 6-digit numeric code
         return Math.floor(100000 + Math.random() * 900000).toString();
       },
-      async sendVerificationRequest({ identifier: email, token }, ctx) {
+      async sendVerificationRequest(params: {
+        identifier: string;
+        url: string;
+        expires: Date;
+        provider: EmailConfig;
+        token: string;
+        theme: Theme;
+        request: Request;
+      }): Promise<void> {
+        const email = params.identifier;
+        const token = params.token;
+        const ctx = params as any;
         const { Resend: ResendAPI } = await import("resend");
         const resend = new ResendAPI(process.env.AUTH_RESEND_KEY);
 

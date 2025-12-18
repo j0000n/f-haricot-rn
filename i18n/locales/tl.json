@@ -428,7 +428,16 @@
     "resultsSubtitle": "Mga resulta para sa \"{{query}}\"",
     "emptyQuery": "Magsimulang mag-type para makahanap ng mga resipe.",
     "loading": "Naglo-load ng mga resulta…",
-    "noResults": "Walang nakitang resipe para sa \"{{query}}\"."
+    "noResults": "Walang nakitang resipe para sa \"{{query}}\".",
+    "filters": "Filters",
+    "sortRelevance": "Relevance",
+    "sortTimeAsc": "Fastest",
+    "sortTimeDesc": "Longest",
+    "sortDifficulty": "Easiest first",
+    "dietaryRestrictions": "Dietary Restrictions",
+    "cuisines": "Cuisines",
+    "maxCookTime": "Max Cooking Time",
+    "clearFilters": "Clear all filters"
   },
   "lists": {
     "title": "Mga Listahan",

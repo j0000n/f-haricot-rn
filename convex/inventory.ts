@@ -35,6 +35,12 @@ type LibraryDescriptor = {
   }>;
 };
 
+type LibraryIndexEntry = {
+  shelfLifeDays: number;
+  storageLocation: Doc<"foodLibrary">["storageLocation"];
+  varietyCodes: Set<string>;
+};
+
 const buildLibraryDescriptors = (library: Doc<"foodLibrary">[]): LibraryDescriptor[] => {
   return library.map((item) => {
     const baseNames = [
@@ -42,6 +48,16 @@ const buildLibraryDescriptors = (library: Doc<"foodLibrary">[]): LibraryDescript
       item.translations.en?.singular ?? "",
       item.translations.en?.plural ?? "",
     ];
+
+    // Add standardized name if available
+    if (item.standardizedName) {
+      baseNames.push(item.standardizedName);
+    }
+
+    // Add aliases if available
+    if (item.aliases && item.aliases.length > 0) {
+      baseNames.push(...item.aliases);
+    }
 
     for (const translation of Object.values(item.translations)) {
       if (translation?.singular) {
@@ -69,6 +85,18 @@ const buildLibraryDescriptors = (library: Doc<"foodLibrary">[]): LibraryDescript
       varieties,
     };
   });
+};
+
+const buildLibraryIndex = (library: Doc<"foodLibrary">[]): Map<string, LibraryIndexEntry> => {
+  const index = new Map<string, LibraryIndexEntry>();
+  for (const item of library) {
+    index.set(item.code, {
+      shelfLifeDays: item.shelfLifeDays,
+      storageLocation: item.storageLocation,
+      varietyCodes: new Set(item.varieties.map((variety) => variety.code)),
+    });
+  }
+  return index;
 };
 
 type InventoryUpdate = {
@@ -127,6 +155,7 @@ export const mapSpeechToInventory = action({
     }
 
     const descriptors = buildLibraryDescriptors(library);
+    const libraryIndex = buildLibraryIndex(library);
 
     const openAiKey = process.env.OPEN_AI_KEY;
     if (!openAiKey) {
@@ -207,6 +236,12 @@ export const mapSpeechToInventory = action({
     }
 
     const items: InventoryUpdate[] = [];
+    const unmatchedItems: string[] = [];
+    const libraryCodes = new Set(library.map((item) => item.code));
+    const warnings = Array.isArray(parsed.warnings)
+      ? parsed.warnings.filter((entry) => typeof entry === "string" && entry.trim().length > 0)
+      : [];
+
     if (Array.isArray(parsed.items)) {
       for (const entry of parsed.items) {
         if (!entry || typeof entry !== "object") {
@@ -220,31 +255,69 @@ export const mapSpeechToInventory = action({
         if (quantity <= 0) {
           continue;
         }
+
+        // Check if item code exists in library
+        const libraryEntry = libraryIndex.get(itemCode);
+        if (!libraryCodes.has(itemCode)) {
+          // Item doesn't exist - we'll create provisional entry
+          unmatchedItems.push(itemCode);
+          // Still add to items so it can be processed
+        }
+
         const varietyCode =
           typeof entry.varietyCode === "string" && entry.varietyCode.trim().length > 0
             ? entry.varietyCode.trim()
             : undefined;
+        const validatedVariety =
+          varietyCode && libraryEntry && !libraryEntry.varietyCodes.has(varietyCode)
+            ? undefined
+            : varietyCode;
+        if (varietyCode && !validatedVariety) {
+          warnings.push(
+            `Variety "${varietyCode}" is not defined for ${itemCode}. Saved without variety code.`,
+          );
+        }
         const note =
           typeof entry.note === "string" && entry.note.trim().length > 0
             ? entry.note.trim()
             : undefined;
         items.push({
           itemCode,
-          varietyCode,
+          varietyCode: validatedVariety,
           quantity: Math.max(1, Math.round(quantity)),
           note,
         });
       }
     }
 
+    // Create provisional entries for unmatched items
     const warnings = Array.isArray(parsed.warnings)
       ? parsed.warnings.filter((entry) => typeof entry === "string" && entry.trim().length > 0)
-      : undefined;
+      : [];
+
+    if (unmatchedItems.length > 0) {
+      // Try to extract names from transcript for unmatched items
+      // For now, use the item code as the name
+      for (const itemCode of unmatchedItems) {
+        try {
+          await ctx.runMutation(api.foodLibrary.ensureProvisional, {
+            code: itemCode,
+            name: itemCode.split(".").pop() || itemCode, // Use last part of code as name
+          });
+          warnings.push(
+            `Created provisional entry for "${itemCode}". Please review and complete the entry.`
+          );
+        } catch (error) {
+          console.error(`Failed to create provisional entry for ${itemCode}:`, error);
+          warnings.push(`Could not create entry for "${itemCode}". Please add manually.`);
+        }
+      }
+    }
 
     return {
       transcript: normalizedTranscript,
       items,
-      warnings,
+      warnings: warnings.length > 0 ? warnings : undefined,
     };
   },
 });
@@ -283,6 +356,12 @@ export const applyInventoryUpdates = mutation({
     const existing = (household.inventory ?? []) as UserInventoryEntry[];
     const nextInventory: UserInventoryEntry[] = [...existing];
 
+    // Ensure all item codes exist in food library
+    const library = await ctx.runQuery(api.foodLibrary.listAll, {});
+    const libraryCodes = new Set(library.map((item) => item.code));
+    const libraryIndex = buildLibraryIndex(library);
+    const warnings: string[] = [];
+
     for (const update of args.updates) {
       const quantity = Math.max(1, Math.round(update.quantity));
       const itemCode = update.itemCode.trim();
@@ -290,13 +369,45 @@ export const applyInventoryUpdates = mutation({
         continue;
       }
 
+      // Ensure item code exists in food library
+      if (!libraryCodes.has(itemCode)) {
+        // Create provisional entry
+        try {
+          await ctx.runMutation(api.foodLibrary.ensureProvisional, {
+            code: itemCode,
+            name: itemCode.split(".").pop() || itemCode,
+          });
+          // Refresh library codes
+          libraryCodes.add(itemCode);
+          libraryIndex.set(itemCode, {
+            shelfLifeDays: 7,
+            storageLocation: "pantry",
+            varietyCodes: new Set(),
+          });
+          warnings.push(`Created provisional entry for "${itemCode}". Please review its details.`);
+        } catch (error) {
+          console.error(`Failed to ensure provisional entry for ${itemCode}:`, error);
+          // Continue anyway - the code will be stored but may not have full food library data
+        }
+      }
+
       const varietyCode = update.varietyCode?.trim();
+      const libraryEntry = libraryIndex.get(itemCode);
+      const validatedVariety =
+        varietyCode && libraryEntry && !libraryEntry.varietyCodes.has(varietyCode)
+          ? undefined
+          : varietyCode;
+      if (varietyCode && !validatedVariety) {
+        warnings.push(
+          `Variety "${varietyCode}" is not defined for ${itemCode}. Saved without variety code.`,
+        );
+      }
       const note = update.note?.trim();
 
       const matchIndex = nextInventory.findIndex(
         (entry) =>
           entry.itemCode === itemCode &&
-          (entry.varietyCode ?? null) === (varietyCode ?? null),
+          (entry.varietyCode ?? null) === (validatedVariety ?? null),
       );
 
       if (matchIndex >= 0) {
@@ -310,7 +421,7 @@ export const applyInventoryUpdates = mutation({
       } else {
         nextInventory.push({
           itemCode,
-          varietyCode: varietyCode ?? undefined,
+          varietyCode: validatedVariety ?? undefined,
           quantity,
           purchaseDate: Date.now(),
           note: note ?? undefined,
@@ -319,6 +430,6 @@ export const applyInventoryUpdates = mutation({
     }
 
     await ctx.db.patch(household._id, { inventory: nextInventory });
-    return { success: true, inventory: nextInventory };
+    return { success: true, inventory: nextInventory, warnings: warnings.length ? warnings : undefined };
   },
 });

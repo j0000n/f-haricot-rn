@@ -495,6 +495,8 @@
     "servings": "servings",
     "cancel": "Cancel",
     "create": "Create",
+    "save": "Save",
+    "delete": "Delete",
     "back": "Back"
   },
   "recipe": {
@@ -546,7 +548,16 @@
     "resultsSubtitle": "Results for \"{{query}}\"",
     "emptyQuery": "Start typing to search recipes.",
     "loading": "Loading results…",
-    "noResults": "No recipes found for \"{{query}}\"."
+    "noResults": "No recipes found for \"{{query}}\".",
+    "filters": "Filters",
+    "sortRelevance": "Relevance",
+    "sortTimeAsc": "Fastest",
+    "sortTimeDesc": "Longest",
+    "sortDifficulty": "Easiest first",
+    "dietaryRestrictions": "Dietary Restrictions",
+    "cuisines": "Cuisines",
+    "maxCookTime": "Max Cooking Time",
+    "clearFilters": "Clear all filters"
   },
   "lists": {
     "title": "Lists",
@@ -569,6 +580,14 @@
     "addToListAction": "Add to list",
     "addedToList": "Added to {{listName}}",
     "unnamedList": "Unnamed list",
+    "createList": "Create List",
+    "createListErrorTitle": "Error",
+    "createListErrorNameRequired": "List name is required",
+    "listName": "List Name",
+    "listNamePlaceholder": "Enter list name",
+    "listEmoji": "Emoji",
+    "listEmojiPlaceholder": "e.g., 🍳",
+    "optional": "Optional",
     "searchLists": "Search lists...",
     "recentListsLabel": "Recent lists",
     "defaultListName": "List {{index}}",
@@ -609,7 +628,13 @@
     "stockedPercentage": "{{percentage}}% stocked",
     "noListsTitle": "You don't have any lists yet",
     "noListsDescription": "Create a list to start organizing your recipes.",
-    "noResults": "No lists match your filters."
+    "noResults": "No lists match your filters.",
+    "editList": "Edit",
+    "deleteList": "Delete",
+    "deleteListTitle": "Delete List",
+    "deleteListMessage": "Are you sure you want to delete \"{{name}}\"? This cannot be undone.",
+    "editListErrorTitle": "Error",
+    "editListErrorNameRequired": "List name is required"
   },
   "themeSwitcher": {
     "shareCodeRequiredTitle": "Share code required",

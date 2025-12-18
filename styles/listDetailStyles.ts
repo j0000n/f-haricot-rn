@@ -19,6 +19,41 @@ const createListDetailStyles = (tokens: ThemeTokens) =>
     header: {
       gap: tokens.spacing.xs,
     },
+    headerTop: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "flex-start",
+      gap: tokens.spacing.md,
+    },
+    headerText: {
+      flex: 1,
+      gap: tokens.spacing.xs,
+    },
+    headerActions: {
+      flexDirection: "row",
+      gap: tokens.spacing.xs,
+      alignItems: "center",
+    },
+    actionButton: {
+      paddingVertical: tokens.spacing.xs,
+      paddingHorizontal: tokens.spacing.sm,
+      borderRadius: tokens.radii.md,
+      backgroundColor: tokens.colors.surface,
+      borderWidth: tokens.borderWidths.thin,
+      borderColor: tokens.colors.border,
+    },
+    deleteButton: {
+      backgroundColor: tokens.colors.error || tokens.colors.surface,
+      borderColor: tokens.colors.error || tokens.colors.border,
+    },
+    actionButtonText: {
+      fontSize: tokens.typography.small,
+      fontFamily: tokens.fontFamilies.medium,
+      color: tokens.colors.textPrimary,
+    },
+    deleteButtonText: {
+      color: tokens.colors.errorOnSurface || tokens.colors.textPrimary,
+    },
     title: {
       fontFamily: tokens.fontFamilies.display,
       fontSize: tokens.typography.title,
@@ -203,6 +238,75 @@ const createListDetailStyles = (tokens: ThemeTokens) =>
       fontFamily: tokens.fontFamilies.medium,
       fontSize: tokens.typography.tiny,
       color: tokens.colors.textSecondary,
+    },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: "rgba(0, 0, 0, 0.5)",
+      justifyContent: "center",
+      alignItems: "center",
+      padding: tokens.spacing.lg,
+    },
+    modalContent: {
+      backgroundColor: tokens.colors.surface,
+      borderRadius: tokens.radii.lg,
+      padding: tokens.spacing.lg,
+      width: "100%",
+      maxWidth: 400,
+      gap: tokens.spacing.md,
+    },
+    modalTitle: {
+      fontSize: tokens.typography.heading,
+      fontFamily: tokens.fontFamilies.bold,
+      color: tokens.colors.textPrimary,
+      marginBottom: tokens.spacing.xs,
+    },
+    modalLabel: {
+      fontSize: tokens.typography.small,
+      fontFamily: tokens.fontFamilies.medium,
+      color: tokens.colors.textSecondary,
+      marginBottom: tokens.spacing.xxs,
+    },
+    modalInput: {
+      borderWidth: tokens.borderWidths.thin,
+      borderColor: tokens.colors.border,
+      borderRadius: tokens.radii.md,
+      backgroundColor: tokens.colors.background,
+      paddingHorizontal: tokens.spacing.md,
+      paddingVertical: tokens.spacing.sm,
+      fontSize: tokens.typography.body,
+      fontFamily: tokens.fontFamilies.regular,
+      color: tokens.colors.textPrimary,
+    },
+    modalButtons: {
+      flexDirection: "row",
+      gap: tokens.spacing.sm,
+      marginTop: tokens.spacing.xs,
+    },
+    modalButton: {
+      flex: 1,
+      paddingVertical: tokens.spacing.md,
+      paddingHorizontal: tokens.spacing.lg,
+      borderRadius: tokens.radii.md,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    modalButtonCancel: {
+      backgroundColor: tokens.colors.surface,
+      borderWidth: tokens.borderWidths.thin,
+      borderColor: tokens.colors.border,
+    },
+    modalButtonSave: {
+      backgroundColor: tokens.colors.accent,
+    },
+    modalButtonCancelText: {
+      fontSize: tokens.typography.body,
+      fontFamily: tokens.fontFamilies.semiBold,
+      color: tokens.colors.textSecondary,
+    },
+    modalButtonSaveText: {
+      fontSize: tokens.typography.body,
+      fontFamily: tokens.fontFamilies.semiBold,
+      color: tokens.colors.accentOnPrimary,
     },
   });
 

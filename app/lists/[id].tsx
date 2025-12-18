@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { Image, Pressable, ScrollView, Text, View } from "react-native";
+import { Alert, Image, Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useQuery } from "convex/react";
@@ -35,10 +35,13 @@ export default function ListDetailScreen() {
   const listId = useMemo(() => (Array.isArray(id) ? id[0] : id), [id]);
   const router = useRouter();
   const { t, i18n } = useTranslation();
-  const { getListById, removeRecipeFromList } = useRecipeLists();
+  const { getListById, removeRecipeFromList, updateList, deleteList } = useRecipeLists();
   const list = listId ? getListById(listId) : undefined;
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [selectedEmoji, setSelectedEmoji] = useState<string>("all");
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editEmoji, setEditEmoji] = useState("");
   const { foodLibrary } = useInventoryDisplay();
   const inventoryCodesQuery = useQuery(api.users.getCurrentInventory, {});
   const orderedRecipeIds = useMemo(() => (list ? buildRecipeIds(list) : []), [list]);
@@ -148,6 +151,55 @@ export default function ListDetailScreen() {
     router.push(`/recipe/${recipeId}`);
   };
 
+  const handleEditPress = () => {
+    if (!list || list.type === "cook-asap") {
+      return;
+    }
+    setEditName(list.name);
+    setEditEmoji(list.emoji || "");
+    setShowEditModal(true);
+  };
+
+  const handleSaveEdit = () => {
+    if (!list || list.type === "cook-asap") {
+      return;
+    }
+    const trimmedName = editName.trim();
+    if (!trimmedName) {
+      Alert.alert(t("lists.editListErrorTitle"), t("lists.editListErrorNameRequired"));
+      return;
+    }
+    updateList(list.id, {
+      name: trimmedName,
+      emoji: editEmoji.trim() || undefined,
+    });
+    setShowEditModal(false);
+  };
+
+  const handleDeletePress = () => {
+    if (!list || list.type === "cook-asap") {
+      return;
+    }
+    Alert.alert(
+      t("lists.deleteListTitle"),
+      t("lists.deleteListMessage", { name: list.name }),
+      [
+        {
+          text: t("common.cancel"),
+          style: "cancel",
+        },
+        {
+          text: t("common.delete"),
+          style: "destructive",
+          onPress: () => {
+            deleteList(list.id);
+            router.back();
+          },
+        },
+      ],
+    );
+  };
+
   return (
     <View style={styles.container}>
       <Stack.Screen
@@ -167,8 +219,34 @@ export default function ListDetailScreen() {
       ) : (
         <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
-          <Text style={styles.title}>{listTitle}</Text>
-          <Text style={styles.description}>{listDescription}</Text>
+          <View style={styles.headerTop}>
+            <View style={styles.headerText}>
+              <Text style={styles.title}>{listTitle}</Text>
+              <Text style={styles.description}>{listDescription}</Text>
+            </View>
+            {list && list.type !== "cook-asap" && (
+              <View style={styles.headerActions}>
+                <Pressable
+                  onPress={handleEditPress}
+                  style={styles.actionButton}
+                  accessibilityRole="button"
+                  accessibilityLabel={t("lists.editList")}
+                >
+                  <Text style={styles.actionButtonText}>{t("lists.editList")}</Text>
+                </Pressable>
+                <Pressable
+                  onPress={handleDeletePress}
+                  style={[styles.actionButton, styles.deleteButton]}
+                  accessibilityRole="button"
+                  accessibilityLabel={t("lists.deleteList")}
+                >
+                  <Text style={[styles.actionButtonText, styles.deleteButtonText]}>
+                    {t("lists.deleteList")}
+                  </Text>
+                </Pressable>
+              </View>
+            )}
+          </View>
         </View>
 
         <View style={styles.controlsRow}>
@@ -335,6 +413,61 @@ export default function ListDetailScreen() {
           </View>
         )}
         </ScrollView>
+      )}
+
+      {list && list.type !== "cook-asap" && (
+        <Modal
+          visible={showEditModal}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setShowEditModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>{t("lists.editList")}</Text>
+              
+              <Text style={styles.modalLabel}>{t("lists.listName")}</Text>
+              <TextInput
+                value={editName}
+                onChangeText={setEditName}
+                placeholder={t("lists.listNamePlaceholder")}
+                placeholderTextColor={styles.modalInput.color}
+                style={styles.modalInput}
+                autoFocus={true}
+                returnKeyType="next"
+              />
+
+              <Text style={styles.modalLabel}>{t("lists.listEmoji")} ({t("lists.optional")})</Text>
+              <TextInput
+                value={editEmoji}
+                onChangeText={setEditEmoji}
+                placeholder={t("lists.listEmojiPlaceholder")}
+                placeholderTextColor={styles.modalInput.color}
+                style={styles.modalInput}
+                maxLength={2}
+              />
+
+              <View style={styles.modalButtons}>
+                <Pressable
+                  onPress={() => {
+                    setShowEditModal(false);
+                    setEditName("");
+                    setEditEmoji("");
+                  }}
+                  style={[styles.modalButton, styles.modalButtonCancel]}
+                >
+                  <Text style={styles.modalButtonCancelText}>{t("common.cancel")}</Text>
+                </Pressable>
+                <Pressable
+                  onPress={handleSaveEdit}
+                  style={[styles.modalButton, styles.modalButtonSave]}
+                >
+                  <Text style={styles.modalButtonSaveText}>{t("common.save")}</Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </Modal>
       )}
     </View>
   );
