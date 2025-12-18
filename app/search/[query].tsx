@@ -21,6 +21,15 @@ const COOKING_TIME_OPTIONS = [
   { label: "60 min", value: 60 },
 ] as const;
 
+const SORT_OPTIONS = [
+  { value: "relevance" as const, labelKey: "search.sortRelevance" },
+  { value: "timeAsc" as const, labelKey: "search.sortTimeAsc" },
+  { value: "timeDesc" as const, labelKey: "search.sortTimeDesc" },
+  { value: "difficulty" as const, labelKey: "search.sortDifficulty" },
+] as const;
+
+type SortOption = (typeof SORT_OPTIONS)[number]["value"];
+
 export default function SearchResultsScreen() {
   const { query } = useLocalSearchParams<{ query: string }>();
   const router = useRouter();
@@ -30,12 +39,13 @@ export default function SearchResultsScreen() {
   const tokens = useTokens();
   const { t, i18n } = useTranslation();
   const language = (i18n.language || "en") as keyof Recipe["recipeName"];
-  
+
   const currentUser = useQuery(api.users.getCurrentUser);
   const [showFilters, setShowFilters] = useState(false);
   const [selectedDietary, setSelectedDietary] = useState<string[]>([]);
   const [selectedCuisines, setSelectedCuisines] = useState<string[]>([]);
   const [maxCookTime, setMaxCookTime] = useState<number | null>(null);
+  const [sortOption, setSortOption] = useState<SortOption>("relevance");
 
   // Get user preferences as defaults
   const userDietary = useMemo(
@@ -100,6 +110,45 @@ export default function SearchResultsScreen() {
   ];
 
   const hasActiveFilters = selectedDietary.length > 0 || selectedCuisines.length > 0 || maxCookTime !== null;
+  const isLoading =
+    (trimmedSearchTerm.length > 0 && searchResults === undefined) ||
+    (hasActiveFilters && filteredResults === undefined);
+
+  const sortedRecipes = useMemo(() => {
+    const list = recipes.slice();
+
+    if (sortOption === "relevance") {
+      return list;
+    }
+
+    if (sortOption === "timeAsc") {
+      return list.sort(
+        (a, b) => (a.totalTimeMinutes ?? Number.POSITIVE_INFINITY) - (b.totalTimeMinutes ?? Number.POSITIVE_INFINITY),
+      );
+    }
+
+    if (sortOption === "timeDesc") {
+      return list.sort(
+        (a, b) => (b.totalTimeMinutes ?? Number.NEGATIVE_INFINITY) - (a.totalTimeMinutes ?? Number.NEGATIVE_INFINITY),
+      );
+    }
+
+    return list.sort((a, b) => {
+      const difficultyRank: Record<NonNullable<Recipe["difficultyLevel"]>, number> = {
+        easy: 0,
+        medium: 1,
+        hard: 2,
+      };
+      const aRank = a.difficultyLevel ? difficultyRank[a.difficultyLevel] : Number.POSITIVE_INFINITY;
+      const bRank = b.difficultyLevel ? difficultyRank[b.difficultyLevel] : Number.POSITIVE_INFINITY;
+
+      if (aRank === bRank) {
+        return (a.totalTimeMinutes ?? Number.POSITIVE_INFINITY) - (b.totalTimeMinutes ?? Number.POSITIVE_INFINITY);
+      }
+
+      return aRank - bRank;
+    });
+  }, [recipes, sortOption]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -126,6 +175,26 @@ export default function SearchResultsScreen() {
                 {t("search.filters")} {hasActiveFilters ? `(${selectedDietary.length + selectedCuisines.length + (maxCookTime ? 1 : 0)})` : ""}
               </Text>
             </Pressable>
+          </View>
+          <View style={styles.sortRow}>
+            {SORT_OPTIONS.map((option) => {
+              const isActive = sortOption === option.value;
+              return (
+                <Pressable
+                  key={option.value}
+                  onPress={() => setSortOption(option.value)}
+                  style={[styles.sortChip, isActive && styles.sortChipActive]}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: isActive }}
+                >
+                  <Text
+                    style={[styles.sortChipText, isActive && styles.sortChipTextActive]}
+                  >
+                    {t(option.labelKey)}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
         </View>
 
@@ -217,10 +286,10 @@ export default function SearchResultsScreen() {
         )}
 
         <View style={styles.resultsList}>
-          {results === undefined ? (
+          {isLoading ? (
             <Text style={styles.subtitle}>{t("search.loading")}</Text>
-          ) : recipes.length > 0 ? (
-            recipes.map((recipe) => (
+          ) : sortedRecipes.length > 0 ? (
+            sortedRecipes.map((recipe) => (
               <Pressable
                 key={recipe._id}
                 onPress={() => router.push(`/recipe/${recipe._id}`)}

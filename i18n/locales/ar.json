@@ -428,7 +428,16 @@
     "resultsSubtitle": "النتائج لـ \"{{query}}\"",
     "emptyQuery": "ابدأ بالكتابة للبحث عن وصفات.",
     "loading": "جارٍ تحميل النتائج…",
-    "noResults": "لم يتم العثور على وصفات لـ \"{{query}}\"."
+    "noResults": "لم يتم العثور على وصفات لـ \"{{query}}\".",
+    "filters": "Filters",
+    "sortRelevance": "Relevance",
+    "sortTimeAsc": "Fastest",
+    "sortTimeDesc": "Longest",
+    "sortDifficulty": "Easiest first",
+    "dietaryRestrictions": "Dietary Restrictions",
+    "cuisines": "Cuisines",
+    "maxCookTime": "Max Cooking Time",
+    "clearFilters": "Clear all filters"
   },
   "lists": {
     "title": "القوائم",

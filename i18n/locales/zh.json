@@ -428,7 +428,16 @@
     "resultsSubtitle": "“{{query}}” 的结果",
     "emptyQuery": "开始输入即可搜索食谱。",
     "loading": "正在加载结果…",
-    "noResults": "没有找到与“{{query}}”匹配的食谱。"
+    "noResults": "没有找到与“{{query}}”匹配的食谱。",
+    "filters": "Filters",
+    "sortRelevance": "Relevance",
+    "sortTimeAsc": "Fastest",
+    "sortTimeDesc": "Longest",
+    "sortDifficulty": "Easiest first",
+    "dietaryRestrictions": "Dietary Restrictions",
+    "cuisines": "Cuisines",
+    "maxCookTime": "Max Cooking Time",
+    "clearFilters": "Clear all filters"
   },
   "lists": {
     "title": "清单",

@@ -428,7 +428,16 @@
     "resultsSubtitle": "Kết quả cho \"{{query}}\"",
     "emptyQuery": "Bắt đầu nhập để tìm công thức.",
     "loading": "Đang tải kết quả…",
-    "noResults": "Không có công thức nào cho \"{{query}}\"."
+    "noResults": "Không có công thức nào cho \"{{query}}\".",
+    "filters": "Filters",
+    "sortRelevance": "Relevance",
+    "sortTimeAsc": "Fastest",
+    "sortTimeDesc": "Longest",
+    "sortDifficulty": "Easiest first",
+    "dietaryRestrictions": "Dietary Restrictions",
+    "cuisines": "Cuisines",
+    "maxCookTime": "Max Cooking Time",
+    "clearFilters": "Clear all filters"
   },
   "lists": {
     "title": "Danh sách",

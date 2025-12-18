@@ -507,7 +507,16 @@
     "resultsSubtitle": "Resultados para \"{{query}}\"",
     "emptyQuery": "Empieza a escribir para buscar recetas.",
     "loading": "Cargando resultados…",
-    "noResults": "No se encontraron recetas para \"{{query}}\"."
+    "noResults": "No se encontraron recetas para \"{{query}}\".",
+    "filters": "Filtros",
+    "sortRelevance": "Relevancia",
+    "sortTimeAsc": "Más rápido",
+    "sortTimeDesc": "Más largo",
+    "sortDifficulty": "Más fácil primero",
+    "dietaryRestrictions": "Restricciones dietarias",
+    "cuisines": "Cocinas",
+    "maxCookTime": "Tiempo máximo de cocción",
+    "clearFilters": "Borrar todos los filtros"
   },
   "lists": {
     "title": "Listas",
