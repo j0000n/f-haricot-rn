@@ -27,6 +27,31 @@ const createSearchStyles = (tokens: ThemeTokens) =>
       flex: 1,
       gap: tokens.spacing.xs,
     },
+    sortRow: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: tokens.spacing.xs,
+    },
+    sortChip: {
+      paddingVertical: tokens.spacing.xxs,
+      paddingHorizontal: tokens.spacing.sm,
+      borderRadius: tokens.radii.sm,
+      borderWidth: tokens.borderWidths.thin,
+      borderColor: tokens.colors.border,
+      backgroundColor: tokens.colors.surface,
+    },
+    sortChipActive: {
+      backgroundColor: tokens.colors.accent,
+      borderColor: tokens.colors.accent,
+    },
+    sortChipText: {
+      fontSize: tokens.typography.small,
+      fontFamily: tokens.fontFamilies.medium,
+      color: tokens.colors.textSecondary,
+    },
+    sortChipTextActive: {
+      color: tokens.colors.accentOnPrimary,
+    },
     filterButton: {
       paddingVertical: tokens.spacing.xs,
       paddingHorizontal: tokens.spacing.md,

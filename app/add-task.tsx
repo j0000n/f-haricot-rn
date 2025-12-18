@@ -85,7 +85,9 @@ export default function AddInventoryModal() {
   const interimTextRef = useRef<string>("");
 
   useSpeechRecognitionEvent("result", (event) => {
-    console.log("Speech recognition result event:", JSON.stringify(event, null, 2));
+    if (__DEV__) {
+      console.debug("Speech recognition result event:", JSON.stringify(event, null, 2));
+    }
     const { results, isFinal } = event;
     
     // Handle different possible event structures
@@ -130,7 +132,9 @@ export default function AddInventoryModal() {
     // "no-speech" (code 7) is a normal case - user didn't speak or mic didn't pick up sound
     // Don't show this as an error to the user
     if (errorCode === 7 || errorType === "no-speech") {
-      console.log("No speech detected - this is normal");
+      if (__DEV__) {
+        console.debug("No speech detected - this is normal");
+      }
       setListening(false);
       return;
     }
@@ -147,7 +151,9 @@ export default function AddInventoryModal() {
   });
 
   useSpeechRecognitionEvent("end", () => {
-    console.log("Speech recognition ended");
+    if (__DEV__) {
+      console.debug("Speech recognition ended");
+    }
     setListening(false);
     // Ensure any final interim text is captured
     if (interimTextRef.current) {
@@ -632,4 +638,3 @@ export default function AddInventoryModal() {
     </KeyboardAvoidingView>
   );
 }
-
