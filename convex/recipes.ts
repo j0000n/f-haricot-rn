@@ -37,6 +37,23 @@ interface RecipeCompatibility {
 }
 
 const CRITICAL_DIETARY_RESTRICTIONS = ["Halal", "Kosher"];
+type FoodLibraryIndexEntry = {
+  shelfLifeDays: number;
+  varietyCodes: Set<string>;
+};
+
+const buildFoodLibraryIndex = (
+  foodLibrary: Doc<"foodLibrary">[],
+): Map<string, FoodLibraryIndexEntry> => {
+  const index = new Map<string, FoodLibraryIndexEntry>();
+  for (const item of foodLibrary) {
+    index.set(item.code, {
+      shelfLifeDays: item.shelfLifeDays,
+      varietyCodes: new Set(item.varieties.map((variety) => variety.code)),
+    });
+  }
+  return index;
+};
 
 function matchesDietaryRestrictions(recipe: Doc<"recipes">, restrictions: string[]): boolean {
   if (!restrictions || restrictions.length === 0) return true;
@@ -579,6 +596,8 @@ export const listPersonalized = query({
     const cookingStylePreferences = (user.cookingStylePreferences ??
       []) as string[];
     const nutritionGoals = user.nutritionGoals;
+    const foodLibrary = await ctx.runQuery(api.foodLibrary.listAll, {});
+    const foodLibraryIndex = buildFoodLibraryIndex(foodLibrary);
 
     // Get user inventory
     let userInventory: string[] = [];
@@ -591,11 +610,12 @@ export const listPersonalized = query({
         for (const item of inventory) {
           const inventoryItem = item as UserInventoryEntry;
           codes.add(item.itemCode);
-          if (item.varietyCode) {
+          const libraryEntry = foodLibraryIndex.get(item.itemCode);
+          if (item.varietyCode && libraryEntry?.varietyCodes.has(item.varietyCode)) {
             codes.add(item.varietyCode);
           }
           // Calculate days until expiration
-          const shelfLifeDays = 7; // Default, should get from food library
+          const shelfLifeDays = libraryEntry?.shelfLifeDays ?? 7;
           const daysSincePurchase = Math.floor(
             (now - item.purchaseDate) / (1000 * 60 * 60 * 24)
           );
@@ -2472,6 +2492,8 @@ export const listPersonalizedForUser = query({
     const cookingStylePreferences = (user.cookingStylePreferences ??
       []) as string[];
     const nutritionGoals = user.nutritionGoals;
+    const foodLibrary = await ctx.runQuery(api.foodLibrary.listAll, {});
+    const foodLibraryIndex = buildFoodLibraryIndex(foodLibrary);
 
     let userInventory: string[] = [];
     let inventoryExpirationData = new Map<string, number>();
@@ -2482,10 +2504,11 @@ export const listPersonalizedForUser = query({
         const codes = new Set<string>();
         for (const item of inventory) {
           codes.add(item.itemCode);
-          if (item.varietyCode) {
+          const libraryEntry = foodLibraryIndex.get(item.itemCode);
+          if (item.varietyCode && libraryEntry?.varietyCodes.has(item.varietyCode)) {
             codes.add(item.varietyCode);
           }
-          const shelfLifeDays = 7; // Default
+          const shelfLifeDays = libraryEntry?.shelfLifeDays ?? 7;
           const daysSincePurchase = Math.floor(
             (now - item.purchaseDate) / (1000 * 60 * 60 * 24)
           );
