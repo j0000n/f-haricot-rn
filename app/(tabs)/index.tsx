@@ -132,7 +132,46 @@ export default function HomeScreen() {
   const tokens = useTokens();
   const { user, inventoryItems, inventoryEntries, isLoading: isInventoryLoading } =
     useInventoryDisplay();
-  const recipes = useQuery(api.recipes.listFeatured, { limit: 10 });
+  // Personalized recipe queries
+  const personalizedRecipes = useQuery(api.recipes.listPersonalized, {
+    limit: 10,
+    railType: "forYou",
+  });
+  const quickMeals = useQuery(
+    api.recipes.listByPreferences,
+    user?.cookingStylePreferences && user.cookingStylePreferences.length > 0
+      ? {
+          cookingStylePreferences: user.cookingStylePreferences as string[],
+          maxPrepTime: 15,
+          maxCookTime: 30,
+          limit: 10,
+        }
+      : "skip"
+  );
+  const cuisineRecipes = useQuery(
+    api.recipes.listByPreferences,
+    user?.favoriteCuisines && user.favoriteCuisines.length > 0
+      ? {
+          favoriteCuisines: user.favoriteCuisines as string[],
+          limit: 10,
+        }
+      : "skip"
+  );
+  const readyToCook = useQuery(api.recipes.listPersonalized, {
+    limit: 10,
+    railType: "readyToCook",
+  });
+  const householdCompatible = useQuery(api.recipes.listPersonalized, {
+    limit: 10,
+    railType: "householdCompatible",
+  });
+
+  // Fallback to featured recipes if no personalized recipes available
+  const featuredRecipes = useQuery(api.recipes.listFeatured, { limit: 10 });
+  const recipes =
+    personalizedRecipes && personalizedRecipes.length > 0
+      ? personalizedRecipes
+      : featuredRecipes ?? [];
   const [searchTerm, setSearchTerm] = useState("");
   const trimmedSearchTerm = searchTerm.trim();
   const { previews: linkPreviews, isLoading: isLoadingLinkPreviews } = useLinkPreviews(
@@ -673,7 +712,18 @@ export default function HomeScreen() {
           isLoading={isLoadingLinkPreviews}
           onLinkPress={handleLinkPreviewPress}
         />
-        {recipeList.length > 0 ? (
+        {/* Personalized "For You" Rail */}
+        {personalizedRecipes && personalizedRecipes.length > 0 ? (
+          <RecipeRail
+            header={t("home.featuredRecipes")}
+            subheader={t("home.featuredRecipesDesc")}
+            recipes={[...personalizedRecipes] as Recipe[]}
+            variant="detailed"
+            onSeeAll={handleRecipeSeeAll}
+            onRecipePress={handleRecipePress}
+            userInventory={userInventoryCodes}
+          />
+        ) : recipeList.length > 0 ? (
           <RecipeRail
             header={t("home.featuredRecipes")}
             subheader={t("home.featuredRecipesDesc")}
@@ -685,11 +735,52 @@ export default function HomeScreen() {
           />
         ) : null}
 
-        {recipeList.length > 0 ? (
-          <RecipeRailCompact
-            header="Compact Recipes"
-            subheader="A more compact view of recipes"
-            recipes={recipeList}
+        {/* Ready to Cook Rail */}
+        {readyToCook && readyToCook.length > 0 ? (
+          <RecipeRail
+            header="Ready to Cook"
+            subheader="Recipes you can make with ingredients you have"
+            recipes={readyToCook as Recipe[]}
+            variant="detailed"
+            onSeeAll={handleRecipeSeeAll}
+            onRecipePress={handleRecipePress}
+            userInventory={userInventoryCodes}
+          />
+        ) : null}
+
+        {/* Quick Meals Rail */}
+        {quickMeals && quickMeals.length > 0 ? (
+          <RecipeRail
+            header="Quick & Easy"
+            subheader="Fast recipes that match your preferences"
+            recipes={quickMeals as Recipe[]}
+            variant="detailed"
+            onSeeAll={handleRecipeSeeAll}
+            onRecipePress={handleRecipePress}
+            userInventory={userInventoryCodes}
+          />
+        ) : null}
+
+        {/* Cuisine Rail */}
+        {cuisineRecipes && cuisineRecipes.length > 0 ? (
+          <RecipeRail
+            header="Your Favorite Cuisines"
+            subheader="Recipes from cuisines you love"
+            recipes={cuisineRecipes as Recipe[]}
+            variant="detailed"
+            onSeeAll={handleRecipeSeeAll}
+            onRecipePress={handleRecipePress}
+            userInventory={userInventoryCodes}
+          />
+        ) : null}
+
+        {/* Household Compatible Rail */}
+        {householdCompatible && householdCompatible.length > 0 ? (
+          <RecipeRail
+            header="For Your Household"
+            subheader="Recipes compatible with all household members"
+            recipes={householdCompatible as Recipe[]}
+            variant="detailed"
             onSeeAll={handleRecipeSeeAll}
             onRecipePress={handleRecipePress}
             userInventory={userInventoryCodes}

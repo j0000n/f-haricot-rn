@@ -1,10 +1,176 @@
-import { action, mutation, query } from "./_generated/server";
+import { action, internalAction, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { Doc, Id } from "./_generated/dataModel";
 import { api } from "./_generated/api";
+import { getAuthUserId } from "@convex-dev/auth/server";
 
 import { recipesSeed } from "../data/recipesSeed";
 import { foodLibrarySeed } from "../data/foodLibrarySeed";
+import type { Recipe } from "../types/recipe";
+import type { UserInventoryEntry } from "../types/food";
+import type { NutritionGoals } from "../utils/nutritionGoals";
+
+// Recipe filtering types and functions (moved here to avoid Convex compilation issues)
+interface RecipeFilterOptions {
+  dietaryRestrictions?: string[];
+  allergies?: string[];
+  favoriteCuisines?: string[];
+  cookingStylePreferences?: string[];
+  mealPlanningPreferences?: string[];
+  nutritionGoals?: NutritionGoals;
+  maxPrepTime?: number;
+  maxCookTime?: number;
+  difficultyLevel?: "easy" | "medium" | "hard";
+}
+
+interface HouseholdMember {
+  memberId: string;
+  memberName: string;
+  allergies?: string[];
+  dietaryRestrictions?: string[];
+}
+
+interface RecipeCompatibility {
+  compatibleMembers: Array<{ memberId: string; memberName: string }>;
+  incompatibleMembers: Array<{ memberId: string; memberName: string; reasons: string[] }>;
+  partialCompatibility: boolean;
+}
+
+const CRITICAL_DIETARY_RESTRICTIONS = ["Halal", "Kosher"];
+
+function matchesDietaryRestrictions(recipe: Doc<"recipes">, restrictions: string[]): boolean {
+  if (!restrictions || restrictions.length === 0) return true;
+  if (!recipe.dietaryTags || recipe.dietaryTags.length === 0) return false;
+
+  const recipeTags = recipe.dietaryTags.map((tag: string) => tag.toLowerCase());
+  const requiredTags = restrictions.map((r: string) => r.toLowerCase());
+  const criticalRestrictions = restrictions.filter((r: string) =>
+    CRITICAL_DIETARY_RESTRICTIONS.some((cdr: string) =>
+      r.toLowerCase().includes(cdr.toLowerCase())
+    )
+  );
+
+  if (criticalRestrictions.length > 0) {
+    const hasCriticalTag = criticalRestrictions.some((cr: string) =>
+      recipeTags.some((rt: string) => rt.includes(cr.toLowerCase()))
+    );
+    if (!hasCriticalTag) return false;
+  }
+
+  return requiredTags.some((rt: string) => recipeTags.includes(rt));
+}
+
+function matchesAllergies(recipe: Doc<"recipes">, allergies: string[]): boolean {
+  if (!allergies || allergies.length === 0) return true;
+  if (!recipe.allergenTags || recipe.allergenTags.length === 0) return true;
+
+  const recipeAllergens = recipe.allergenTags.map((a: string) => a.toLowerCase());
+  const userAllergies = allergies.map((a: string) => a.toLowerCase());
+  return !recipeAllergens.some((ra: string) =>
+    userAllergies.some((ua: string) => ra.includes(ua) || ua.includes(ra))
+  );
+}
+
+function matchesCuisines(recipe: Doc<"recipes">, cuisines: string[]): boolean {
+  if (!cuisines || cuisines.length === 0) return true;
+  if (!recipe.cuisineTags || recipe.cuisineTags.length === 0) return false;
+
+  const recipeCuisines = recipe.cuisineTags.map((c: string) => c.toLowerCase());
+  const userCuisines = cuisines.map((c: string) => c.toLowerCase());
+  return recipeCuisines.some((rc: string) => userCuisines.includes(rc));
+}
+
+function matchesCookingStyles(recipe: Doc<"recipes">, styles: string[]): boolean {
+  if (!styles || styles.length === 0) return true;
+  if (!recipe.cookingStyleTags || recipe.cookingStyleTags.length === 0) return false;
+
+  const recipeStyles = recipe.cookingStyleTags.map((s: string) => s.toLowerCase());
+  const userStyles = styles.map((s: string) => s.toLowerCase());
+  return recipeStyles.some((rs: string) => userStyles.includes(rs));
+}
+
+function calculateRecipeScore(
+  recipe: Doc<"recipes">,
+  userPreferences: RecipeFilterOptions,
+  userInventory: string[],
+  inventoryExpirationData?: Map<string, number>
+): number {
+  let score = 0;
+
+  if (userInventory && userInventory.length > 0 && recipe.ingredients) {
+    const recipeIngredientCodes = recipe.ingredients.map((ing: any) => ing.foodCode);
+    const matchingIngredients = recipeIngredientCodes.filter((code: string) =>
+      userInventory.includes(code)
+    );
+    const matchRatio = matchingIngredients.length / recipeIngredientCodes.length;
+    score += matchRatio * 500;
+    if (matchRatio === 1) score += 300;
+
+    if (inventoryExpirationData) {
+      for (const code of matchingIngredients) {
+        const daysUntilExpiration = inventoryExpirationData.get(code);
+        if (daysUntilExpiration !== undefined) {
+          if (daysUntilExpiration <= 3) score += 200;
+          else if (daysUntilExpiration <= 7) score += 100;
+        }
+      }
+    }
+  }
+
+  if (userPreferences.dietaryRestrictions && recipe.dietaryTags) {
+    const recipeTags = recipe.dietaryTags.map((t: string) => t.toLowerCase());
+    const userRestrictions = userPreferences.dietaryRestrictions.map((r: string) => r.toLowerCase());
+    const matchingTags = recipeTags.filter((rt: string) =>
+      userRestrictions.some((ur: string) => rt.includes(ur) || ur.includes(rt))
+    );
+    score += (matchingTags.length / userRestrictions.length) * 300;
+  }
+
+  if (userPreferences.favoriteCuisines && recipe.cuisineTags) {
+    const recipeCuisines = recipe.cuisineTags.map((c: string) => c.toLowerCase());
+    const userCuisines = userPreferences.favoriteCuisines.map((c: string) => c.toLowerCase());
+    score += recipeCuisines.filter((rc: string) => userCuisines.includes(rc)).length * (200 / userCuisines.length);
+  }
+
+  if (userPreferences.cookingStylePreferences && recipe.cookingStyleTags) {
+    const recipeStyles = recipe.cookingStyleTags.map((s: string) => s.toLowerCase());
+    const userStyles = userPreferences.cookingStylePreferences.map((s: string) => s.toLowerCase());
+    score += recipeStyles.filter((rs: string) => userStyles.includes(rs)).length * (150 / userStyles.length);
+  }
+
+  return score;
+}
+
+function getRecipeCompatibility(
+  recipe: Doc<"recipes">,
+  householdMembers: HouseholdMember[]
+): RecipeCompatibility {
+  const compatibleMembers: Array<{ memberId: string; memberName: string }> = [];
+  const incompatibleMembers: Array<{ memberId: string; memberName: string; reasons: string[] }> = [];
+
+  for (const member of householdMembers) {
+    const reasons: string[] = [];
+    if (member.allergies && !matchesAllergies(recipe, member.allergies)) {
+      reasons.push(`Contains allergens: ${member.allergies.filter((a: string) =>
+        recipe.allergenTags?.some((at: string) => at.toLowerCase().includes(a.toLowerCase()))
+      ).join(", ")}`);
+    }
+    if (member.dietaryRestrictions && !matchesDietaryRestrictions(recipe, member.dietaryRestrictions)) {
+      reasons.push(`Does not match dietary restrictions: ${member.dietaryRestrictions.join(", ")}`);
+    }
+    if (reasons.length === 0) {
+      compatibleMembers.push({ memberId: member.memberId, memberName: member.memberName });
+    } else {
+      incompatibleMembers.push({ memberId: member.memberId, memberName: member.memberName, reasons });
+    }
+  }
+
+  return {
+    compatibleMembers,
+    incompatibleMembers,
+    partialCompatibility: compatibleMembers.length > 0 && incompatibleMembers.length > 0,
+  };
+}
 
 type SourceType =
   | "website"
@@ -357,6 +523,646 @@ export const listByAuthorName = query({
       .collect();
 
     return recipes.sort((a, b) => b.createdAt - a.createdAt).slice(0, limit);
+  },
+});
+
+export const listPersonalized = query({
+  args: {
+    limit: v.optional(v.number()),
+    railType: v.optional(
+      v.union(
+        v.literal("forYou"),
+        v.literal("readyToCook"),
+        v.literal("quickEasy"),
+        v.literal("cuisines"),
+        v.literal("dietaryFriendly"),
+        v.literal("householdCompatible")
+      )
+    ),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) {
+      return [] as const;
+    }
+
+    const limit = args.limit ?? 10;
+    const railType = args.railType ?? "forYou";
+    const now = Date.now();
+
+    // Check cache first
+    const cached = await ctx.db
+      .query("userPersonalizedRecipes")
+      .withIndex("by_user_and_type", (q) =>
+        q.eq("userId", userId).eq("railType", railType)
+      )
+      .first();
+
+    if (cached && cached.expiresAt > now) {
+      // Return cached results
+      const recipes = await Promise.all(
+        cached.recipeIds.map((id) => ctx.db.get(id))
+      );
+      return recipes.filter(Boolean) as Doc<"recipes">[];
+    }
+
+    // Cache expired or missing, compute fresh results
+    const user = await ctx.db.get(userId);
+    if (!user) {
+      return [] as const;
+    }
+
+    // Get user preferences
+    const dietaryRestrictions = (user.dietaryRestrictions ?? []) as string[];
+    const allergies = (user.allergies ?? []) as string[];
+    const favoriteCuisines = (user.favoriteCuisines ?? []) as string[];
+    const cookingStylePreferences = (user.cookingStylePreferences ??
+      []) as string[];
+    const nutritionGoals = user.nutritionGoals;
+
+    // Get user inventory
+    let userInventory: string[] = [];
+    let inventoryExpirationData = new Map<string, number>();
+    if (user.householdId) {
+      const household = await ctx.db.get(user.householdId);
+      if (household?.inventory) {
+        const inventory = household.inventory as UserInventoryEntry[];
+        const codes = new Set<string>();
+        for (const item of inventory) {
+          const inventoryItem = item as UserInventoryEntry;
+          codes.add(item.itemCode);
+          if (item.varietyCode) {
+            codes.add(item.varietyCode);
+          }
+          // Calculate days until expiration
+          const shelfLifeDays = 7; // Default, should get from food library
+          const daysSincePurchase = Math.floor(
+            (now - item.purchaseDate) / (1000 * 60 * 60 * 24)
+          );
+          const daysUntilExpiration = shelfLifeDays - daysSincePurchase;
+          inventoryExpirationData.set(item.itemCode, daysUntilExpiration);
+        }
+        userInventory = Array.from(codes);
+      }
+    }
+
+    // Get all recipes
+    const allRecipes = await ctx.db.query("recipes").collect();
+
+    // Filter recipes based on rail type
+    let filteredRecipes = allRecipes;
+
+    // Apply hard filters first (allergies and critical dietary restrictions)
+    filteredRecipes = filteredRecipes.filter((recipe) => {
+      // Check allergies - hard filter
+      if (allergies.length > 0 && !matchesAllergies(recipe, allergies)) {
+        return false;
+      }
+
+      // Check critical dietary restrictions - hard filter
+      const criticalRestrictions = dietaryRestrictions.filter((r) =>
+        ["Halal", "Kosher"].some((cdr) =>
+          r.toLowerCase().includes(cdr.toLowerCase())
+        )
+      );
+      if (
+        criticalRestrictions.length > 0 &&
+        !matchesDietaryRestrictions(recipe, criticalRestrictions)
+      ) {
+        return false;
+      }
+
+      return true;
+    });
+
+    // Apply rail-specific filters
+    if (railType === "readyToCook") {
+      // Only recipes where user has all ingredients
+      filteredRecipes = filteredRecipes.filter((recipe) => {
+        const recipeIngredientCodes = recipe.ingredients.map(
+          (ing) => ing.foodCode
+        );
+        return recipeIngredientCodes.every((code) =>
+          userInventory.includes(code)
+        );
+      });
+    } else if (railType === "quickEasy") {
+      // Quick meals: prep + cook time <= 30 minutes, or cooking style preference
+      filteredRecipes = filteredRecipes.filter((recipe) => {
+        const isQuick =
+          recipe.totalTimeMinutes <= 30 ||
+          recipe.cookingStyleTags?.some((tag) =>
+            tag.toLowerCase().includes("quick")
+          );
+        return isQuick && matchesCookingStyles(recipe, cookingStylePreferences);
+      });
+    } else if (railType === "cuisines") {
+      // Filter by favorite cuisines
+      filteredRecipes = filteredRecipes.filter((recipe) =>
+        matchesCuisines(recipe, favoriteCuisines)
+      );
+    } else if (railType === "dietaryFriendly") {
+      // Filter by dietary restrictions
+      filteredRecipes = filteredRecipes.filter((recipe) =>
+        matchesDietaryRestrictions(recipe, dietaryRestrictions)
+      );
+    } else if (railType === "householdCompatible") {
+      // Get household members
+      if (user.householdId) {
+        const household = await ctx.db.get(user.householdId);
+        if (household) {
+          const memberDocs = await Promise.all(
+            household.members.map((id) => ctx.db.get(id))
+          );
+          const householdMembers = memberDocs
+            .filter(Boolean)
+            .map((member) => ({
+              memberId: member!._id,
+              memberName: member!.name ?? "Unknown",
+              allergies: (member!.allergies ?? []) as string[],
+              dietaryRestrictions: (member!.dietaryRestrictions ??
+                []) as string[],
+            }))
+            .map((m) => ({
+              ...m,
+              memberId: m.memberId as unknown as string, // Convert Id to string for compatibility function
+            }));
+
+          // Filter recipes compatible with all household members
+          filteredRecipes = filteredRecipes.filter((recipe) => {
+            const compatibility = getRecipeCompatibility(
+              recipe,
+              householdMembers
+            );
+            return compatibility.incompatibleMembers.length === 0;
+          });
+        }
+      }
+    }
+
+    // Score and sort recipes
+    const scoredRecipes = filteredRecipes.map((recipe) => {
+      const filterOptions: RecipeFilterOptions = {
+        dietaryRestrictions,
+        allergies,
+        favoriteCuisines,
+        cookingStylePreferences,
+        nutritionGoals: nutritionGoals ?? undefined,
+      };
+
+      const score = calculateRecipeScore(
+        recipe,
+        filterOptions,
+        userInventory,
+        inventoryExpirationData
+      );
+
+      return { recipe, score };
+    });
+
+    // Sort by score (descending) and then by createdAt (descending)
+    scoredRecipes.sort((a, b) => {
+      if (b.score !== a.score) {
+        return b.score - a.score;
+      }
+      return b.recipe.createdAt - a.recipe.createdAt;
+    });
+
+    // Take top N recipes
+    const topRecipes = scoredRecipes
+      .slice(0, limit)
+      .map((entry) => entry.recipe);
+
+    // Note: Caching is handled by scheduled action `precomputePersonalizedRecipes`
+    // This query computes on-demand if cache is expired
+
+    return topRecipes;
+  },
+});
+
+export const listByPreferences = query({
+  args: {
+    dietaryRestrictions: v.optional(v.array(v.string())),
+    allergies: v.optional(v.array(v.string())),
+    favoriteCuisines: v.optional(v.array(v.string())),
+    cookingStylePreferences: v.optional(v.array(v.string())),
+    maxPrepTime: v.optional(v.number()),
+    maxCookTime: v.optional(v.number()),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = args.limit ?? 25;
+
+    // Get all recipes
+    let recipes = await ctx.db.query("recipes").collect();
+
+    // Apply filters
+    if (args.allergies && args.allergies.length > 0) {
+      recipes = recipes.filter((recipe) =>
+        matchesAllergies(recipe, args.allergies!)
+      );
+    }
+
+    if (
+      args.dietaryRestrictions &&
+      args.dietaryRestrictions.length > 0
+    ) {
+      recipes = recipes.filter((recipe) =>
+        matchesDietaryRestrictions(recipe, args.dietaryRestrictions!)
+      );
+    }
+
+    if (args.favoriteCuisines && args.favoriteCuisines.length > 0) {
+      recipes = recipes.filter((recipe) =>
+        matchesCuisines(recipe, args.favoriteCuisines!)
+      );
+    }
+
+    if (
+      args.cookingStylePreferences &&
+      args.cookingStylePreferences.length > 0
+    ) {
+      recipes = recipes.filter((recipe) =>
+        matchesCookingStyles(recipe, args.cookingStylePreferences!)
+      );
+    }
+
+    if (args.maxPrepTime) {
+      recipes = recipes.filter(
+        (recipe) => recipe.prepTimeMinutes <= args.maxPrepTime!
+      );
+    }
+
+    if (args.maxCookTime) {
+      recipes = recipes.filter(
+        (recipe) => recipe.cookTimeMinutes <= args.maxCookTime!
+      );
+    }
+
+    // Sort by createdAt descending
+    recipes.sort((a, b) => b.createdAt - a.createdAt);
+
+    return recipes.slice(0, limit);
+  },
+});
+
+export const getHouseholdCompatibility = query({
+  args: {
+    recipeId: v.id("recipes"),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) {
+      return {
+        compatibleMembers: [],
+        incompatibleMembers: [],
+        partialCompatibility: false,
+      };
+    }
+
+    const recipe = await ctx.db.get(args.recipeId);
+    if (!recipe) {
+      return {
+        compatibleMembers: [],
+        incompatibleMembers: [],
+        partialCompatibility: false,
+      };
+    }
+
+    const user = await ctx.db.get(userId);
+    if (!user) {
+      return {
+        compatibleMembers: [],
+        incompatibleMembers: [],
+        partialCompatibility: false,
+      };
+    }
+
+    if (!user.householdId) {
+      // No household, just check user
+      const isCompatible =
+        (!user.allergies ||
+          matchesAllergies(recipe, user.allergies as string[])) &&
+        (!user.dietaryRestrictions ||
+          matchesDietaryRestrictions(
+            recipe,
+            user.dietaryRestrictions as string[]
+          ));
+
+      return {
+        compatibleMembers: isCompatible
+          ? [
+              {
+                memberId: userId as unknown as string,
+                memberName: user.name ?? "You",
+              },
+            ]
+          : [],
+        incompatibleMembers: isCompatible
+          ? []
+          : [
+              {
+                memberId: userId as unknown as string,
+                memberName: user.name ?? "You",
+                reasons: [],
+              },
+            ],
+        partialCompatibility: false,
+      };
+    }
+
+    const householdDoc = await ctx.db.get(user.householdId);
+    if (!householdDoc) {
+      return {
+        compatibleMembers: [],
+        incompatibleMembers: [],
+        partialCompatibility: false,
+      };
+    }
+
+    // Get all household members
+    const memberDocs = await Promise.all(
+      householdDoc.members.map((id: Id<"users">) => ctx.db.get(id))
+    );
+
+    const householdMembers = memberDocs
+      .filter((member): member is Doc<"users"> => member !== null)
+      .map((member) => ({
+        memberId: member._id,
+        memberName: member.name ?? "Unknown",
+        allergies: (member.allergies ?? []) as string[],
+        dietaryRestrictions: (member.dietaryRestrictions ?? []) as string[],
+      }));
+
+    // Get children
+    const children = (householdDoc.children ?? []).map(
+      (child: { id: string; name: string; allergies: string[]; createdAt: number }) => ({
+        memberId: child.id,
+        memberName: child.name,
+        allergies: child.allergies,
+        dietaryRestrictions: [] as string[],
+      })
+    );
+
+    const allMembers = [
+      ...householdMembers.map((m: { memberId: Id<"users">; memberName: string; allergies: string[]; dietaryRestrictions: string[] }) => ({
+        ...m,
+        memberId: m.memberId as unknown as string,
+      })),
+      ...children.map((c: { memberId: string; memberName: string; allergies: string[]; dietaryRestrictions: string[] }) => ({
+        memberId: c.memberId,
+        memberName: c.memberName,
+        allergies: c.allergies,
+        dietaryRestrictions: c.dietaryRestrictions,
+      })),
+    ];
+
+    const compatibility = getRecipeCompatibility(
+      recipe,
+      allMembers
+    );
+
+    return compatibility;
+  },
+});
+
+/**
+ * Extract recipe metadata using LLM
+ * This analyzes the recipe and extracts dietary tags, cuisines, cooking styles, allergens, etc.
+ */
+export const extractRecipeMetadata = action({
+  args: {
+    recipeName: v.object({
+      en: v.string(),
+      es: v.string(),
+      zh: v.string(),
+      fr: v.string(),
+      ar: v.string(),
+      ja: v.string(),
+      vi: v.string(),
+      tl: v.string(),
+    }),
+    description: v.object({
+      en: v.string(),
+      es: v.string(),
+      zh: v.string(),
+      fr: v.string(),
+      ar: v.string(),
+      ja: v.string(),
+      vi: v.string(),
+      tl: v.string(),
+    }),
+    ingredients: v.array(
+      v.object({
+        foodCode: v.string(),
+        varietyCode: v.optional(v.string()),
+        quantity: v.number(),
+        unit: v.string(),
+        preparation: v.optional(v.string()),
+      })
+    ),
+    sourceSteps: v.optional(
+      v.array(
+        v.object({
+          stepNumber: v.number(),
+          text: v.string(),
+          timeInMinutes: v.optional(v.number()),
+        })
+      )
+    ),
+    prepTimeMinutes: v.number(),
+    cookTimeMinutes: v.number(),
+    totalTimeMinutes: v.number(),
+    servings: v.number(),
+  },
+  returns: v.object({
+    dietaryTags: v.optional(v.array(v.string())),
+    cuisineTags: v.optional(v.array(v.string())),
+    cookingStyleTags: v.optional(v.array(v.string())),
+    allergenTags: v.optional(v.array(v.string())),
+    mealTypeTags: v.optional(v.array(v.string())),
+    difficultyLevel: v.optional(
+      v.union(v.literal("easy"), v.literal("medium"), v.literal("hard"))
+    ),
+  }),
+  handler: async (ctx, args) => {
+    const openAiKey = process.env.OPEN_AI_KEY;
+    if (!openAiKey) {
+      // If no API key, return empty metadata (graceful degradation)
+      return {
+        dietaryTags: undefined,
+        cuisineTags: undefined,
+        cookingStyleTags: undefined,
+        allergenTags: undefined,
+        mealTypeTags: undefined,
+        difficultyLevel: undefined,
+      };
+    }
+
+    // Get food library to understand ingredients better
+    const foodLibrary = await ctx.runQuery(api.foodLibrary.listAll, {});
+
+    // Build ingredient list with names
+    const ingredientNames = args.ingredients
+      .map((ing) => {
+        const foodItem = foodLibrary.find((item) => item.code === ing.foodCode);
+        return foodItem
+          ? `${ing.quantity} ${ing.unit} ${foodItem.name}${ing.preparation ? ` (${ing.preparation})` : ""}`
+          : `${ing.quantity} ${ing.unit} ${ing.foodCode}`;
+      })
+      .join(", ");
+
+    // Build steps text
+    const stepsText =
+      args.sourceSteps
+        ?.map((step) => `${step.stepNumber}. ${step.text}`)
+        .join("\n") || "";
+
+    const prompt = `Analyze this recipe and extract metadata tags. Return ONLY valid JSON.
+
+Recipe Name (English): ${args.recipeName.en}
+Description (English): ${args.description.en}
+Ingredients: ${ingredientNames}
+Steps: ${stepsText}
+Prep Time: ${args.prepTimeMinutes} minutes
+Cook Time: ${args.cookTimeMinutes} minutes
+Total Time: ${args.totalTimeMinutes} minutes
+Servings: ${args.servings}
+
+Extract and return:
+1. dietaryTags: Array of dietary restrictions/preferences (e.g., ["Vegetarian", "Vegan", "Gluten-free", "Dairy-free", "Keto", "Paleo", "Halal", "Kosher"])
+2. cuisineTags: Array of cuisine types (e.g., ["Italian", "Mexican", "Mediterranean", "Asian", "American"])
+3. cookingStyleTags: Array of cooking styles (e.g., ["Quick meals", "Slow cooking", "Baking", "Grilling", "One-pot meals"])
+4. allergenTags: Array of allergens present (e.g., ["Dairy", "Nuts", "Shellfish", "Eggs", "Soy", "Gluten"])
+5. mealTypeTags: Array of meal types (e.g., ["Breakfast", "Lunch", "Dinner", "Snack", "Dessert"])
+6. difficultyLevel: "easy", "medium", or "hard" based on complexity, number of steps, and techniques required
+
+Return JSON in this exact format:
+{
+  "dietaryTags": ["..."],
+  "cuisineTags": ["..."],
+  "cookingStyleTags": ["..."],
+  "allergenTags": ["..."],
+  "mealTypeTags": ["..."],
+  "difficultyLevel": "easy" | "medium" | "hard"
+}`;
+
+    try {
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${openAiKey}`,
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          temperature: 0.2,
+          response_format: {
+            type: "json_schema",
+            json_schema: {
+              name: "recipe_metadata",
+              schema: {
+                type: "object",
+                properties: {
+                  dietaryTags: {
+                    type: "array",
+                    items: { type: "string" },
+                  },
+                  cuisineTags: {
+                    type: "array",
+                    items: { type: "string" },
+                  },
+                  cookingStyleTags: {
+                    type: "array",
+                    items: { type: "string" },
+                  },
+                  allergenTags: {
+                    type: "array",
+                    items: { type: "string" },
+                  },
+                  mealTypeTags: {
+                    type: "array",
+                    items: { type: "string" },
+                  },
+                  difficultyLevel: {
+                    type: "string",
+                    enum: ["easy", "medium", "hard"],
+                  },
+                },
+                required: [],
+                additionalProperties: false,
+              },
+            },
+          },
+          messages: [
+            {
+              role: "system",
+              content:
+                "You are a recipe analyzer that extracts metadata tags from recipes. Always return valid JSON.",
+            },
+            {
+              role: "user",
+              content: prompt,
+            },
+          ],
+        }),
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        console.error(`OpenAI metadata extraction failed: ${response.status} ${text}`);
+        return {
+          dietaryTags: undefined,
+          cuisineTags: undefined,
+          cookingStyleTags: undefined,
+          allergenTags: undefined,
+          mealTypeTags: undefined,
+          difficultyLevel: undefined,
+        };
+      }
+
+      const payload = await response.json();
+      const message = payload?.choices?.[0]?.message?.content;
+      if (!message) {
+        console.error("OpenAI response missing content for metadata extraction");
+        return {
+          dietaryTags: undefined,
+          cuisineTags: undefined,
+          cookingStyleTags: undefined,
+          allergenTags: undefined,
+          mealTypeTags: undefined,
+          difficultyLevel: undefined,
+        };
+      }
+
+      // Parse JSON from response
+      let jsonText = message.trim();
+      if (jsonText.startsWith("```")) {
+        jsonText = jsonText.replace(/^```json\n?/, "").replace(/```$/, "").trim();
+      }
+
+      const metadata = JSON.parse(jsonText);
+
+      return {
+        dietaryTags: metadata.dietaryTags && metadata.dietaryTags.length > 0 ? metadata.dietaryTags : undefined,
+        cuisineTags: metadata.cuisineTags && metadata.cuisineTags.length > 0 ? metadata.cuisineTags : undefined,
+        cookingStyleTags: metadata.cookingStyleTags && metadata.cookingStyleTags.length > 0 ? metadata.cookingStyleTags : undefined,
+        allergenTags: metadata.allergenTags && metadata.allergenTags.length > 0 ? metadata.allergenTags : undefined,
+        mealTypeTags: metadata.mealTypeTags && metadata.mealTypeTags.length > 0 ? metadata.mealTypeTags : undefined,
+        difficultyLevel: metadata.difficultyLevel || undefined,
+      };
+    } catch (error) {
+      console.error("Failed to extract recipe metadata:", error);
+      // Return empty metadata on error (graceful degradation)
+      return {
+        dietaryTags: undefined,
+        cuisineTags: undefined,
+        cookingStyleTags: undefined,
+        allergenTags: undefined,
+        mealTypeTags: undefined,
+        difficultyLevel: undefined,
+      };
+    }
   },
 });
 
@@ -925,15 +1731,70 @@ Captured text: ${sourceSummary}`;
       foodItemsAdded: [...foodItemsAdded, ...(enhanced.foodItemsAdded ?? [])],
     } satisfies Omit<Doc<"recipes">, "_id" | "_creationTime">;
 
-    const recipeId: Id<"recipes"> = await ctx.runMutation(api.recipes.insertFromIngestion, {
-      recipeData,
-    });
+    // Extract recipe metadata using LLM
+    let metadata;
+    try {
+      metadata = await ctx.runAction(api.recipes.extractRecipeMetadata, {
+        recipeName: normalizedRecipeName,
+        description: normalizedDescription,
+        ingredients: normalizedIngredients,
+        sourceSteps: normalizedSourceSteps,
+        prepTimeMinutes: recipeData.prepTimeMinutes,
+        cookTimeMinutes: recipeData.cookTimeMinutes,
+        totalTimeMinutes: recipeData.totalTimeMinutes,
+        servings: recipeData.servings,
+      });
+    } catch (error) {
+      console.error("Failed to extract recipe metadata:", error);
+      metadata = {
+        dietaryTags: undefined,
+        cuisineTags: undefined,
+        cookingStyleTags: undefined,
+        allergenTags: undefined,
+        mealTypeTags: undefined,
+        difficultyLevel: undefined,
+      };
+    }
 
+    // Calculate nutrition profile if possible
     const perServing = computeNutritionProfile(
       normalizedIngredients,
       recipeData.servings,
       foodLibrary,
     );
+
+    const nutritionProfile =
+      perServing.calories > 0
+        ? {
+            caloriesPerServing: Math.round(perServing.calories),
+            proteinPerServing: Math.round(perServing.macronutrients.protein),
+            carbsPerServing: Math.round(perServing.macronutrients.carbohydrates),
+            fatPerServing: Math.round(perServing.macronutrients.fat),
+            fiberPerServing: perServing.macronutrients.fiber
+              ? Math.round(perServing.macronutrients.fiber)
+              : undefined,
+            sugarsPerServing: perServing.macronutrients.sugars
+              ? Math.round(perServing.macronutrients.sugars)
+              : undefined,
+            sodiumPerServing: undefined, // Not calculated from food library currently
+          }
+        : undefined;
+
+    // Add metadata to recipe data
+    const recipeDataWithMetadata = {
+      ...recipeData,
+      dietaryTags: metadata.dietaryTags,
+      cuisineTags: metadata.cuisineTags,
+      cookingStyleTags: metadata.cookingStyleTags,
+      allergenTags: metadata.allergenTags,
+      mealTypeTags: metadata.mealTypeTags,
+      difficultyLevel: metadata.difficultyLevel,
+      nutritionProfile,
+    };
+
+    const recipeId: Id<"recipes"> = await ctx.runMutation(api.recipes.insertFromIngestion, {
+      recipeData: recipeDataWithMetadata,
+    });
 
     await ctx.runMutation(api.nutritionProfiles.upsertForRecipe, {
       recipeId,
@@ -1136,6 +1997,616 @@ Return valid JSON matching this schema:
       encodedSteps: enhancedRecipe.encodedSteps || "",
       encodingVersion: enhancedRecipe.encodingVersion || "URES-4.6",
     };
+  },
+});
+
+/**
+ * Backfill recipe metadata for existing recipes
+ * This can be run as a one-time migration
+ */
+export const backfillRecipeMetadata = internalAction({
+  args: {
+    batchSize: v.optional(v.number()),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args): Promise<{
+    processed: number;
+    updated: number;
+    errors: number;
+    total: number;
+  }> => {
+    const batchSize = args.batchSize ?? 10;
+    const limit = args.limit;
+
+    // Get all recipes without metadata
+    const recipes = (await ctx.runQuery(api.recipes.listAllWithoutMetadata, {
+      limit,
+    })) as Doc<"recipes">[];
+
+    let processed = 0;
+    let updated = 0;
+    let errors = 0;
+
+    for (let i = 0; i < recipes.length; i += batchSize) {
+      const batch = recipes.slice(i, i + batchSize);
+
+      await Promise.all(
+        batch.map(async (recipe: Doc<"recipes">) => {
+          try {
+            // Extract metadata
+            const metadata = await ctx.runAction(api.recipes.extractRecipeMetadata, {
+              recipeName: recipe.recipeName,
+              description: recipe.description,
+              ingredients: recipe.ingredients,
+              sourceSteps: recipe.sourceSteps,
+              prepTimeMinutes: recipe.prepTimeMinutes,
+              cookTimeMinutes: recipe.cookTimeMinutes,
+              totalTimeMinutes: recipe.totalTimeMinutes,
+              servings: recipe.servings,
+            });
+
+            // Calculate nutrition profile if possible
+            const foodLibrary = await ctx.runQuery(api.foodLibrary.listAll, {});
+            const perServing = computeNutritionProfile(
+              recipe.ingredients,
+              recipe.servings,
+              foodLibrary,
+            );
+
+            const nutritionProfile =
+              perServing.calories > 0
+                ? {
+                    caloriesPerServing: Math.round(perServing.calories),
+                    proteinPerServing: Math.round(perServing.macronutrients.protein),
+                    carbsPerServing: Math.round(perServing.macronutrients.carbohydrates),
+                    fatPerServing: Math.round(perServing.macronutrients.fat),
+                    fiberPerServing: perServing.macronutrients.fiber
+                      ? Math.round(perServing.macronutrients.fiber)
+                      : undefined,
+                    sugarsPerServing: perServing.macronutrients.sugars
+                      ? Math.round(perServing.macronutrients.sugars)
+                      : undefined,
+                    sodiumPerServing: undefined,
+                  }
+                : undefined;
+
+            // Update recipe with metadata
+            await ctx.runMutation(api.recipes.updateMetadata, {
+              recipeId: recipe._id,
+              dietaryTags: metadata.dietaryTags,
+              cuisineTags: metadata.cuisineTags,
+              cookingStyleTags: metadata.cookingStyleTags,
+              allergenTags: metadata.allergenTags,
+              mealTypeTags: metadata.mealTypeTags,
+              difficultyLevel: metadata.difficultyLevel,
+              nutritionProfile,
+            });
+
+            updated++;
+            processed++;
+          } catch (error) {
+            console.error(`Failed to backfill metadata for recipe ${recipe._id}:`, error);
+            errors++;
+            processed++;
+          }
+        })
+      );
+    }
+
+    return {
+      processed,
+      updated,
+      errors,
+      total: recipes.length,
+    } as {
+      processed: number;
+      updated: number;
+      errors: number;
+      total: number;
+    };
+  },
+});
+
+/**
+ * List recipes without metadata (for backfilling)
+ */
+export const listAllWithoutMetadata = query({
+  args: {
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const allRecipes = await ctx.db.query("recipes").collect();
+
+    // Filter recipes that are missing metadata
+    const recipesWithoutMetadata = allRecipes.filter(
+      (recipe) =>
+        !recipe.dietaryTags ||
+        !recipe.cuisineTags ||
+        !recipe.cookingStyleTags ||
+        !recipe.allergenTags
+    );
+
+    const sorted = recipesWithoutMetadata.sort(
+      (a, b) => b.createdAt - a.createdAt
+    );
+
+    if (args.limit) {
+      return sorted.slice(0, args.limit);
+    }
+
+    return sorted;
+  },
+});
+
+/**
+ * Update recipe metadata
+ */
+export const updateMetadata = mutation({
+  args: {
+    recipeId: v.id("recipes"),
+    dietaryTags: v.optional(v.array(v.string())),
+    cuisineTags: v.optional(v.array(v.string())),
+    cookingStyleTags: v.optional(v.array(v.string())),
+    allergenTags: v.optional(v.array(v.string())),
+    mealTypeTags: v.optional(v.array(v.string())),
+    difficultyLevel: v.optional(
+      v.union(v.literal("easy"), v.literal("medium"), v.literal("hard"))
+    ),
+    nutritionProfile: v.optional(
+      v.object({
+        caloriesPerServing: v.number(),
+        proteinPerServing: v.number(),
+        carbsPerServing: v.number(),
+        fatPerServing: v.number(),
+        fiberPerServing: v.optional(v.number()),
+        sugarsPerServing: v.optional(v.number()),
+        sodiumPerServing: v.optional(v.number()),
+      })
+    ),
+  },
+  handler: async (ctx, args) => {
+    const recipe = await ctx.db.get(args.recipeId);
+    if (!recipe) {
+      throw new Error("Recipe not found");
+    }
+
+    const updates: Partial<Doc<"recipes">> = {};
+
+    if (args.dietaryTags !== undefined) {
+      updates.dietaryTags = args.dietaryTags;
+    }
+    if (args.cuisineTags !== undefined) {
+      updates.cuisineTags = args.cuisineTags;
+    }
+    if (args.cookingStyleTags !== undefined) {
+      updates.cookingStyleTags = args.cookingStyleTags;
+    }
+    if (args.allergenTags !== undefined) {
+      updates.allergenTags = args.allergenTags;
+    }
+    if (args.mealTypeTags !== undefined) {
+      updates.mealTypeTags = args.mealTypeTags;
+    }
+    if (args.difficultyLevel !== undefined) {
+      updates.difficultyLevel = args.difficultyLevel;
+    }
+    if (args.nutritionProfile !== undefined) {
+      updates.nutritionProfile = args.nutritionProfile;
+    }
+
+    await ctx.db.patch(args.recipeId, updates);
+    return args.recipeId;
+  },
+});
+
+/**
+ * Pre-compute personalized recipe lists for all users
+ * This should be called by a scheduled action periodically
+ */
+export const precomputePersonalizedRecipes = internalAction({
+  args: {
+    userId: v.optional(v.id("users")), // If provided, only compute for this user
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    const expiresAt = now + 60 * 60 * 1000; // 1 hour from now
+
+    // Get users to process
+    let userIds: Id<"users">[];
+    if (args.userId) {
+      userIds = [args.userId];
+    } else {
+      // Get all user IDs from database
+      const allUsers = await ctx.runQuery(api.recipes.getAllUserIds, {});
+      userIds = allUsers;
+    }
+
+    let computed = 0;
+    let errors = 0;
+
+    const railTypes = [
+      "forYou",
+      "readyToCook",
+      "quickEasy",
+      "cuisines",
+      "dietaryFriendly",
+      "householdCompatible",
+    ] as const;
+
+    for (const userId of userIds) {
+      try {
+        // Get user data
+        const user = await ctx.runQuery(api.users.getUserById, { userId });
+        if (!user) continue;
+
+        // Compute personalized lists for each rail type
+        for (const railType of railTypes) {
+          const recipes = (await ctx.runQuery(api.recipes.listPersonalizedForUser, {
+            userId,
+            railType,
+            limit: 20,
+          })) as Doc<"recipes">[];
+
+          // Store in cache
+          const existing = await ctx.runQuery(api.recipes.getPersonalizedCache, {
+            userId,
+            railType,
+          });
+
+          const cacheData = {
+            userId,
+            railType,
+            recipeIds: recipes.map((r: Doc<"recipes">) => r._id),
+            computedAt: now,
+            expiresAt,
+          };
+
+          if (existing) {
+            await ctx.runMutation(api.recipes.updatePersonalizedCache, {
+              cacheId: existing._id,
+              ...cacheData,
+            });
+          } else {
+            await ctx.runMutation(api.recipes.createPersonalizedCache, cacheData);
+          }
+        }
+
+        computed++;
+      } catch (error) {
+        console.error(`Failed to precompute for user ${userId}:`, error);
+        errors++;
+      }
+    }
+
+    // Clean up expired cache entries
+    const expiredCutoff = now - 24 * 60 * 60 * 1000; // 24 hours ago
+    await ctx.runMutation(api.recipes.cleanupExpiredCache, {
+      expiredBefore: expiredCutoff,
+    });
+
+    return {
+      computed,
+      errors,
+      total: userIds.length,
+    } as {
+      computed: number;
+      errors: number;
+      total: number;
+    };
+  },
+});
+
+/**
+ * Get personalized cache entry
+ */
+export const getPersonalizedCache = query({
+  args: {
+    userId: v.id("users"),
+    railType: v.union(
+      v.literal("forYou"),
+      v.literal("readyToCook"),
+      v.literal("quickEasy"),
+      v.literal("cuisines"),
+      v.literal("dietaryFriendly"),
+      v.literal("householdCompatible")
+    ),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("userPersonalizedRecipes")
+      .withIndex("by_user_and_type", (q) =>
+        q.eq("userId", args.userId).eq("railType", args.railType)
+      )
+      .first();
+  },
+});
+
+/**
+ * Create personalized cache entry
+ */
+export const createPersonalizedCache = mutation({
+  args: {
+    userId: v.id("users"),
+    railType: v.union(
+      v.literal("forYou"),
+      v.literal("readyToCook"),
+      v.literal("quickEasy"),
+      v.literal("cuisines"),
+      v.literal("dietaryFriendly"),
+      v.literal("householdCompatible")
+    ),
+    recipeIds: v.array(v.id("recipes")),
+    computedAt: v.number(),
+    expiresAt: v.number(),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db.insert("userPersonalizedRecipes", args);
+  },
+});
+
+/**
+ * Update personalized cache entry
+ */
+export const updatePersonalizedCache = mutation({
+  args: {
+    cacheId: v.id("userPersonalizedRecipes"),
+    userId: v.id("users"),
+    railType: v.union(
+      v.literal("forYou"),
+      v.literal("readyToCook"),
+      v.literal("quickEasy"),
+      v.literal("cuisines"),
+      v.literal("dietaryFriendly"),
+      v.literal("householdCompatible")
+    ),
+    recipeIds: v.array(v.id("recipes")),
+    computedAt: v.number(),
+    expiresAt: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const { cacheId, ...updates } = args;
+    await ctx.db.patch(cacheId, updates);
+    return cacheId;
+  },
+});
+
+/**
+ * Cleanup expired cache entries
+ */
+export const cleanupExpiredCache = mutation({
+  args: {
+    expiredBefore: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const expired = await ctx.db
+      .query("userPersonalizedRecipes")
+      .withIndex("by_expires_at", (q) => q.lt("expiresAt", args.expiredBefore))
+      .collect();
+
+    for (const entry of expired) {
+      await ctx.db.delete(entry._id);
+    }
+
+    return { deleted: expired.length };
+  },
+});
+
+/**
+ * Invalidate cache for a user (call when preferences/inventory change)
+ */
+export const invalidateUserCache = mutation({
+  args: {
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    const cacheEntries = await ctx.db
+      .query("userPersonalizedRecipes")
+      .withIndex("by_user_and_type", (q) => q.eq("userId", args.userId))
+      .collect();
+
+    // Delete all cache entries for this user
+    for (const entry of cacheEntries) {
+      await ctx.db.delete(entry._id);
+    }
+
+    return { deleted: cacheEntries.length };
+  },
+});
+
+/**
+ * Get all user IDs (for pre-computation)
+ */
+export const getAllUserIds = query({
+  args: {},
+  handler: async (ctx) => {
+    const users = await ctx.db.query("users").collect();
+    return users.map((u) => u._id);
+  },
+});
+
+/**
+ * List personalized recipes for a specific user (internal version for pre-computation)
+ */
+export const listPersonalizedForUser = query({
+  args: {
+    userId: v.id("users"),
+    railType: v.union(
+      v.literal("forYou"),
+      v.literal("readyToCook"),
+      v.literal("quickEasy"),
+      v.literal("cuisines"),
+      v.literal("dietaryFriendly"),
+      v.literal("householdCompatible")
+    ),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = args.limit ?? 10;
+    const now = Date.now();
+
+    // Check cache first
+    const cached = await ctx.db
+      .query("userPersonalizedRecipes")
+      .withIndex("by_user_and_type", (q) =>
+        q.eq("userId", args.userId).eq("railType", args.railType)
+      )
+      .first();
+
+    if (cached && cached.expiresAt > now) {
+      const recipes = await Promise.all(
+        cached.recipeIds.map((id) => ctx.db.get(id))
+      );
+      return recipes.filter(Boolean) as Doc<"recipes">[];
+    }
+
+    // Compute fresh (same logic as listPersonalized but for specific user)
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      return [];
+    }
+
+    // Get user preferences and inventory (same as listPersonalized)
+    const dietaryRestrictions = (user.dietaryRestrictions ?? []) as string[];
+    const allergies = (user.allergies ?? []) as string[];
+    const favoriteCuisines = (user.favoriteCuisines ?? []) as string[];
+    const cookingStylePreferences = (user.cookingStylePreferences ??
+      []) as string[];
+    const nutritionGoals = user.nutritionGoals;
+
+    let userInventory: string[] = [];
+    let inventoryExpirationData = new Map<string, number>();
+    if (user.householdId) {
+      const household = await ctx.db.get(user.householdId);
+      if (household?.inventory) {
+        const inventory = household.inventory as UserInventoryEntry[];
+        const codes = new Set<string>();
+        for (const item of inventory) {
+          codes.add(item.itemCode);
+          if (item.varietyCode) {
+            codes.add(item.varietyCode);
+          }
+          const shelfLifeDays = 7; // Default
+          const daysSincePurchase = Math.floor(
+            (now - item.purchaseDate) / (1000 * 60 * 60 * 24)
+          );
+          const daysUntilExpiration = shelfLifeDays - daysSincePurchase;
+          inventoryExpirationData.set(item.itemCode, daysUntilExpiration);
+        }
+        userInventory = Array.from(codes);
+      }
+    }
+
+    // Get all recipes
+    let filteredRecipes = await ctx.db.query("recipes").collect();
+
+    // Apply hard filters
+    filteredRecipes = filteredRecipes.filter((recipe) => {
+      if (allergies.length > 0 && !matchesAllergies(recipe, allergies)) {
+        return false;
+      }
+      const criticalRestrictions = dietaryRestrictions.filter((r) =>
+        ["Halal", "Kosher"].some((cdr) =>
+          r.toLowerCase().includes(cdr.toLowerCase())
+        )
+      );
+      if (
+        criticalRestrictions.length > 0 &&
+        !matchesDietaryRestrictions(recipe, criticalRestrictions)
+      ) {
+        return false;
+      }
+      return true;
+    });
+
+    // Apply rail-specific filters (same as listPersonalized)
+    if (args.railType === "readyToCook") {
+      filteredRecipes = filteredRecipes.filter((recipe) => {
+        const recipeIngredientCodes = recipe.ingredients.map(
+          (ing) => ing.foodCode
+        );
+        return recipeIngredientCodes.every((code) =>
+          userInventory.includes(code)
+        );
+      });
+    } else if (args.railType === "quickEasy") {
+      filteredRecipes = filteredRecipes.filter((recipe) => {
+        const isQuick =
+          recipe.totalTimeMinutes <= 30 ||
+          recipe.cookingStyleTags?.some((tag) =>
+            tag.toLowerCase().includes("quick")
+          );
+        return isQuick && matchesCookingStyles(recipe, cookingStylePreferences);
+      });
+    } else if (args.railType === "cuisines") {
+      filteredRecipes = filteredRecipes.filter((recipe) =>
+        matchesCuisines(recipe, favoriteCuisines)
+      );
+    } else if (args.railType === "dietaryFriendly") {
+      filteredRecipes = filteredRecipes.filter((recipe) =>
+        matchesDietaryRestrictions(recipe, dietaryRestrictions)
+      );
+    } else if (args.railType === "householdCompatible") {
+      if (user.householdId) {
+        const household = await ctx.db.get(user.householdId);
+        if (household) {
+          const memberDocs = await Promise.all(
+            household.members.map((id: Id<"users">) => ctx.db.get(id))
+          );
+          const householdMembers = memberDocs
+            .filter((member): member is Doc<"users"> => member !== null)
+            .map((member) => ({
+              memberId: member._id,
+              memberName: member.name ?? "Unknown",
+              allergies: (member.allergies ?? []) as string[],
+              dietaryRestrictions: (member.dietaryRestrictions ??
+                []) as string[],
+            }))
+            .map((m) => ({
+              ...m,
+              memberId: m.memberId as unknown as string,
+            }));
+
+          filteredRecipes = filteredRecipes.filter((recipe) => {
+            const compatibility = getRecipeCompatibility(
+              recipe,
+              householdMembers
+            );
+            return compatibility.incompatibleMembers.length === 0;
+          });
+        }
+      }
+    }
+
+    // Score and sort
+    const scoredRecipes = filteredRecipes.map((recipe) => {
+      const filterOptions: RecipeFilterOptions = {
+        dietaryRestrictions,
+        allergies,
+        favoriteCuisines,
+        cookingStylePreferences,
+        nutritionGoals: nutritionGoals ?? undefined,
+      };
+
+      const score = calculateRecipeScore(
+        recipe,
+        filterOptions,
+        userInventory,
+        inventoryExpirationData
+      );
+
+      return { recipe, score };
+    });
+
+    scoredRecipes.sort((a, b) => {
+      if (b.score !== a.score) {
+        return b.score - a.score;
+      }
+      return b.recipe.createdAt - a.recipe.createdAt;
+    });
+
+    return scoredRecipes
+      .slice(0, limit)
+      .map((entry) => entry.recipe);
   },
 });
 
@@ -1561,6 +3032,25 @@ export const insertFromIngestion = mutation({
       updatedAt: v.number(),
       createdBy: v.optional(v.id("users")),
       isPublic: v.boolean(),
+      dietaryTags: v.optional(v.array(v.string())),
+      cuisineTags: v.optional(v.array(v.string())),
+      cookingStyleTags: v.optional(v.array(v.string())),
+      allergenTags: v.optional(v.array(v.string())),
+      mealTypeTags: v.optional(v.array(v.string())),
+      difficultyLevel: v.optional(
+        v.union(v.literal("easy"), v.literal("medium"), v.literal("hard"))
+      ),
+      nutritionProfile: v.optional(
+        v.object({
+          caloriesPerServing: v.number(),
+          proteinPerServing: v.number(),
+          carbsPerServing: v.number(),
+          fatPerServing: v.number(),
+          fiberPerServing: v.optional(v.number()),
+          sugarsPerServing: v.optional(v.number()),
+          sodiumPerServing: v.optional(v.number()),
+        })
+      ),
     }),
   },
   returns: v.id("recipes"),
