@@ -13,6 +13,7 @@ import {
 import { formatShortDate, calculateDaysOld } from "@/utils/date";
 import { useCallback, useMemo, useState } from "react";
 import { Image, Pressable, ScrollView, Text, View } from "react-native";
+import { useRouter } from "expo-router";
 
 type ViewMode = "list" | "grid";
 type SortOption = "location" | "quantity" | "purchaseDate";
@@ -36,12 +37,17 @@ type DecoratedInventoryItem = InventoryDisplayItem & {
 
 export default function KitchenScreen() {
   const styles = useThemedStyles(createKitchenStyles);
+  const router = useRouter();
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [sortOption, setSortOption] = useState<SortOption>("location");
   const [locationFilter, setLocationFilter] = useState<string>("all");
   const [showSortMenu, setShowSortMenu] = useState(false);
   const { t, i18n } = useTranslation();
   const { inventoryItems, isLoading } = useInventoryDisplay();
+
+  const handleItemPress = useCallback((itemCode: string) => {
+    router.push(`/ingredient/${encodeURIComponent(itemCode)}`);
+  }, [router]);
   const formatDate = useCallback(
     (timestamp: number) => formatShortDate(timestamp, i18n.language),
     [i18n.language],
@@ -235,7 +241,12 @@ export default function KitchenScreen() {
             </View>
 
             {filteredInventory.map((item, index) => (
-              <View key={`${item.itemCode}-${index}`} style={styles.listRow}>
+              <Pressable
+                key={`${item.itemCode}-${index}`}
+                onPress={() => handleItemPress(item.itemCode)}
+                style={styles.listRow}
+                accessibilityRole="button"
+              >
                 <View style={[styles.listCell, styles.listCellName]}>
                   <Text style={styles.listItemName}>
                     {item.displayName}
@@ -258,21 +269,26 @@ export default function KitchenScreen() {
                     {t("kitchen.dayAge", { count: item.daysOld })}
                   </Text>
                 </View>
-              </View>
+              </Pressable>
             ))}
           </View>
         ) : (
           <View style={styles.grid}>
             {filteredInventory.map((item, index) => (
-              <View key={`${item.itemCode}-${index}`} style={styles.gridItem}>
-              <View style={styles.gridMetaBar}>
-                <Text style={styles.gridMetaBarLabel}>{formatDate(item.purchaseDate)}</Text>
-                <View style={styles.gridQuantityPill}>
-                  <Text style={styles.gridQuantityPillLabel}>
-                    {t("kitchen.itemCount", { count: item.quantity })}
-                  </Text>
+              <Pressable
+                key={`${item.itemCode}-${index}`}
+                onPress={() => handleItemPress(item.itemCode)}
+                style={styles.gridItem}
+                accessibilityRole="button"
+              >
+                <View style={styles.gridMetaBar}>
+                  <Text style={styles.gridMetaBarLabel}>{formatDate(item.purchaseDate)}</Text>
+                  <View style={styles.gridQuantityPill}>
+                    <Text style={styles.gridQuantityPillLabel}>
+                      {t("kitchen.itemCount", { count: item.quantity })}
+                    </Text>
+                  </View>
                 </View>
-              </View>
                 <Image
                   source={{ uri: item.imageUrl }}
                   style={styles.gridImage}
@@ -294,7 +310,7 @@ export default function KitchenScreen() {
                     </Text>
                   </View>
                 </View>
-              </View>
+              </Pressable>
             ))}
           </View>
         )}

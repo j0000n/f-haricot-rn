@@ -138,6 +138,7 @@ export default function RecipeDetailScreen() {
   const recipe = useQuery(api.recipes.getById, recipeId ? { id: recipeId } : "skip");
   const translationGuides = useQuery(api.translationGuides.listAll, {});
   const userInventory = useQuery(api.users.getCurrentInventory, {});
+  const currentUser = useQuery(api.users.getCurrentUser);
 
   if (recipe === undefined) {
     return <LoadingScreen />;
@@ -224,28 +225,106 @@ export default function RecipeDetailScreen() {
     );
   }
 
-  const nutritionFacts = useMemo(
-    () => ({
+  const nutritionFacts = useMemo(() => {
+    const profile = recipe.nutritionProfile;
+    
+    // Default values if nutrition profile is not available
+    if (!profile) {
+      return {
+        servingPerContainer: "1",
+        servingSize: `${recipe.servings} ${recipe.servings === 1 ? "serving" : "servings"}`,
+        calories: 0,
+        nutrients: [],
+        notes: [
+          "* Nutrition information is not available for this recipe.",
+          "* The % Daily Value (DV) tells you how much a nutrient in a serving of food contributes to a daily diet. 2,000 Calories a day is used for general nutrition advice.",
+        ],
+        caloriesPerGram: {
+          fat: 9,
+          carbohydrate: 4,
+          protein: 4,
+        },
+      };
+    }
+
+    const nutrients: Array<{
+      key: string;
+      label: string;
+      amount: string;
+      percentDailyValue?: number;
+      isHeader?: boolean;
+      isSubItem?: boolean;
+    }> = [];
+
+    // Total Fat
+    if (profile.fatPerServing > 0) {
+      nutrients.push({
+        key: "totalFat",
+        label: "Total Fat",
+        amount: `${profile.fatPerServing} g`,
+        percentDailyValue: Math.round((profile.fatPerServing / 78) * 100),
+        isHeader: true,
+      });
+    }
+
+    // Carbohydrates
+    if (profile.carbsPerServing > 0) {
+      nutrients.push({
+        key: "totalCarbohydrate",
+        label: "Total Carbohydrate",
+        amount: `${profile.carbsPerServing} g`,
+        percentDailyValue: Math.round((profile.carbsPerServing / 275) * 100),
+        isHeader: true,
+      });
+
+      if (profile.fiberPerServing !== undefined && profile.fiberPerServing > 0) {
+        nutrients.push({
+          key: "dietaryFiber",
+          label: "Dietary Fiber",
+          amount: `${profile.fiberPerServing} g`,
+          percentDailyValue: Math.round((profile.fiberPerServing / 28) * 100),
+          isSubItem: true,
+        });
+      }
+
+      if (profile.sugarsPerServing !== undefined && profile.sugarsPerServing > 0) {
+        nutrients.push({
+          key: "totalSugars",
+          label: "Total Sugars",
+          amount: `${profile.sugarsPerServing} g`,
+          isSubItem: true,
+        });
+      }
+    }
+
+    // Protein
+    if (profile.proteinPerServing > 0) {
+      nutrients.push({
+        key: "protein",
+        label: "Protein",
+        amount: `${profile.proteinPerServing} g`,
+        percentDailyValue: Math.round((profile.proteinPerServing / 50) * 100),
+        isHeader: true,
+      });
+    }
+
+    // Sodium (if available)
+    if (profile.sodiumPerServing !== undefined && profile.sodiumPerServing > 0) {
+      nutrients.push({
+        key: "sodium",
+        label: "Sodium",
+        amount: `${profile.sodiumPerServing} mg`,
+        percentDailyValue: Math.round((profile.sodiumPerServing / 2300) * 100),
+        isHeader: true,
+      });
+    }
+
+    return {
       servingPerContainer: "1",
-      servingSize: "1 Package",
-      calories: 150,
-      nutrients: [
-        { key: "totalFat", label: "Total Fat", amount: "7 g", percentDailyValue: 10, isHeader: true },
-        { key: "saturatedFat", label: "Saturated Fat", amount: "1 g", percentDailyValue: 5, isSubItem: true },
-        { key: "transFat", label: "Trans Fat", amount: "0 g", isSubItem: true },
-        { key: "cholesterol", label: "Cholesterol", amount: "0 mg", percentDailyValue: 0, isHeader: true },
-        { key: "sodium", label: "Sodium", amount: "160 mg", percentDailyValue: 7, isHeader: true },
-        { key: "totalCarbohydrate", label: "Total Carbohydrate", amount: "18 g", percentDailyValue: 6, isHeader: true },
-        { key: "dietaryFiber", label: "Dietary Fiber", amount: "1 g", percentDailyValue: 5, isSubItem: true },
-        { key: "totalSugars", label: "Total Sugars", amount: "< 1 g", isSubItem: true },
-        { key: "protein", label: "Protein", amount: "2 g", isHeader: true },
-        { key: "vitaminD", label: "Vitamin D", amount: "0 mcg", percentDailyValue: 0, isHeader: true },
-        { key: "calcium", label: "Calcium", amount: "40 mg", percentDailyValue: 2, isHeader: true },
-        { key: "iron", label: "Iron", amount: "0.3 mg", percentDailyValue: 0, isHeader: true },
-        { key: "potassium", label: "Potassium", amount: "100 mg", percentDailyValue: 2, isHeader: true },
-      ],
+      servingSize: `${recipe.servings} ${recipe.servings === 1 ? "serving" : "servings"}`,
+      calories: profile.caloriesPerServing,
+      nutrients,
       notes: [
-        "Not a significant source of added sugars.",
         "* The % Daily Value (DV) tells you how much a nutrient in a serving of food contributes to a daily diet. 2,000 Calories a day is used for general nutrition advice.",
       ],
       caloriesPerGram: {
@@ -253,38 +332,47 @@ export default function RecipeDetailScreen() {
         carbohydrate: 4,
         protein: 4,
       },
-    }),
-    [],
-  );
+    };
+  }, [recipe.nutritionProfile, recipe.servings]);
 
-  const dailyValues = useMemo(
-    () => ({
-      default: {
-        totalFat: 78,
-        saturatedFat: 20,
-        cholesterol: 300,
-        sodium: 2300,
-        totalCarbohydrate: 275,
-        dietaryFiber: 28,
-        protein: 50,
-        vitaminD: 20,
-        calcium: 1300,
-        iron: 18,
-        potassium: 4700,
-      },
-      user: {
-        totalFat: 70,
-        saturatedFat: 15,
-        sodium: 2000,
-      },
-      family: {
-        totalFat: 90,
-        saturatedFat: 22,
-        sodium: 2400,
-      },
-    }),
-    [],
-  );
+  const dailyValues = useMemo(() => {
+    const userGoals = (currentUser as { nutritionGoals?: { targets?: { 
+      calories?: number | null;
+      protein?: number | null;
+      fat?: number | null;
+      carbohydrates?: number | null;
+      fiber?: number | null;
+      sodium?: number | null;
+      saturatedFat?: number | null;
+    } } } | null)?.nutritionGoals?.targets;
+
+    const defaults = {
+      totalFat: 78,
+      saturatedFat: 20,
+      cholesterol: 300,
+      sodium: 2300,
+      totalCarbohydrate: 275,
+      dietaryFiber: 28,
+      protein: 50,
+      vitaminD: 20,
+      calcium: 1300,
+      iron: 18,
+      potassium: 4700,
+    };
+
+    return {
+      default: defaults,
+      user: userGoals ? {
+        totalFat: userGoals.fat ?? defaults.totalFat,
+        saturatedFat: userGoals.saturatedFat ?? defaults.saturatedFat,
+        sodium: userGoals.sodium ?? defaults.sodium,
+        totalCarbohydrate: userGoals.carbohydrates ?? defaults.totalCarbohydrate,
+        dietaryFiber: userGoals.fiber ?? defaults.dietaryFiber,
+        protein: userGoals.protein ?? defaults.protein,
+      } : defaults,
+      family: defaults, // TODO: Calculate from household members' goals
+    };
+  }, [currentUser]);
 
   return (
     <SafeAreaView style={styles.screen}>

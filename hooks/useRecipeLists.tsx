@@ -41,6 +41,8 @@ type RecipeListsContextValue = {
   addRecipeToList: (listId: string, recipeId: Id<"recipes">) => void;
   removeRecipeFromList: (listId: string, recipeId: Id<"recipes">) => void;
   createList: (name: string, emoji?: string) => StandardRecipeList;
+  updateList: (listId: string, updates: { name?: string; emoji?: string }) => void;
+  deleteList: (listId: string) => void;
   seedLists: () => void;
   getListById: (listId: string) => RecipeList | undefined;
   isRecipeInList: (listId: string, recipeId: Id<"recipes">) => boolean;
@@ -210,6 +212,43 @@ export const RecipeListsProvider: React.FC<{ children: React.ReactNode }> = ({ c
     [],
   );
 
+  const updateList = useCallback((listId: string, updates: { name?: string; emoji?: string }) => {
+    setLists((current) =>
+      current.map((list) => {
+        if (list.id !== listId) {
+          return list;
+        }
+
+        const timestamp = Date.now();
+
+        if (list.type === "cook-asap") {
+          // Cook-asap list can't be edited (it's a special list)
+          return list;
+        }
+
+        return {
+          ...list,
+          name: updates.name ?? list.name,
+          emoji: updates.emoji !== undefined ? updates.emoji : list.emoji,
+          updatedAt: timestamp,
+        } satisfies StandardRecipeList;
+      }),
+    );
+  }, []);
+
+  const deleteList = useCallback(
+    (listId: string) => {
+      // Don't allow deleting the cook-asap list
+      if (listId === COOK_ASAP_LIST_ID) {
+        return;
+      }
+
+      setLists((current) => current.filter((list) => list.id !== listId));
+      setRecentListIds((current) => current.filter((id) => id !== listId));
+    },
+    [],
+  );
+
   const seedLists = useCallback(() => {
     setLists(buildInitialLists());
     setRecentListIds([]);
@@ -273,6 +312,8 @@ export const RecipeListsProvider: React.FC<{ children: React.ReactNode }> = ({ c
       addRecipeToList,
       removeRecipeFromList,
       createList,
+      updateList,
+      deleteList,
       seedLists,
       getListById,
       isRecipeInList,
@@ -283,6 +324,7 @@ export const RecipeListsProvider: React.FC<{ children: React.ReactNode }> = ({ c
       allLists,
       cookAsapList,
       createList,
+      deleteList,
       getListById,
       getListsForRecipe,
       isRecipeInList,
@@ -290,6 +332,7 @@ export const RecipeListsProvider: React.FC<{ children: React.ReactNode }> = ({ c
       removeRecipeFromList,
       seedLists,
       standardLists,
+      updateList,
     ],
   );
 

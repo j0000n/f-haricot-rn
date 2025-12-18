@@ -240,15 +240,12 @@ export default function HomeScreen() {
   );
 
   const handleItemPress = (itemId: string, item: InventoryDisplayItem) => {
-    console.log("Item pressed:", itemId, item.displayName);
     router.push(`/ingredient/${encodeURIComponent(itemId)}`);
-    console.log("Navigating to:", `/ingredient/${encodeURIComponent(itemId)}`);
-    // Navigate to item detail screen when implemented
   };
 
   const handleSeeAll = (category: string) => {
-    console.log("See all pressed for:", category);
-    // Navigate to category list screen when implemented
+    // Navigate to kitchen screen which shows all inventory items
+    router.push("/kitchen");
   };
 
   const handleRecipePress = (recipe: Recipe) => {
@@ -256,7 +253,8 @@ export default function HomeScreen() {
   };
 
   const handleDishPress = (dish: NutrientDish) => {
-    console.log("Nutrient dish pressed:", dish.name);
+    // Navigate to search for recipes related to this nutrient dish
+    router.push(`/search/${encodeURIComponent(dish.name)}`);
   };
 
   const handleSearchResultPress = (recipeId: string) => {
@@ -273,8 +271,8 @@ export default function HomeScreen() {
   };
 
   const handleRecipeSeeAll = () => {
-    console.log("See all pressed for: recipes");
-    // Navigate to recipe collection when implemented
+    // Navigate to search screen to browse all recipes
+    router.push("/search/");
   };
 
   const handleLinkPreviewPress = (url: string) => {
