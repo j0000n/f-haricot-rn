@@ -182,7 +182,9 @@ export const updateProfile = mutation({
         v.literal("fr"),
         v.literal("tl"),
         v.literal("vi"),
-        v.literal("ar")
+        v.literal("ar"),
+        v.literal("hi"),
+        v.literal("ur")
       )
     ),
     nutritionGoals: v.optional(
