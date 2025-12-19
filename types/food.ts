@@ -32,6 +32,8 @@ export interface FoodLibraryItem {
   code: string;
   namespace: string;
   name: string;
+  standardizedName?: string;
+  aliases?: string[];
   translations: LocalizedText;
   category: string;
   categoryTranslations: LocalizedText;

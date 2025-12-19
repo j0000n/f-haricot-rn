@@ -146,6 +146,8 @@ const schema = defineSchema({
     code: v.string(),
     namespace: v.string(),
     name: v.string(),
+    standardizedName: v.optional(v.string()),
+    aliases: v.optional(v.array(v.string())),
     translations: v.object({
       en: v.object({
         singular: v.string(),

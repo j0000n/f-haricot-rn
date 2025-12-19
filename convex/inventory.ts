@@ -104,6 +104,7 @@ type InventoryUpdate = {
   varietyCode?: string;
   quantity: number;
   note?: string;
+  operation?: "add" | "decrement" | "remove";
 };
 
 type MappingResponse = {
@@ -125,10 +126,14 @@ const buildPrompt = (transcript: string, descriptors: LibraryDescriptor[]) => {
   return `You convert grocery-related speech transcripts into structured inventory updates. ` +
     `Use the provided catalog of inventory items and their codes. ` +
     `Only return items that clearly match the transcript. ` +
+    `Prefer brand-specific items (for example, "oreo cookies") when the transcript includes a brand name. ` +
     `If quantity is not specified, assume quantity 1. ` +
     `Prefer whole numbers and round to the nearest integer when needed. ` +
     `When varieties are mentioned, map them to the corresponding variety code. ` +
     `If no variety is given, omit varietyCode. ` +
+    `If the transcript indicates items are being removed or used up, set operation to "decrement" ` +
+    `when a quantity is specified or "remove" when the item should be removed entirely. ` +
+    `Otherwise, omit operation or set it to "add". ` +
     `Always respond with valid JSON that follows the provided schema. ` +
     `Transcript: ${transcript}\n\nCatalog: ${JSON.stringify(catalog)}.`;
 };
@@ -187,6 +192,10 @@ export const mapSpeechToInventory = action({
                       varietyCode: { type: "string" },
                       quantity: { type: "number" },
                       note: { type: "string" },
+                      operation: {
+                        type: "string",
+                        enum: ["add", "decrement", "remove"],
+                      },
                     },
                     required: ["itemCode", "quantity"],
                     additionalProperties: false,
@@ -256,6 +265,12 @@ export const mapSpeechToInventory = action({
           continue;
         }
 
+        const operation =
+          typeof entry.operation === "string" &&
+          ["add", "decrement", "remove"].includes(entry.operation)
+            ? (entry.operation as InventoryUpdate["operation"])
+            : undefined;
+
         // Check if item code exists in library
         const libraryEntry = libraryIndex.get(itemCode);
         if (!libraryCodes.has(itemCode)) {
@@ -286,6 +301,7 @@ export const mapSpeechToInventory = action({
           varietyCode: validatedVariety,
           quantity: Math.max(1, Math.round(quantity)),
           note,
+          operation,
         });
       }
     }
@@ -326,6 +342,7 @@ export const applyInventoryUpdates = mutation({
         varietyCode: v.optional(v.string()),
         quantity: v.number(),
         note: v.optional(v.string()),
+        operation: v.optional(v.union(v.literal("add"), v.literal("decrement"), v.literal("remove"))),
       }),
     ),
   },
@@ -359,33 +376,14 @@ export const applyInventoryUpdates = mutation({
     const warnings: string[] = [];
 
     for (const update of args.updates) {
-      const quantity = Math.max(1, Math.round(update.quantity));
       const itemCode = update.itemCode.trim();
       if (!itemCode) {
         continue;
       }
 
-      // Ensure item code exists in food library
-      if (!libraryCodes.has(itemCode)) {
-        // Create provisional entry
-        try {
-          await ctx.runMutation(api.foodLibrary.ensureProvisional, {
-            code: itemCode,
-            name: itemCode.split(".").pop() || itemCode,
-          });
-          // Refresh library codes
-          libraryCodes.add(itemCode);
-          libraryIndex.set(itemCode, {
-            shelfLifeDays: 7,
-            storageLocation: "pantry",
-            varietyCodes: new Set(),
-          });
-          warnings.push(`Created provisional entry for "${itemCode}". Please review its details.`);
-        } catch (error) {
-          console.error(`Failed to ensure provisional entry for ${itemCode}:`, error);
-          // Continue anyway - the code will be stored but may not have full food library data
-        }
-      }
+      const operation = update.operation ?? "add";
+      const quantity = Math.max(1, Math.round(update.quantity));
+      const note = update.note?.trim();
 
       const varietyCode = update.varietyCode?.trim();
       const libraryEntry = libraryIndex.get(itemCode);
@@ -398,13 +396,64 @@ export const applyInventoryUpdates = mutation({
           `Variety "${varietyCode}" is not defined for ${itemCode}. Saved without variety code.`,
         );
       }
-      const note = update.note?.trim();
+
+      if (operation === "add") {
+        // Ensure item code exists in food library
+        if (!libraryCodes.has(itemCode)) {
+          // Create provisional entry
+          try {
+            await ctx.runMutation(api.foodLibrary.ensureProvisional, {
+              code: itemCode,
+              name: itemCode.split(".").pop() || itemCode,
+            });
+            // Refresh library codes
+            libraryCodes.add(itemCode);
+            libraryIndex.set(itemCode, {
+              shelfLifeDays: 7,
+              storageLocation: "pantry",
+              varietyCodes: new Set(),
+            });
+            warnings.push(`Created provisional entry for "${itemCode}". Please review its details.`);
+          } catch (error) {
+            console.error(`Failed to ensure provisional entry for ${itemCode}:`, error);
+            // Continue anyway - the code will be stored but may not have full food library data
+          }
+        }
+      }
 
       const matchIndex = nextInventory.findIndex(
         (entry) =>
           entry.itemCode === itemCode &&
           (entry.varietyCode ?? null) === (validatedVariety ?? null),
       );
+
+      if (operation === "remove") {
+        if (matchIndex >= 0) {
+          nextInventory.splice(matchIndex, 1);
+        } else {
+          warnings.push(`No existing inventory entry found to remove for "${itemCode}".`);
+        }
+        continue;
+      }
+
+      if (operation === "decrement") {
+        if (matchIndex >= 0) {
+          const current = nextInventory[matchIndex];
+          const nextQuantity = current.quantity - quantity;
+          if (nextQuantity > 0) {
+            nextInventory[matchIndex] = {
+              ...current,
+              quantity: nextQuantity,
+              purchaseDate: Date.now(),
+            };
+          } else {
+            nextInventory.splice(matchIndex, 1);
+          }
+        } else {
+          warnings.push(`No existing inventory entry found to decrement for "${itemCode}".`);
+        }
+        continue;
+      }
 
       if (matchIndex >= 0) {
         const current = nextInventory[matchIndex];

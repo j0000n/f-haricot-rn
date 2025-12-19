@@ -29,6 +29,7 @@ type InventorySuggestion = {
   varietyCode?: string;
   quantity: number;
   note?: string;
+  operation?: "add" | "decrement" | "remove";
 };
 
 type CaptureMode = "camera" | "voice" | "text";
@@ -246,6 +247,21 @@ export default function AddInventoryModal() {
 
     const varietyName = variety.translations[languageKey] ?? variety.translations.en ?? varietyCode;
     return `${itemName} (${varietyName})`;
+  };
+
+  const operationOptions = useMemo(
+    () => [
+      { key: "add" as const, label: t("inventoryCapture.operationAdd") },
+      { key: "decrement" as const, label: t("inventoryCapture.operationDecrement") },
+      { key: "remove" as const, label: t("inventoryCapture.operationRemove") },
+    ],
+    [t],
+  );
+
+  const updateSuggestion = (index: number, updates: Partial<InventorySuggestion>) => {
+    setSuggestions((prev) =>
+      prev.map((entry, entryIndex) => (entryIndex === index ? { ...entry, ...updates } : entry)),
+    );
   };
 
   const resetCapture = () => {
@@ -634,30 +650,124 @@ export default function AddInventoryModal() {
           <View style={styles.section}>
             <Text style={styles.label}>{t("inventoryCapture.suggestedUpdates")}</Text>
             <View style={styles.suggestionList}>
-              {suggestions.map((suggestion) => (
-                <View
-                  key={`${suggestion.itemCode}-${suggestion.varietyCode ?? "default"}`}
-                  style={styles.suggestionCard}
-                >
-                  <Text style={styles.suggestionTitle}>
-                    {getDisplayName(suggestion.itemCode, suggestion.varietyCode)}
-                  </Text>
-                  <Text style={styles.suggestionMeta}>
-                    {t("inventoryCapture.codeLabel", { code: suggestion.itemCode })}
-                    {suggestion.varietyCode
-                      ? ` · ${t("inventoryCapture.varietyLabel", { variety: suggestion.varietyCode })}`
-                      : ""}
-                  </Text>
-                  <Text style={styles.suggestionMeta}>
-                    {t("inventoryCapture.quantityLabel", { quantity: suggestion.quantity })}
-                  </Text>
-                  {suggestion.note ? (
-                    <Text style={styles.suggestionMeta}>
-                      {t("inventoryCapture.noteLabel", { note: suggestion.note })}
+              {suggestions.map((suggestion, index) => {
+                const item = libraryByCode.get(suggestion.itemCode);
+                const varieties = item?.varieties ?? [];
+                const operation = suggestion.operation ?? "add";
+
+                return (
+                  <View key={`${suggestion.itemCode}-${index}`} style={styles.suggestionCard}>
+                    <Text style={styles.suggestionTitle}>
+                      {getDisplayName(suggestion.itemCode, suggestion.varietyCode)}
                     </Text>
-                  ) : null}
-                </View>
-              ))}
+                    <Text style={styles.suggestionMeta}>
+                      {t("inventoryCapture.codeLabel", { code: suggestion.itemCode })}
+                    </Text>
+
+                    <View style={styles.suggestionField}>
+                      <Text style={styles.suggestionLabel}>
+                        {t("inventoryCapture.editOperationLabel")}
+                      </Text>
+                      <View style={styles.chipRow}>
+                        {operationOptions.map((option) => {
+                          const isActive = operation === option.key;
+                          return (
+                            <Pressable
+                              key={option.key}
+                              onPress={() => updateSuggestion(index, { operation: option.key })}
+                              style={[styles.chip, isActive && styles.chipActive]}
+                            >
+                              <Text style={[styles.chipText, isActive && styles.chipTextActive]}>
+                                {option.label}
+                              </Text>
+                            </Pressable>
+                          );
+                        })}
+                      </View>
+                    </View>
+
+                    {operation !== "remove" ? (
+                      <View style={styles.suggestionField}>
+                        <Text style={styles.suggestionLabel}>
+                          {t("inventoryCapture.editQuantityLabel")}
+                        </Text>
+                        <TextInput
+                          style={styles.suggestionInput}
+                          keyboardType="numeric"
+                          value={String(suggestion.quantity)}
+                          onChangeText={(value) => {
+                            const nextValue = Number(value.replace(/[^\d]/g, ""));
+                            updateSuggestion(index, {
+                              quantity: Number.isFinite(nextValue) && nextValue > 0 ? nextValue : 1,
+                            });
+                          }}
+                        />
+                      </View>
+                    ) : (
+                      <Text style={styles.suggestionMeta}>
+                        {t("inventoryCapture.removeAllHint")}
+                      </Text>
+                    )}
+
+                    {varieties.length > 0 ? (
+                      <View style={styles.suggestionField}>
+                        <Text style={styles.suggestionLabel}>
+                          {t("inventoryCapture.editVarietyLabel")}
+                        </Text>
+                        <View style={styles.chipRow}>
+                          <Pressable
+                            onPress={() => updateSuggestion(index, { varietyCode: undefined })}
+                            style={[
+                              styles.chip,
+                              !suggestion.varietyCode && styles.chipActive,
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.chipText,
+                                !suggestion.varietyCode && styles.chipTextActive,
+                              ]}
+                            >
+                              {t("inventoryCapture.varietyNone")}
+                            </Text>
+                          </Pressable>
+                          {varieties.map((variety) => {
+                            const varietyLabel =
+                              variety.translations[languageKey] ??
+                              variety.translations.en ??
+                              variety.code;
+                            const isSelected = suggestion.varietyCode === variety.code;
+                            return (
+                              <Pressable
+                                key={variety.code}
+                                onPress={() => updateSuggestion(index, { varietyCode: variety.code })}
+                                style={[styles.chip, isSelected && styles.chipActive]}
+                              >
+                                <Text style={[styles.chipText, isSelected && styles.chipTextActive]}>
+                                  {varietyLabel}
+                                </Text>
+                              </Pressable>
+                            );
+                          })}
+                        </View>
+                      </View>
+                    ) : null}
+
+                    <View style={styles.suggestionField}>
+                      <Text style={styles.suggestionLabel}>
+                        {t("inventoryCapture.editNoteLabel")}
+                      </Text>
+                      <TextInput
+                        style={styles.suggestionInput}
+                        placeholder={t("inventoryCapture.editNotePlaceholder")}
+                        placeholderTextColor={tokens.colors.textMuted}
+                        value={suggestion.note ?? ""}
+                        onChangeText={(value) => updateSuggestion(index, { note: value })}
+                      />
+                    </View>
+                  </View>
+                );
+              })}
             </View>
           </View>
         ) : null}
