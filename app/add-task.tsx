@@ -15,6 +15,7 @@ import { Feather } from "@expo/vector-icons";
 
 import { api } from "@/convex/_generated/api";
 import type { Doc } from "@/convex/_generated/dataModel";
+import { useTranslation } from "@/i18n/useTranslation";
 import createAddTaskStyles from "@/styles/addTaskStyles";
 import { useThemedStyles, useTokens } from "@/styles/tokens";
 import {
@@ -32,36 +33,11 @@ type InventorySuggestion = {
 
 type CaptureMode = "camera" | "voice" | "text";
 
-const captureModes: {
-  key: CaptureMode;
-  icon: keyof typeof Feather.glyphMap;
-  label: string;
-  description: string;
-}[] = [
-  {
-    key: "camera",
-    icon: "camera",
-    label: "Camera",
-    description: "Scan receipts or product labels",
-  },
-  {
-    key: "voice",
-    icon: "mic",
-    label: "Voice",
-    description: "Speak your updates naturally",
-  },
-  {
-    key: "text",
-    icon: "edit-3",
-    label: "Text",
-    description: "Type your updates manually",
-  },
-];
-
 export default function AddInventoryModal() {
   const router = useRouter();
   const styles = useThemedStyles(createAddTaskStyles);
   const tokens = useTokens();
+  const { t, i18n } = useTranslation();
 
   const mapSpeechToInventory = useAction(api.inventory.mapSpeechToInventory);
   const applyInventoryUpdates = useMutation(api.inventory.applyInventoryUpdates);
@@ -83,6 +59,31 @@ export default function AddInventoryModal() {
 
   const transcriptRef = useRef<string>("");
   const interimTextRef = useRef<string>("");
+  const languageKey = (i18n.language || "en") as keyof Doc<"foodLibrary">["translations"];
+
+  const captureModes = useMemo(
+    () => [
+      {
+        key: "camera" as const,
+        icon: "camera" as const,
+        label: t("inventoryCapture.modeCameraLabel"),
+        description: t("inventoryCapture.modeCameraDescription"),
+      },
+      {
+        key: "voice" as const,
+        icon: "mic" as const,
+        label: t("inventoryCapture.modeVoiceLabel"),
+        description: t("inventoryCapture.modeVoiceDescription"),
+      },
+      {
+        key: "text" as const,
+        icon: "edit-3" as const,
+        label: t("inventoryCapture.modeTextLabel"),
+        description: t("inventoryCapture.modeTextDescription"),
+      },
+    ],
+    [t],
+  );
 
   useSpeechRecognitionEvent("result", (event) => {
     if (__DEV__) {
@@ -164,9 +165,9 @@ export default function AddInventoryModal() {
     if (errorMessage) {
       setError(errorMessage);
     } else if (errorType) {
-      setError(`Speech recognition error: ${errorType}`);
+      setError(t("inventoryCapture.speechErrorWithType", { type: errorType }));
     } else {
-      setError("Speech recognition encountered an error. Please try again.");
+      setError(t("inventoryCapture.speechGenericError"));
     }
     setListening(false);
   });
@@ -190,14 +191,14 @@ export default function AddInventoryModal() {
     setSpeechReady(available);
 
     if (!available) {
-      setError("Speech recognition is not configured in this build.");
+      setError(t("inventoryCapture.speechNotConfigured"));
       return;
     }
 
     (async () => {
       const module = getSpeechRecognitionModule();
       if (!module) {
-        setError("Speech recognition is not configured in this build.");
+        setError(t("inventoryCapture.speechNotConfigured"));
         setSpeechReady(false);
         return;
       }
@@ -205,14 +206,14 @@ export default function AddInventoryModal() {
       try {
         const permissions = await module.requestPermissionsAsync();
         if (!permissions.granted) {
-          setError("Speech permissions are required to capture inventory updates.");
+          setError(t("inventoryCapture.speechPermissionsRequired"));
           setSpeechReady(false);
         }
       } catch (requestError) {
         console.warn("Speech permission request failed", requestError);
       }
     })();
-  }, []);
+  }, [t]);
 
   const libraryByCode = useMemo<Map<string, Doc<"foodLibrary">>>(() => {
     if (!foodLibrary) {
@@ -227,9 +228,10 @@ export default function AddInventoryModal() {
       return itemCode;
     }
 
+    const translation = item.translations[languageKey] ?? item.translations.en;
     const itemName =
-      item.translations.en?.singular ??
-      item.translations.en?.plural ??
+      translation?.singular ??
+      translation?.plural ??
       item.name ??
       itemCode;
 
@@ -242,7 +244,7 @@ export default function AddInventoryModal() {
       return itemName;
     }
 
-    const varietyName = variety.translations.en ?? varietyCode;
+    const varietyName = variety.translations[languageKey] ?? variety.translations.en ?? varietyCode;
     return `${itemName} (${varietyName})`;
   };
 
@@ -263,7 +265,7 @@ export default function AddInventoryModal() {
       setMode("voice");
     }
     if (!speechReady) {
-      setError("Speech recognition is not available on this device.");
+      setError(t("inventoryCapture.speechNotAvailable"));
       return;
     }
 
@@ -276,7 +278,7 @@ export default function AddInventoryModal() {
     setInterimText("");
     const module = getSpeechRecognitionModule();
     if (!module) {
-      setError("Speech recognition is not available on this device.");
+      setError(t("inventoryCapture.speechNotAvailable"));
       setSpeechReady(false);
       return;
     }
@@ -291,7 +293,7 @@ export default function AddInventoryModal() {
       setListening(true);
     } catch (startError) {
       console.error("Failed to start speech recognition", startError);
-      setError("Unable to start speech recognition. Please try again.");
+      setError(t("inventoryCapture.speechStartError"));
     }
   };
 
@@ -329,7 +331,7 @@ export default function AddInventoryModal() {
       const permission = await ImagePicker.requestCameraPermissionsAsync();
       if (!permission.granted) {
         setCameraPermissionDenied(true);
-        setError("Camera permission is required to scan receipts or products.");
+        setError(t("inventoryCapture.cameraPermissionRequired"));
         return;
       }
 
@@ -344,9 +346,9 @@ export default function AddInventoryModal() {
     } catch (cameraError) {
       console.warn("Camera capture failed", cameraError);
       if (cameraError instanceof Error && cameraError.message.includes("native module")) {
-        setError("Camera feature requires rebuilding the app. Please rebuild with: npx expo run:ios");
+        setError(t("inventoryCapture.cameraModuleMissing"));
       } else {
-        setError("We couldn't open the camera. Please try again.");
+        setError(t("inventoryCapture.cameraOpenError"));
       }
     }
   };
@@ -361,15 +363,16 @@ export default function AddInventoryModal() {
     activeMode: CaptureMode;
   }) => {
     await new Promise((resolve) => setTimeout(resolve, 700));
-    const sanitizedText = text || (images.length ? `Scanned ${images.length} receipt photo(s).` : "");
+    const sanitizedText =
+      text || (images.length ? t("inventoryCapture.scannedReceiptPhotos", { count: images.length }) : "");
     const notes = activeMode === "camera" && !images.length
-      ? "Try snapping a clear photo of your receipt or product label."
+      ? t("inventoryCapture.cameraNotesPrompt")
       : activeMode === "text" && !sanitizedText
-        ? "Add a quick note about what you bought."
+        ? t("inventoryCapture.textNotesPrompt")
         : null;
 
     return {
-      transcript: sanitizedText || "No transcript available",
+      transcript: sanitizedText || t("inventoryCapture.noTranscriptAvailable"),
       warnings: notes ? [notes] : [],
     };
   };
@@ -377,10 +380,12 @@ export default function AddInventoryModal() {
   const handleProcessData = async () => {
     const fullTranscript = `${transcriptRef.current}${interimText ? ` ${interimText}` : ""}`.trim();
     const textPayload = [fullTranscript, manualText.trim()].filter(Boolean).join("\n\n");
-    const synthesizedTranscript = textPayload || (capturedImages.length ? "Scanned grocery images." : "");
+    const synthesizedTranscript =
+      textPayload ||
+      (capturedImages.length ? t("inventoryCapture.scannedGroceryImages") : "");
 
     if (!synthesizedTranscript) {
-      setError("Add a recording, a note, or a photo before processing your update.");
+      setError(t("inventoryCapture.addInputBeforeProcess"));
       return;
     }
 
@@ -402,11 +407,11 @@ export default function AddInventoryModal() {
       setTranscript(transcriptToProcess);
       setInterimText("");
       if (result.items.length === 0) {
-        setError("We couldn’t match any inventory items. Try adding more detail to your capture.");
+        setError(t("inventoryCapture.noMatchesError"));
       }
     } catch (processingError) {
       console.error("Inventory mapping failed", processingError);
-      setError("We ran into a problem understanding that update. Please try again.");
+      setError(t("inventoryCapture.processingError"));
     } finally {
       setProcessing(false);
     }
@@ -414,7 +419,7 @@ export default function AddInventoryModal() {
 
   const handleApplyUpdates = async () => {
     if (suggestions.length === 0) {
-      setError("Generate inventory suggestions before applying updates.");
+      setError(t("inventoryCapture.noSuggestionsError"));
       return;
     }
 
@@ -426,10 +431,25 @@ export default function AddInventoryModal() {
       router.back();
     } catch (applyError) {
       console.error("Failed to apply inventory updates", applyError);
-      setError("We couldn’t update your inventory. Please try again.");
+      setError(t("inventoryCapture.applyError"));
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleVoiceAction = async () => {
+    if (processing) {
+      return;
+    }
+
+    if (listening) {
+      await handleStopListening();
+      await new Promise((resolve) => setTimeout(resolve, 150));
+      await handleProcessData();
+      return;
+    }
+
+    await handleStartListening();
   };
 
   return (
@@ -439,8 +459,8 @@ export default function AddInventoryModal() {
     >
       <Stack.Screen
         options={{
-          title: "Update Inventory",
-          headerBackTitle: "Cancel",
+          title: t("inventoryCapture.title"),
+          headerBackTitle: t("inventoryCapture.cancel"),
         }}
       />
 
@@ -451,11 +471,8 @@ export default function AddInventoryModal() {
       >
         <View style={styles.section}>
       
-          <Text style={styles.heading}>Capture an update</Text>
-          <Text style={styles.helperText}>
-            Pick how you want to log your groceries. Toggle between camera, voice, or text to
-            capture receipts, talk through your haul, or jot down what you picked up.
-          </Text>
+          <Text style={styles.heading}>{t("inventoryCapture.captureHeading")}</Text>
+          <Text style={styles.helperText}>{t("inventoryCapture.captureDescription")}</Text>
 
           <View style={styles.modeSwitcher}>
             {captureModes.map((option) => {
@@ -488,24 +505,24 @@ export default function AddInventoryModal() {
 
         {mode === "camera" ? (
           <View style={styles.sectionCard}>
-            <Text style={styles.label}>Scan receipts or products</Text>
-            <Text style={styles.helperText}>
-              Snap receipts or product labels and we’ll prepare the data for inventory updates.
-            </Text>
+            <Text style={styles.label}>{t("inventoryCapture.cameraSectionLabel")}</Text>
+            <Text style={styles.helperText}>{t("inventoryCapture.cameraSectionDescription")}</Text>
 
             <Pressable style={styles.micButton} onPress={handleCaptureImage}>
-              <Text style={styles.micButtonText}>Open camera</Text>
+              <Text style={styles.micButtonText}>{t("inventoryCapture.openCamera")}</Text>
             </Pressable>
 
             {cameraPermissionDenied ? (
               <Text style={styles.warningText}>
-                We need access to your camera to scan receipts or groceries.
+                {t("inventoryCapture.cameraPermissionDenied")}
               </Text>
             ) : null}
 
             {capturedImages.length > 0 ? (
               <View style={styles.gallery}>
-                <Text style={styles.label}>Captured images ({capturedImages.length})</Text>
+                <Text style={styles.label}>
+                  {t("inventoryCapture.capturedImages", { count: capturedImages.length })}
+                </Text>
                 <ScrollView
                   horizontal
                   contentContainerStyle={styles.galleryRow}
@@ -520,8 +537,7 @@ export default function AddInventoryModal() {
               </View>
             ) : (
               <Text style={styles.helperText}>
-                You haven’t added any photos yet. Take a picture of your receipt or the front of the
-                package to capture details.
+                {t("inventoryCapture.noCapturedImages")}
               </Text>
             )}
           </View>
@@ -529,41 +545,39 @@ export default function AddInventoryModal() {
 
         {mode === "voice" ? (
           <View style={styles.sectionCard}>
-            <Text style={styles.label}>Capture by voice</Text>
-            <Text style={styles.helperText}>
-              Speak naturally about what you bought or used up. You’ll see the transcript update
-              live as we listen.
-            </Text>
+            <Text style={styles.label}>{t("inventoryCapture.voiceSectionLabel")}</Text>
+            <Text style={styles.helperText}>{t("inventoryCapture.voiceSectionDescription")}</Text>
 
             <Pressable
-              onPress={listening ? handleStopListening : handleStartListening}
+              onPress={handleVoiceAction}
               style={[
                 styles.micButton,
                 !speechReady && styles.micButtonDisabled,
                 listening && styles.micButtonActive,
               ]}
-              disabled={!speechReady}
+              disabled={!speechReady || processing}
             >
               <Text style={[styles.micButtonText, listening && styles.micButtonTextActive]}>
-                {listening ? "Stop Recording" : "Start Recording"}
+                {processing
+                  ? t("inventoryCapture.processing")
+                  : listening
+                    ? t("inventoryCapture.stopAndProcess")
+                    : t("inventoryCapture.startRecording")}
               </Text>
             </Pressable>
 
             <Pressable onPress={resetCapture} style={styles.resetButton}>
-              <Text style={styles.resetButtonText}>Clear recording</Text>
+              <Text style={styles.resetButtonText}>{t("inventoryCapture.clearRecording")}</Text>
             </Pressable>
           </View>
         ) : null}
 
         {mode === "text" ? (
           <View style={styles.sectionCard}>
-            <Text style={styles.label}>Write down what you bought</Text>
-            <Text style={styles.helperText}>
-              Add quick notes about items or quantities. We’ll merge these with anything you say or
-              scan.
-            </Text>
+            <Text style={styles.label}>{t("inventoryCapture.textSectionLabel")}</Text>
+            <Text style={styles.helperText}>{t("inventoryCapture.textSectionDescription")}</Text>
             <TextInput
-              placeholder="Example: 2 cartons of eggs, 1 bag of rice"
+              placeholder={t("inventoryCapture.textPlaceholder")}
               value={manualText}
               onChangeText={setManualText}
               multiline
@@ -575,15 +589,17 @@ export default function AddInventoryModal() {
         ) : null}
 
         <View style={styles.section}>
-          <Text style={styles.label}>Transcript & notes</Text>
+          <Text style={styles.label}>{t("inventoryCapture.transcriptNotesLabel")}</Text>
           <View style={styles.transcriptBox}>
-            <Text style={styles.transcriptTitle}>Live transcript</Text>
-            <Text style={styles.transcriptText}>{transcript || "Your words will appear here."}</Text>
+            <Text style={styles.transcriptTitle}>{t("inventoryCapture.liveTranscriptLabel")}</Text>
+            <Text style={styles.transcriptText}>
+              {transcript || t("inventoryCapture.liveTranscriptPlaceholder")}
+            </Text>
             {interimText ? <Text style={styles.interimText}>{interimText}</Text> : null}
 
             {manualText ? (
               <>
-                <Text style={styles.transcriptTitle}>Typed notes</Text>
+                <Text style={styles.transcriptTitle}>{t("inventoryCapture.typedNotesLabel")}</Text>
                 <Text style={styles.transcriptText}>{manualText}</Text>
               </>
             ) : null}
@@ -600,21 +616,23 @@ export default function AddInventoryModal() {
           </View>
         ) : null}
 
-        <View style={styles.section}>
-          <Pressable
-            style={[styles.actionButton, (processing || listening) && styles.actionButtonDisabled]}
-            onPress={handleProcessData}
-            disabled={processing || listening}
-          >
-            <Text style={styles.actionButtonText}>
-              {processing ? "Processing..." : "[PROCESS DATA]"}
-            </Text>
-          </Pressable>
-        </View>
+        {mode !== "voice" ? (
+          <View style={styles.section}>
+            <Pressable
+              style={[styles.actionButton, (processing || listening) && styles.actionButtonDisabled]}
+              onPress={handleProcessData}
+              disabled={processing || listening}
+            >
+              <Text style={styles.actionButtonText}>
+                {processing ? t("inventoryCapture.processing") : t("inventoryCapture.processData")}
+              </Text>
+            </Pressable>
+          </View>
+        ) : null}
 
         {suggestions.length > 0 ? (
           <View style={styles.section}>
-            <Text style={styles.label}>Suggested updates</Text>
+            <Text style={styles.label}>{t("inventoryCapture.suggestedUpdates")}</Text>
             <View style={styles.suggestionList}>
               {suggestions.map((suggestion) => (
                 <View
@@ -625,12 +643,18 @@ export default function AddInventoryModal() {
                     {getDisplayName(suggestion.itemCode, suggestion.varietyCode)}
                   </Text>
                   <Text style={styles.suggestionMeta}>
-                    Code: {suggestion.itemCode}
-                    {suggestion.varietyCode ? ` · Variety: ${suggestion.varietyCode}` : ""}
+                    {t("inventoryCapture.codeLabel", { code: suggestion.itemCode })}
+                    {suggestion.varietyCode
+                      ? ` · ${t("inventoryCapture.varietyLabel", { variety: suggestion.varietyCode })}`
+                      : ""}
                   </Text>
-                  <Text style={styles.suggestionMeta}>Quantity: {suggestion.quantity}</Text>
+                  <Text style={styles.suggestionMeta}>
+                    {t("inventoryCapture.quantityLabel", { quantity: suggestion.quantity })}
+                  </Text>
                   {suggestion.note ? (
-                    <Text style={styles.suggestionMeta}>Note: {suggestion.note}</Text>
+                    <Text style={styles.suggestionMeta}>
+                      {t("inventoryCapture.noteLabel", { note: suggestion.note })}
+                    </Text>
                   ) : null}
                 </View>
               ))}
@@ -652,7 +676,7 @@ export default function AddInventoryModal() {
           disabled={submitting || suggestions.length === 0}
         >
           <Text style={styles.primaryButtonText}>
-            {submitting ? "Saving..." : "Apply inventory updates"}
+            {submitting ? t("inventoryCapture.saving") : t("inventoryCapture.applyInventoryUpdates")}
           </Text>
         </Pressable>
       </View>
