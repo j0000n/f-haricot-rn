@@ -220,6 +220,51 @@ const createAddTaskStyles = (tokens: ThemeTokens) =>
       fontSize: tokens.typography.small,
       color: tokens.colors.textSecondary,
     },
+    suggestionField: {
+      gap: tokens.spacing.xs,
+      marginTop: tokens.spacing.sm,
+    },
+    suggestionLabel: {
+      fontFamily: tokens.fontFamilies.medium,
+      fontSize: tokens.typography.small,
+      color: tokens.colors.textSecondary,
+    },
+    suggestionInput: {
+      backgroundColor: tokens.colors.surface,
+      borderRadius: tokens.radii.sm,
+      borderWidth: tokens.borderWidths.thin,
+      borderColor: tokens.colors.border,
+      paddingVertical: tokens.spacing.sm,
+      paddingHorizontal: tokens.spacing.md,
+      fontFamily: tokens.fontFamilies.regular,
+      fontSize: tokens.typography.body,
+      color: tokens.colors.textPrimary,
+    },
+    chipRow: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: tokens.spacing.sm,
+    },
+    chip: {
+      borderRadius: tokens.radii.full,
+      borderWidth: tokens.borderWidths.thin,
+      borderColor: tokens.colors.border,
+      paddingVertical: tokens.spacing.xs,
+      paddingHorizontal: tokens.spacing.md,
+      backgroundColor: tokens.colors.surface,
+    },
+    chipActive: {
+      backgroundColor: tokens.colors.accent,
+      borderColor: tokens.colors.accent,
+    },
+    chipText: {
+      fontFamily: tokens.fontFamilies.medium,
+      fontSize: tokens.typography.small,
+      color: tokens.colors.textSecondary,
+    },
+    chipTextActive: {
+      color: tokens.colors.accentOnPrimary,
+    },
     errorText: {
       fontFamily: tokens.fontFamilies.medium,
       fontSize: tokens.typography.small,
