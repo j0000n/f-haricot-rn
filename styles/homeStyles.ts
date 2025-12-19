@@ -458,6 +458,7 @@ const createHomeStyles = (tokens: ThemeTokens) =>
       shadowOpacity: tokens.shadows.floating.shadowOpacity,
       shadowRadius: tokens.shadows.floating.shadowRadius,
       elevation: tokens.shadows.floating.elevation,
+      ...(Platform.OS === "web" && { zIndex: 1000 }),
     },
     fabText: {
       fontSize: tokens.typography.title,
