@@ -89,33 +89,54 @@ export default function AddInventoryModal() {
       console.debug("Speech recognition result event:", JSON.stringify(event, null, 2));
     }
     const { results, isFinal } = event;
-    
-    // Handle different possible event structures
-    // results is Array<Array<SpeechResult>> where SpeechResult has transcript
-    let text = "";
-    if (results && Array.isArray(results) && results.length > 0) {
-      const firstResultArray = results[0];
-      if (Array.isArray(firstResultArray) && firstResultArray.length > 0) {
-        const firstAlternative = firstResultArray[0];
-        if (firstAlternative && typeof firstAlternative === "object" && "transcript" in firstAlternative) {
-          text = firstAlternative.transcript ?? "";
-        } else if (typeof firstAlternative === "string") {
-          text = firstAlternative;
-        }
+
+    const extractTranscript = (input: unknown) => {
+      if (!input || !Array.isArray(input) || input.length === 0) {
+        return "";
       }
-    }
-    
+
+      const firstEntry = input[0];
+      if (Array.isArray(firstEntry)) {
+        const firstAlternative = firstEntry[0];
+        if (firstAlternative && typeof firstAlternative === "object" && "transcript" in firstAlternative) {
+          return String(firstAlternative.transcript ?? "");
+        }
+        if (typeof firstAlternative === "string") {
+          return firstAlternative;
+        }
+        return "";
+      }
+
+      if (firstEntry && typeof firstEntry === "object" && "transcript" in firstEntry) {
+        return input
+          .map((result) =>
+            result && typeof result === "object" && "transcript" in result
+              ? String(result.transcript ?? "")
+              : "",
+          )
+          .filter(Boolean)
+          .join(" ")
+          .trim();
+      }
+
+      if (typeof firstEntry === "string") {
+        return input.filter((entry): entry is string => typeof entry === "string").join(" ").trim();
+      }
+
+      return "";
+    };
+
+    const text = extractTranscript(results);
     if (!text) {
-      return; // No text to process
+      return;
     }
-    
+
     if (isFinal) {
       transcriptRef.current = `${transcriptRef.current}${transcriptRef.current ? " " : ""}${text}`.trim();
       setTranscript(transcriptRef.current);
       interimTextRef.current = "";
       setInterimText("");
     } else {
-      // Show interim results
       interimTextRef.current = text;
       setInterimText(text);
     }
