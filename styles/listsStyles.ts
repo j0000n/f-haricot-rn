@@ -45,12 +45,6 @@ const createListsStyles = (tokens: ThemeTokens) =>
       alignItems: "center",
       gap: tokens.spacing.sm,
     },
-    controlsRight: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "flex-end",
-      gap: tokens.spacing.xs,
-    },
     sortControl: {
       position: "relative",
       zIndex: 2,
@@ -112,45 +106,12 @@ const createListsStyles = (tokens: ThemeTokens) =>
       fontFamily: tokens.fontFamilies.semiBold,
       color: tokens.colors.accent,
     },
-    viewToggle: {
+    filterRow: {
       flexDirection: "row",
-      alignItems: "center",
-      backgroundColor: tokens.colors.surface,
-      borderRadius: tokens.radii.lg,
-      borderWidth: tokens.borderWidths.thin,
-      borderColor: tokens.colors.border,
-      paddingVertical: tokens.spacing.xxs,
-      paddingHorizontal: tokens.spacing.xxs,
-      gap: tokens.spacing.xxs,
-    },
-    viewToggleButton: {
-      alignItems: "center",
-      justifyContent: "center",
-      paddingVertical: tokens.spacing.xs,
-      paddingHorizontal: tokens.spacing.md,
-      borderRadius: tokens.radii.md,
-      minWidth: tokens.spacing.xxl,
-    },
-    viewToggleButtonActive: {
-      backgroundColor: tokens.colors.accent,
-    },
-    viewToggleLabel: {
-      fontSize: tokens.typography.small,
-      fontFamily: tokens.fontFamilies.medium,
-      color: tokens.colors.textSecondary,
-      textTransform: "uppercase",
-      letterSpacing: tokens.letterSpacing.tight,
-    },
-    viewToggleLabelActive: {
-      color: tokens.colors.accentOnPrimary,
-      fontFamily: tokens.fontFamilies.semiBold,
-    },
-    filterRowContent: {
-      flexDirection: "row",
+      flexWrap: "wrap",
       alignItems: "center",
       gap: tokens.spacing.xs,
-      paddingRight: tokens.spacing.sm,
-      paddingLeft: 0,
+      width: "100%",
     },
     filterChip: {
       paddingVertical: tokens.spacing.xxs,
@@ -159,6 +120,8 @@ const createListsStyles = (tokens: ThemeTokens) =>
       borderWidth: tokens.borderWidths.thin,
       borderColor: tokens.colors.border,
       backgroundColor: tokens.colors.surface,
+      flexGrow: 1,
+      alignItems: "center",
     },
     filterChipActive: {
       backgroundColor: tokens.colors.accent,
@@ -206,15 +169,6 @@ const createListsStyles = (tokens: ThemeTokens) =>
       fontFamily: tokens.fontFamilies.regular,
       color: tokens.colors.textSecondary,
       lineHeight: tokens.typography.small * tokens.lineHeights.relaxed,
-    },
-    detailedSection: {
-      gap: tokens.spacing.xs,
-    },
-    railEmptyMessage: {
-      fontSize: tokens.typography.small,
-      fontFamily: tokens.fontFamilies.regular,
-      color: tokens.colors.textSecondary,
-      paddingHorizontal: tokens.padding.card,
     },
     emptyState: {
       flex: 1,

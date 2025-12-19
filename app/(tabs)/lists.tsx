@@ -1,6 +1,5 @@
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { PageHeader } from "@/components/PageHeader";
-import { RecipeRail } from "@/components/RecipeRail";
 import { api } from "@/convex/_generated/api";
 import { useRecipeLists, type RecipeList } from "@/hooks/useRecipeLists";
 import { useTranslation } from "@/i18n/useTranslation";
@@ -10,15 +9,12 @@ import type { Recipe } from "@/types/recipe";
 import {
   buildRecipeIds,
   decorateRecipesWithMatches,
-  sortRecipesByReadiness,
   type DecoratedRecipe,
 } from "@/utils/recipeLists";
 import { useQuery } from "convex/react";
 import { useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import { Alert, Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
-
-type ViewMode = "list" | "detailed";
 
 type SortOption = "name" | "recipes" | "ready" | "match" | "updated";
 
@@ -27,7 +23,6 @@ type FilterOption = "all" | "cookAsap" | "standard" | "ready";
 type DecoratedList = {
   list: RecipeList;
   recipes: DecoratedRecipe[];
-  sortedRecipes: Recipe[];
   readyCount: number;
   averageMatch: number;
   totalRecipes: number;
@@ -40,10 +35,9 @@ export default function ListsScreen() {
   const styles = useThemedStyles(createListsStyles);
   const tokens = useTokens();
   const router = useRouter();
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { allLists, createList } = useRecipeLists();
   const [searchTerm, setSearchTerm] = useState("");
-  const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [sortOption, setSortOption] = useState<SortOption>("ready");
   const [filterOption, setFilterOption] = useState<FilterOption>("all");
   const [showSortMenu, setShowSortMenu] = useState(false);
@@ -78,7 +72,6 @@ export default function ListsScreen() {
     [inventoryCodesQuery],
   );
 
-  const language = (i18n.language || "en") as keyof Recipe["recipeName"];
   const isLoading =
     (allRecipeIds.length > 0 && recipesResult === undefined) ||
     inventoryCodesQuery === undefined;
@@ -101,19 +94,17 @@ export default function ListsScreen() {
               decoratedRecipes.reduce((sum, entry) => sum + entry.matchPercentage, 0) /
                 totalRecipes,
             );
-      const sortedRecipes = sortRecipesByReadiness(decoratedRecipes, language);
 
       return {
         list,
         recipes: decoratedRecipes,
-        sortedRecipes,
         readyCount,
         averageMatch,
         totalRecipes,
         updatedAt: list.updatedAt ?? 0,
       } satisfies DecoratedList;
     });
-  }, [allLists, inventoryCodes, language, recipeMap]);
+  }, [allLists, inventoryCodes, recipeMap]);
 
   const sortedLists = useMemo(() => {
     const lists = [...decoratedLists];
@@ -193,13 +184,6 @@ export default function ListsScreen() {
   const handleListPress = useCallback(
     (listId: string) => {
       router.push(`/lists/${listId}`);
-    },
-    [router],
-  );
-
-  const handleRecipePress = useCallback(
-    (recipeId: Recipe["_id"]) => {
-      router.push(`/recipe/${recipeId}`);
     },
     [router],
   );
@@ -320,41 +304,9 @@ export default function ListsScreen() {
             ) : null}
           </View>
 
-          <View style={styles.controlsRight}>
-            <View style={styles.viewToggle}>
-              {(["list", "detailed"] as ViewMode[]).map((mode) => {
-                const isActive = viewMode === mode;
-                return (
-                  <Pressable
-                    key={mode}
-                    onPress={() => setViewMode(mode)}
-                    style={[
-                      styles.viewToggleButton,
-                      isActive ? styles.viewToggleButtonActive : undefined,
-                    ]}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: isActive }}
-                  >
-                    <Text
-                      style={[
-                        styles.viewToggleLabel,
-                        isActive ? styles.viewToggleLabelActive : undefined,
-                      ]}
-                    >
-                      {mode === "list" ? t("lists.viewList") : t("lists.viewDetailed")}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </View>
         </View>
 
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filterRowContent}
-        >
+        <View style={styles.filterRow}>
           {filterOptions.map((option) => {
             const isActive = option.value === filterOption;
             return (
@@ -379,7 +331,7 @@ export default function ListsScreen() {
               </Pressable>
             );
           })}
-        </ScrollView>
+        </View>
 
         {!hasAnyLists ? (
           <View style={styles.emptyState}>
@@ -388,39 +340,9 @@ export default function ListsScreen() {
           </View>
         ) : !hasFilteredLists ? (
           <Text style={styles.noResultsText}>{t("lists.noResults")}</Text>
-        ) : viewMode === "list" ? (
+        ) : (
           <View style={styles.listCollection}>
             {filteredLists.map((entry) => {
-              const summary = buildSummary(
-                entry.readyCount,
-                entry.averageMatch,
-                entry.totalRecipes,
-              );
-
-              return (
-                <Pressable
-                  key={entry.list.id}
-                  onPress={() => handleListPress(entry.list.id)}
-                  accessibilityRole="button"
-                  accessibilityLabel={entry.list.name}
-                  style={({ pressed }: { pressed: boolean }) => [
-                    styles.listCard,
-                    pressed ? styles.listCardPressed : undefined,
-                  ]}
-                >
-                  <View style={styles.listCardHeader}>
-                    {entry.list.emoji ? (
-                      <Text style={styles.listCardEmoji}>{entry.list.emoji}</Text>
-                    ) : null}
-                    <Text style={styles.listCardTitle}>{entry.list.name}</Text>
-                  </View>
-                  <Text style={styles.listCardSummary}>{summary}</Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        ) : (
-          filteredLists.map((entry) => {
             const summary = buildSummary(
               entry.readyCount,
               entry.averageMatch,
@@ -428,23 +350,27 @@ export default function ListsScreen() {
             );
 
             return (
-              <View key={entry.list.id} style={styles.detailedSection}>
-                <RecipeRail
-                  header={`${entry.list.emoji ? `${entry.list.emoji} ` : ""}${entry.list.name}`.trim()}
-                  subheader={summary}
-                  recipes={entry.sortedRecipes}
-                  variant="detailed"
-                  onSeeAll={() => handleListPress(entry.list.id)}
-                  onRecipePress={(recipe) => handleRecipePress(recipe._id)}
-                  userInventory={inventoryCodes}
-                  showAddToList={false}
-                />
-                {entry.totalRecipes === 0 ? (
-                  <Text style={styles.railEmptyMessage}>{t("lists.emptyList")}</Text>
-                ) : null}
-              </View>
+              <Pressable
+                key={entry.list.id}
+                onPress={() => handleListPress(entry.list.id)}
+                accessibilityRole="button"
+                accessibilityLabel={entry.list.name}
+                style={({ pressed }: { pressed: boolean }) => [
+                  styles.listCard,
+                  pressed ? styles.listCardPressed : undefined,
+                ]}
+              >
+                <View style={styles.listCardHeader}>
+                  {entry.list.emoji ? (
+                    <Text style={styles.listCardEmoji}>{entry.list.emoji}</Text>
+                  ) : null}
+                  <Text style={styles.listCardTitle}>{entry.list.name}</Text>
+                </View>
+                <Text style={styles.listCardSummary}>{summary}</Text>
+              </Pressable>
             );
-          })
+          })}
+          </View>
         )}
       </ScrollView>
 
