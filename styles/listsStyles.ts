@@ -44,6 +44,7 @@ const createListsStyles = (tokens: ThemeTokens) =>
       justifyContent: "space-between",
       alignItems: "center",
       gap: tokens.spacing.sm,
+      zIndex: 2
     },
     sortControl: {
       position: "relative",
