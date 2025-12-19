@@ -742,8 +742,6 @@
     "editQuantityLabel": "Quantity",
     "editVarietyLabel": "Variety",
     "varietyNone": "No variety",
-    "editNoteLabel": "Note",
-    "editNotePlaceholder": "Add an optional note",
     "removeAllHint": "This will remove the item entirely.",
     "codeLabel": "Code: {{code}}",
     "varietyLabel": "Variety: {{variety}}",

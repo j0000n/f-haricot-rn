@@ -99,6 +99,33 @@ const buildLibraryIndex = (library: Doc<"foodLibrary">[]): Map<string, LibraryIn
   return index;
 };
 
+const buildNameLookup = (
+  descriptors: LibraryDescriptor[],
+): {
+  itemNameMap: Map<string, { itemCode: string; varietyCode?: string }>;
+  varietyNameMap: Map<string, Map<string, string>>;
+} => {
+  const itemNameMap = new Map<string, { itemCode: string; varietyCode?: string }>();
+  const varietyNameMap = new Map<string, Map<string, string>>();
+
+  for (const item of descriptors) {
+    for (const name of item.names) {
+      itemNameMap.set(normalize(name), { itemCode: item.itemCode });
+    }
+    const varietyMap = new Map<string, string>();
+    for (const variety of item.varieties) {
+      for (const name of variety.names) {
+        const normalizedName = normalize(name);
+        itemNameMap.set(normalizedName, { itemCode: item.itemCode, varietyCode: variety.varietyCode });
+        varietyMap.set(normalizedName, variety.varietyCode);
+      }
+    }
+    varietyNameMap.set(item.itemCode, varietyMap);
+  }
+
+  return { itemNameMap, varietyNameMap };
+};
+
 type InventoryUpdate = {
   itemCode: string;
   varietyCode?: string;
@@ -134,6 +161,7 @@ const buildPrompt = (transcript: string, descriptors: LibraryDescriptor[]) => {
     `If the transcript indicates items are being removed or used up, set operation to "decrement" ` +
     `when a quantity is specified or "remove" when the item should be removed entirely. ` +
     `Otherwise, omit operation or set it to "add". ` +
+    `Always use itemCode values exactly as listed in the catalog. Do not invent new codes. ` +
     `Always respond with valid JSON that follows the provided schema. ` +
     `Transcript: ${transcript}\n\nCatalog: ${JSON.stringify(catalog)}.`;
 };
@@ -161,6 +189,7 @@ export const mapSpeechToInventory = action({
 
     const descriptors = buildLibraryDescriptors(library);
     const libraryIndex = buildLibraryIndex(library);
+    const { itemNameMap, varietyNameMap } = buildNameLookup(descriptors);
 
     const openAiKey = process.env.OPEN_AI_KEY;
     if (!openAiKey) {
@@ -256,7 +285,7 @@ export const mapSpeechToInventory = action({
         if (!entry || typeof entry !== "object") {
           continue;
         }
-        const itemCode = typeof entry.itemCode === "string" ? entry.itemCode.trim() : "";
+        let itemCode = typeof entry.itemCode === "string" ? entry.itemCode.trim() : "";
         const quantity = Number(entry.quantity);
         if (!itemCode || !Number.isFinite(quantity)) {
           continue;
@@ -271,6 +300,17 @@ export const mapSpeechToInventory = action({
             ? (entry.operation as InventoryUpdate["operation"])
             : undefined;
 
+        const normalizedItemCode = normalize(itemCode);
+        if (!libraryCodes.has(itemCode) && itemNameMap.has(normalizedItemCode)) {
+          const matched = itemNameMap.get(normalizedItemCode);
+          if (matched) {
+            itemCode = matched.itemCode;
+            if (!entry.varietyCode && matched.varietyCode) {
+              entry.varietyCode = matched.varietyCode;
+            }
+          }
+        }
+
         // Check if item code exists in library
         const libraryEntry = libraryIndex.get(itemCode);
         if (!libraryCodes.has(itemCode)) {
@@ -283,10 +323,16 @@ export const mapSpeechToInventory = action({
           typeof entry.varietyCode === "string" && entry.varietyCode.trim().length > 0
             ? entry.varietyCode.trim()
             : undefined;
+        let resolvedVariety = varietyCode;
+        if (varietyCode && libraryEntry && !libraryEntry.varietyCodes.has(varietyCode)) {
+          const varietyMap = varietyNameMap.get(itemCode);
+          const mappedVariety = varietyMap?.get(normalize(varietyCode));
+          resolvedVariety = mappedVariety ?? undefined;
+        }
         const validatedVariety =
-          varietyCode && libraryEntry && !libraryEntry.varietyCodes.has(varietyCode)
+          resolvedVariety && libraryEntry && !libraryEntry.varietyCodes.has(resolvedVariety)
             ? undefined
-            : varietyCode;
+            : resolvedVariety;
         if (varietyCode && !validatedVariety) {
           warnings.push(
             `Variety "${varietyCode}" is not defined for ${itemCode}. Saved without variety code.`,

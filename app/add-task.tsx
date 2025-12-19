@@ -28,7 +28,6 @@ type InventorySuggestion = {
   itemCode: string;
   varietyCode?: string;
   quantity: number;
-  note?: string;
   operation?: "add" | "decrement" | "remove";
 };
 
@@ -753,18 +752,6 @@ export default function AddInventoryModal() {
                       </View>
                     ) : null}
 
-                    <View style={styles.suggestionField}>
-                      <Text style={styles.suggestionLabel}>
-                        {t("inventoryCapture.editNoteLabel")}
-                      </Text>
-                      <TextInput
-                        style={styles.suggestionInput}
-                        placeholder={t("inventoryCapture.editNotePlaceholder")}
-                        placeholderTextColor={tokens.colors.textMuted}
-                        value={suggestion.note ?? ""}
-                        onChangeText={(value) => updateSuggestion(index, { note: value })}
-                      />
-                    </View>
                   </View>
                 );
               })}
