@@ -10,6 +10,8 @@ import fr from './locales/fr.json';
 import tl from './locales/tl.json';
 import vi from './locales/vi.json';
 import ar from './locales/ar.json';
+import hi from './locales/hi.json';
+import ur from './locales/ur.json';
 
 const resources = {
   en: { translation: en },
@@ -19,6 +21,8 @@ const resources = {
   tl: { translation: tl },
   vi: { translation: vi },
   ar: { translation: ar },
+  hi: { translation: hi },
+  ur: { translation: ur },
 };
 
 // Map common locale variants to our supported languages
@@ -33,6 +37,8 @@ const getLanguageCode = (locale: string): string => {
     fil: 'tl', // Filipino -> Tagalog
     vi: 'vi',
     ar: 'ar',
+    hi: 'hi',
+    ur: 'ur',
   };
   return languageMap[code] || 'en';
 };
