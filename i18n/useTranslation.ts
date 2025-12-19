@@ -33,7 +33,7 @@ export function getCurrentLanguage(): string {
 /**
  * Change the app language
  *
- * @param languageCode - Language code to change to (e.g., 'en', 'es', 'zh', 'fr', 'tl', 'vi', 'ar')
+ * @param languageCode - Language code to change to (e.g., 'en', 'es', 'zh', 'fr', 'tl', 'vi', 'ar', 'hi', 'ur')
  */
 export async function changeLanguage(languageCode: string): Promise<void> {
   await i18n.changeLanguage(languageCode);
@@ -69,6 +69,8 @@ export function getMultilingualText(
     tl: "Tagalog",
     vi: "Vietnamese",
     ar: "Arabic",
+    hi: "Hindi",
+    ur: "Urdu",
   };
 
   const fieldSuffix = languageMap[lang] || "English";
@@ -80,7 +82,7 @@ export function getMultilingualText(
 /**
  * Type for supported language codes
  */
-export type SupportedLanguage = "en" | "es" | "zh" | "fr" | "tl" | "vi" | "ar";
+export type SupportedLanguage = "en" | "es" | "zh" | "fr" | "tl" | "vi" | "ar" | "hi" | "ur";
 
 /**
  * List of all supported languages with their native names
@@ -97,4 +99,6 @@ export const SUPPORTED_LANGUAGES: Array<{
   { code: "tl", name: "Tagalog", nativeName: "Tagalog" },
   { code: "vi", name: "Vietnamese", nativeName: "Tiếng Việt" },
   { code: "ar", name: "Arabic", nativeName: "العربية" },
+  { code: "hi", name: "Hindi", nativeName: "हिन्दी" },
+  { code: "ur", name: "Urdu", nativeName: "اردو" },
 ];
