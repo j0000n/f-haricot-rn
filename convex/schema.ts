@@ -250,8 +250,6 @@ const schema = defineSchema({
     ),
     allergenTags: v.optional(v.array(v.string())),
     dietaryCompatibility: v.optional(v.array(v.string())),
-    standardizedName: v.optional(v.string()),
-    aliases: v.optional(v.array(v.string())),
     isProvisional: v.optional(v.boolean()),
     createdBy: v.optional(v.id("users")),
   })

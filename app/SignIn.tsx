@@ -77,10 +77,25 @@ export default function SignIn() {
     setSubmitting(true);
     resetCodeInputs();
     const formData = new FormData();
-    formData.append("email", email.trim().toLowerCase());
-    if (i18n.language) {
-      formData.append("preferredLanguage", i18n.language);
+    const cleanEmail = email.trim().toLowerCase();
+    formData.append("email", cleanEmail);
+    
+    const languageToSend = i18n.language;
+    console.log("[SignIn] Current i18n.language:", languageToSend);
+    if (languageToSend) {
+      formData.append("preferredLanguage", languageToSend);
+      // Use a relative URL to avoid SITE_URL validation issues
+      // Convex Auth will resolve this relative URL against the configured SITE_URL
+      const redirectTo = `/?preferredLanguage=${languageToSend}`;
+      formData.append("redirectTo", redirectTo);
+      console.log("[SignIn] Appended redirectTo with preferredLanguage:", redirectTo);
+      console.log("[SignIn] Appended preferredLanguage to formData:", languageToSend);
+    } else {
+      console.log("[SignIn] No language to append, i18n.language is falsy");
     }
+
+    // Log FormData contents (for debugging)
+    console.log("[SignIn] FormData created with email:", cleanEmail, "and preferredLanguage:", languageToSend || "none");
 
     if (userTypeSelection) {
       await savePendingUserType(userTypeSelection);
@@ -89,6 +104,7 @@ export default function SignIn() {
     }
 
     try {
+      console.log("[SignIn] Calling signIn('resend', formData)");
       await signIn("resend", formData);
       setStep("codeSent");
       setSubmitting(false);
@@ -97,7 +113,7 @@ export default function SignIn() {
         Alert.alert(t('auth.codeSentTitle'), t('auth.codeSentMessage'));
       }
     } catch (error) {
-      console.error(error);
+      console.error("[SignIn] Error during signIn:", error);
       Alert.alert(t('auth.errorTitle'), t('auth.errorSendCode'));
       setSubmitting(false);
     }
