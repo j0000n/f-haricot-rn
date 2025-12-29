@@ -373,6 +373,7 @@ export default function AccessibilityPreferencesScreen() {
         isBusy={isSubmitting || isUpdatingAccessibility}
         onBack={handleBack}
         onContinue={handleContinue}
+        showBack={false}
       />
     </View>
   );

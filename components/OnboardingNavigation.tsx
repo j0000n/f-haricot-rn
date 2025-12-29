@@ -11,6 +11,7 @@ type OnboardingNavigationProps = {
   onContinue: () => void;
   busyLabel?: string;
   isBusy?: boolean;
+  showBack?: boolean;
 };
 
 export function OnboardingNavigation({
@@ -20,6 +21,7 @@ export function OnboardingNavigation({
   isBusy = false,
   onBack,
   onContinue,
+  showBack = true,
 }: OnboardingNavigationProps) {
   const onboardingStyles = useThemedStyles(createOnboardingStyles);
   const continueText = isBusy && busyLabel ? busyLabel : continueLabel;
@@ -27,16 +29,18 @@ export function OnboardingNavigation({
   return (
     <View pointerEvents="box-none" style={onboardingStyles.navigationContainer}>
       <View style={onboardingStyles.navigationCard}>
-        <Pressable
-          onPress={onBack}
-          style={[
-            onboardingStyles.buttonSecondary,
-            isBusy ? onboardingStyles.buttonDisabled : null,
-          ]}
-          disabled={isBusy}
-        >
-          <Text style={onboardingStyles.buttonSecondaryText}>{backLabel}</Text>
-        </Pressable>
+        {showBack ? (
+          <Pressable
+            onPress={onBack}
+            style={[
+              onboardingStyles.buttonSecondary,
+              isBusy ? onboardingStyles.buttonDisabled : null,
+            ]}
+            disabled={isBusy}
+          >
+            <Text style={onboardingStyles.buttonSecondaryText}>{backLabel}</Text>
+          </Pressable>
+        ) : null}
         <Pressable
           onPress={onContinue}
           style={[
