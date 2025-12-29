@@ -108,6 +108,27 @@ const schema = defineSchema({
   })
     .index("email", ["email"])
     .index("phone", ["phone"]),
+  crashReports: defineTable({
+    userId: v.optional(v.id("users")),
+    message: v.string(),
+    name: v.optional(v.string()),
+    stack: v.optional(v.string()),
+    cause: v.optional(v.string()),
+    isFatal: v.optional(v.boolean()),
+    source: v.optional(v.string()),
+    platform: v.string(),
+    platformVersion: v.optional(v.string()),
+    appVersion: v.optional(v.string()),
+    buildVersion: v.optional(v.string()),
+    releaseChannel: v.optional(v.string()),
+    deviceName: v.optional(v.string()),
+    deviceModel: v.optional(v.string()),
+    deviceManufacturer: v.optional(v.string()),
+    occurredAt: v.optional(v.number()),
+    reportedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_reported_at", ["reportedAt"]),
   households: defineTable({
     code: v.string(),
     ownerId: v.id("users"),

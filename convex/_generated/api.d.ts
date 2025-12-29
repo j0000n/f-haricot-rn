@@ -10,6 +10,7 @@
 
 import type * as allergies from "../allergies.js";
 import type * as auth from "../auth.js";
+import type * as crashReports from "../crashReports.js";
 import type * as customThemes from "../customThemes.js";
 import type * as dietary from "../dietary.js";
 import type * as dsar from "../dsar.js";
@@ -47,6 +48,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   allergies: typeof allergies;
   auth: typeof auth;
+  crashReports: typeof crashReports;
   customThemes: typeof customThemes;
   dietary: typeof dietary;
   dsar: typeof dsar;
