@@ -39,6 +39,28 @@ const translations: Record<EmailLocale, {
     emailNotice: (email) => `This email was sent to ${email}`,
     contact: "If you have any questions, please contact us at support@haricot.app",
   },
+  "en-US": {
+    subject: "Your Haricot sign-in code",
+    heading: "Your sign-in code is",
+    expires: "This code will expire in 10 minutes.",
+    ignore: "If you did not request this code, please ignore this email.",
+    signOff: "-Haricot",
+    locationLine: "HARICOT APP SYNDICATE · 123 EASY STREET, TOWN, COUNTRY",
+    copyright: (year) => `Copyright ${year} Haricot App Syndicate. All rights reserved.`,
+    emailNotice: (email) => `This email was sent to ${email}`,
+    contact: "If you have any questions, please contact us at support@haricot.app",
+  },
+  "en-CA": {
+    subject: "Your Haricot sign-in code",
+    heading: "Your sign-in code is",
+    expires: "This code will expire in 10 minutes.",
+    ignore: "If you did not request this code, please ignore this email.",
+    signOff: "-Haricot",
+    locationLine: "HARICOT APP SYNDICATE · 123 EASY STREET, TOWN, COUNTRY",
+    copyright: (year) => `Copyright ${year} Haricot App Syndicate. All rights reserved.`,
+    emailNotice: (email) => `This email was sent to ${email}`,
+    contact: "If you have any questions, please contact us at support@haricot.app",
+  },
   es: {
     subject: "Tu código de inicio de sesión de Haricot",
     heading: "Tu código de acceso es",
@@ -70,6 +92,28 @@ const translations: Record<EmailLocale, {
     locationLine: "HARICOT APP SYNDICATE · 123 EASY STREET, VILLE, PAYS",
     copyright: (year) => `Copyright ${year} Haricot App Syndicate. Tous droits réservés.`,
     emailNotice: (email) => `Cet e-mail a été envoyé à ${email}`,
+    contact: "Si vous avez des questions, contactez-nous à support@haricot.app",
+  },
+  "fr-FR": {
+    subject: "Votre code de connexion Haricot",
+    heading: "Votre code de connexion est",
+    expires: "Ce code expirera dans 10 minutes.",
+    ignore: "Si vous n'avez pas demandé ce code, ignorez cet e-mail.",
+    signOff: "-Haricot",
+    locationLine: "HARICOT APP SYNDICATE · 123 EASY STREET, VILLE, PAYS",
+    copyright: (year) => `Copyright ${year} Haricot App Syndicate. Tous droits réservés.`,
+    emailNotice: (email) => `Cet e-mail a été envoyé à ${email}`,
+    contact: "Si vous avez des questions, contactez-nous à support@haricot.app",
+  },
+  "fr-CA": {
+    subject: "Votre code de connexion Haricot",
+    heading: "Votre code de connexion est",
+    expires: "Ce code expirera dans 10 minutes.",
+    ignore: "Si vous n'avez pas demandé ce code, ignorez ce courriel.",
+    signOff: "-Haricot",
+    locationLine: "HARICOT APP SYNDICATE · 123 EASY STREET, VILLE, PAYS",
+    copyright: (year) => `Copyright ${year} Haricot App Syndicate. Tous droits réservés.`,
+    emailNotice: (email) => `Ce courriel a été envoyé à ${email}`,
     contact: "Si vous avez des questions, contactez-nous à support@haricot.app",
   },
   tl: {
@@ -108,8 +152,19 @@ const translations: Record<EmailLocale, {
 };
 
 const normalizeLocale = (locale?: string): EmailLocale => {
-  const code = locale?.split("-")[0].toLowerCase();
-  if (!code) return "en";
+  if (!locale) return "en";
+  const normalized = locale.replace("_", "-").toLowerCase();
+  const exactLocaleMap: Record<string, EmailLocale> = {
+    "en-us": "en-US",
+    "en-ca": "en-CA",
+    "fr-fr": "fr-FR",
+    "fr-ca": "fr-CA",
+  };
+  if (exactLocaleMap[normalized]) {
+    return exactLocaleMap[normalized];
+  }
+
+  const code = normalized.split("-")[0];
   const available = Object.keys(translations) as EmailLocale[];
   return available.find((key) => key === code) ?? "en";
 };
