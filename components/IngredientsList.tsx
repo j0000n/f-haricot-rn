@@ -119,8 +119,8 @@ export const IngredientsList: React.FC<IngredientsListProps> = ({
 
     // Handle database translation format (can be {singular, plural} object or string)
     const baseTranslation = entry.translations[language as keyof typeof entry.translations] || entry.translations.en;
-    const baseName = typeof baseTranslation === "string" 
-      ? baseTranslation 
+    const baseName = typeof baseTranslation === "string"
+      ? baseTranslation
       : baseTranslation?.singular || baseTranslation?.plural || "";
 
     if (!ingredient.varietyCode) {

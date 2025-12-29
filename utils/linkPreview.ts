@@ -123,4 +123,3 @@ export async function fetchLinkPreview(
     return { url, ...defaultFallback };
   }
 }
-

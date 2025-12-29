@@ -245,15 +245,9 @@ The app uses Expo Router for file-based routing. Routes are defined by the file 
 1. **Keep screens thin**: Screens should primarily handle routing and data fetching
 2. **Extract reusable logic**: Move repeated logic to utilities or hooks
 3. **Use typed utilities**: All utilities are fully typed with TypeScript
-4. **Follow naming conventions**: 
+4. **Follow naming conventions**:
    - Components: PascalCase
    - Utilities: camelCase
    - Files: camelCase for utilities, PascalCase for components
 5. **Document utilities**: All utility functions include JSDoc comments
 6. **Centralize constants**: Constants are defined in utility files or constants files
-
-
-
-
-
-

@@ -252,4 +252,3 @@ export const NutritionLabel: React.FC<NutritionLabelProps> = ({
     </View>
   );
 };
-

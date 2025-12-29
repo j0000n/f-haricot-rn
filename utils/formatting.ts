@@ -66,9 +66,3 @@ export function createDisplayEntries(
       value: formatValue(value),
     }));
 }
-
-
-
-
-
-

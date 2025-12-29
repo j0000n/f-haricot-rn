@@ -16,7 +16,3 @@ try {
 }
 
 module.exports = config;
-
-
-
-

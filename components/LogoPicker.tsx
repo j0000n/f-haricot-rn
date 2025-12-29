@@ -37,8 +37,8 @@ type LogoPickerProps = {
   tokens?: ThemeTokens;
 };
 
-export function LogoPicker({ 
-  selectedLogoPath, 
+export function LogoPicker({
+  selectedLogoPath,
   onSelectLogo,
   logoFillColor = "#000000",
   onLogoFillColorChange,
@@ -102,29 +102,29 @@ export function LogoPicker({
           const isSelected = logo.path === selectedLogoPath;
           // Use SvgLogo for haricot-logo.svg (the only one with SVG data)
           const useSvgLogo = logo.path === "@/assets/images/haricot-logo.svg";
-          
+
           // Check if logo.source is a React component (SVG transformers can return components)
           const logoSource = logo.source;
           const isDirectFunctionComponent = typeof logoSource === "function";
-          const hasComponentInDefault = 
-            typeof logoSource === "object" && 
-            logoSource !== null && 
-            "default" in logoSource && 
+          const hasComponentInDefault =
+            typeof logoSource === "object" &&
+            logoSource !== null &&
+            "default" in logoSource &&
             typeof (logoSource as any).default === "function";
-          const hasReactComponentProperties = 
-            typeof logoSource === "object" && 
-            logoSource !== null && 
+          const hasReactComponentProperties =
+            typeof logoSource === "object" &&
+            logoSource !== null &&
             ("$$typeof" in logoSource || "displayName" in logoSource || "render" in logoSource || "prototype" in logoSource);
           const isReactComponent = isDirectFunctionComponent || hasComponentInDefault || hasReactComponentProperties;
-          
+
           // Validate that logoSource is a valid image source for expo-image
           // A valid image source should be:
           // - A number (require() result for non-SVG images)
           // - An object with uri/localUri
-          const isValidImageSource = 
+          const isValidImageSource =
             typeof logoSource === "number" ||
-            (typeof logoSource === "object" && 
-             logoSource !== null && 
+            (typeof logoSource === "object" &&
+             logoSource !== null &&
              !isReactComponent &&
              ("uri" in logoSource || "localUri" in logoSource));
 
@@ -141,28 +141,28 @@ export function LogoPicker({
                 />
               );
             }
-            
+
             // If it's a React component (like SVG transformers return), render it directly
             if (isReactComponent) {
               try {
-                let LogoComponent: React.ComponentType<{ 
-                  width?: number | string; 
-                  height?: number | string; 
+                let LogoComponent: React.ComponentType<{
+                  width?: number | string;
+                  height?: number | string;
                   style?: StyleProp<ImageStyle>;
                 }>;
-                
+
                 if (hasComponentInDefault) {
                   LogoComponent = (logoSource as any).default;
                 } else if (isDirectFunctionComponent) {
-                  LogoComponent = logoSource as React.ComponentType<{ 
-                    width?: number | string; 
-                    height?: number | string; 
+                  LogoComponent = logoSource as React.ComponentType<{
+                    width?: number | string;
+                    height?: number | string;
                     style?: StyleProp<ImageStyle>;
                   }>;
                 } else {
                   LogoComponent = logoSource as any;
                 }
-                
+
                 return (
                   <LogoComponent
                     width={60}
@@ -175,7 +175,7 @@ export function LogoPicker({
                 // Fall through to Image component
               }
             }
-            
+
             // Only use Image component if we have a valid image source
             if (isValidImageSource) {
               return (
@@ -186,7 +186,7 @@ export function LogoPicker({
                 />
               );
             }
-            
+
             // Fallback: return null if we can't render anything
             return null;
           };

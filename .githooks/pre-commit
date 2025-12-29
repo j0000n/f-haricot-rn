@@ -1,0 +1,9 @@
+#!/bin/sh
+set -e
+
+npm run -s format:whitespace
+
+if ! git diff --quiet; then
+  echo "Whitespace normalized. Please review and re-stage changes."
+  exit 1
+fi

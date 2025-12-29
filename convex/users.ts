@@ -349,7 +349,7 @@ export const seedInventory = mutation({
  * Migration: Remove inventory field from user documents
  * This is a one-time migration to clean up old data after moving inventory to households.
  * Run this once to fix schema validation errors.
- * 
+ *
  * Usage: Call this mutation once from the Convex dashboard or via the API to clean up old data.
  */
 export const migrateRemoveInventoryFromUsers = mutation({
@@ -357,7 +357,7 @@ export const migrateRemoveInventoryFromUsers = mutation({
   handler: async (ctx) => {
     // Get all users
     const users = await ctx.db.query("users").collect();
-    
+
     let updated = 0;
     for (const user of users) {
       // Check if user has inventory field (using type assertion to check)
@@ -370,7 +370,7 @@ export const migrateRemoveInventoryFromUsers = mutation({
         updated += 1;
       }
     }
-    
+
     return { updated, total: users.length };
   },
 });

@@ -410,12 +410,12 @@ function translateTerm(
 ): string {
   // Get base translation
   const translation = getTranslation(code, targetLang, context);
-  
+
   // Apply quantity rules
   if (quantity !== undefined) {
     return applyQuantityRules(translation, quantity, targetLang);
   }
-  
+
   return translation.singular;
 }
 ```
@@ -429,7 +429,7 @@ function translateWithGrammar(
 ): string {
   const parsed = parseEncoded(encoded);
   const translated = [];
-  
+
   for (const component of parsed) {
     const term = translateTerm(component.code, targetLang);
     const withGrammar = applyGrammarRules(
@@ -439,7 +439,7 @@ function translateWithGrammar(
     );
     translated.push(withGrammar);
   }
-  
+
   return joinWithLanguageRules(translated, targetLang);
 }
 ```
@@ -520,14 +520,14 @@ describe('Translation Tests', () => {
   test('all codes have translations', () => {
     const codes = getAllCodes();
     const languages = ['en', 'es', 'ja', 'fr', 'de'];
-    
+
     for (const code of codes) {
       for (const lang of languages) {
         expect(hasTranslation(code, lang)).toBe(true);
       }
     }
   });
-  
+
   test('grammar rules apply correctly', () => {
     const result = translateWithGrammar(
       '1.11.003 @quantity:2',
@@ -561,12 +561,12 @@ class TranslationCache {
     this.cache = new Map();
     this.maxSize = 10000;
   }
-  
+
   get(code, lang, context) {
     const key = `${code}:${lang}:${context}`;
     return this.cache.get(key);
   }
-  
+
   set(code, lang, context, translation) {
     const key = `${code}:${lang}:${context}`;
     if (this.cache.size >= this.maxSize) {

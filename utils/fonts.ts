@@ -246,9 +246,3 @@ export const FONT_SOURCES = {
   "SairaUltraCondensed-Black": require("../assets/fonts/Saira/SairaUltraCondensed-Black.ttf"),
   "SairaUltraCondensed-BlackItalic": require("../assets/fonts/Saira/SairaUltraCondensed-BlackItalic.ttf"),
 } as const;
-
-
-
-
-
-

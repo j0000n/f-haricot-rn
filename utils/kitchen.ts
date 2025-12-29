@@ -60,9 +60,3 @@ export function sortByPurchaseDate<T extends { purchaseDate: number; storageLoca
     return getLocationIndex(a.storageLocation) - getLocationIndex(b.storageLocation);
   });
 }
-
-
-
-
-
-

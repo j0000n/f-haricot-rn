@@ -128,4 +128,3 @@ export default function TaskDetail() {
     </View>
   );
 }
-

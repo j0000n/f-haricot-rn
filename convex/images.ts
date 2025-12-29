@@ -118,7 +118,7 @@ export const generateRecipeImages = internalAction({
 /**
  * Internal action to process an image through the external processing endpoint
  * and save the returned base64 encoded images to Convex storage.
- * 
+ *
  * This function:
  * 1. Retrieves the image from Convex storage (if storageId provided) or uses provided bytes
  * 2. Sends a multipart form request to the processing endpoint with image and sizes
@@ -157,8 +157,8 @@ export const processImageVariants = internalAction({
       imageBytes = new Uint8Array(arrayBuffer);
     } else if (args.imageBytes) {
       // Convert ArrayBuffer to Uint8Array if needed
-      imageBytes = args.imageBytes instanceof Uint8Array 
-        ? args.imageBytes 
+      imageBytes = args.imageBytes instanceof Uint8Array
+        ? args.imageBytes
         : new Uint8Array(args.imageBytes);
     } else {
       throw new Error("Either imageStorageId or imageBytes must be provided");
@@ -167,7 +167,7 @@ export const processImageVariants = internalAction({
     // Step 2: Create multipart form data using Node.js built-in FormData
     // Node.js 18+ has built-in FormData support (via undici)
     const formData = new FormData();
-    
+
     // Create a Blob for the image file
     // Create a proper ArrayBuffer copy to ensure type compatibility
     const imageBuffer = imageBytes.buffer.slice(
@@ -176,7 +176,7 @@ export const processImageVariants = internalAction({
     ) as ArrayBuffer;
     const imageBlob = new Blob([imageBuffer], { type: "image/jpeg" });
     formData.append("image", imageBlob, "image.jpg");
-    
+
     // Add sizes as JSON string
     formData.append("sizes", JSON.stringify(args.sizes));
 
@@ -197,7 +197,7 @@ export const processImageVariants = internalAction({
 
     // Step 4: Parse the response
     const result = await response.json();
-    
+
     // Step 5: Extract and save base64 images from outputs
     const storageIds: {
       thumbnail?: Id<"_storage">;
@@ -363,7 +363,7 @@ export const generateAndProcessImages = internalAction({
 
     // Step 4: Parse the response
     const result = await response.json();
-    
+
     // Step 5: Extract and save base64 images from outputs
     const storageIds: {
       thumbnail?: Id<"_storage">;
@@ -395,4 +395,3 @@ export const generateAndProcessImages = internalAction({
     return storageIds;
   },
 });
-

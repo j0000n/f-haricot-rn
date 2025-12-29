@@ -30,7 +30,7 @@
       "1.01.013": {"name": "persimmon", "category": "Tree Fruits", "varieties": ["fuyu", "hachiya"]},
       "1.01.014": {"name": "pomegranate", "category": "Tree Fruits", "varieties": ["wonderful", "red_angel"]},
       "1.01.015": {"name": "quince", "category": "Tree Fruits", "varieties": []},
-      
+
       "1.02.001": {"name": "strawberry", "category": "Berries", "varieties": ["garden", "wild"]},
       "1.02.002": {"name": "blueberry", "category": "Berries", "varieties": ["highbush", "lowbush", "wild"]},
       "1.02.003": {"name": "raspberry", "category": "Berries", "varieties": ["red", "black", "golden"]},
@@ -39,7 +39,7 @@
       "1.02.006": {"name": "gooseberry", "category": "Berries", "varieties": ["green", "red"]},
       "1.02.007": {"name": "currant", "category": "Berries", "varieties": ["red", "black", "white"]},
       "1.02.008": {"name": "elderberry", "category": "Berries", "varieties": []},
-      
+
       "1.03.001": {"name": "banana", "category": "Tropical Fruits", "varieties": ["cavendish", "plantain", "lady_finger", "red"]},
       "1.03.002": {"name": "mango", "category": "Tropical Fruits", "varieties": ["ataulfo", "tommy_atkins", "kent", "keitt"]},
       "1.03.003": {"name": "pineapple", "category": "Tropical Fruits", "varieties": ["golden", "white"]},
@@ -52,13 +52,13 @@
       "1.03.010": {"name": "lychee", "category": "Tropical Fruits", "varieties": []},
       "1.03.011": {"name": "dragon_fruit", "category": "Tropical Fruits", "varieties": ["white", "red"]},
       "1.03.012": {"name": "star_fruit", "category": "Tropical Fruits", "varieties": []},
-      
+
       "1.04.001": {"name": "watermelon", "category": "Melons", "varieties": ["seedless", "seeded", "yellow"]},
       "1.04.002": {"name": "cantaloupe", "category": "Melons", "varieties": []},
       "1.04.003": {"name": "honeydew", "category": "Melons", "varieties": []},
       "1.04.004": {"name": "casaba", "category": "Melons", "varieties": []},
       "1.04.005": {"name": "crenshaw", "category": "Melons", "varieties": []},
-      
+
       "1.10.001": {"name": "lettuce", "category": "Leafy Greens", "varieties": ["romaine", "iceberg", "butter", "green_leaf", "red_leaf"]},
       "1.10.002": {"name": "spinach", "category": "Leafy Greens", "varieties": ["savoy", "flat_leaf", "baby"]},
       "1.10.003": {"name": "kale", "category": "Leafy Greens", "varieties": ["curly", "lacinato", "red_russian", "baby"]},
@@ -72,7 +72,7 @@
       "1.10.011": {"name": "endive", "category": "Leafy Greens", "varieties": ["belgian", "curly"]},
       "1.10.012": {"name": "radicchio", "category": "Leafy Greens", "varieties": []},
       "1.10.013": {"name": "escarole", "category": "Leafy Greens", "varieties": []},
-      
+
       "1.11.001": {"name": "carrot", "category": "Root Vegetables", "varieties": ["orange", "purple", "white", "yellow", "baby"]},
       "1.11.002": {"name": "potato", "category": "Root Vegetables", "varieties": ["russet", "yukon_gold", "red", "fingerling", "purple", "white"]},
       "1.11.003": {"name": "onion", "category": "Root Vegetables", "varieties": ["yellow", "white", "red", "sweet", "pearl", "cipollini"]},
@@ -91,19 +91,19 @@
       "1.11.016": {"name": "turmeric", "category": "Root Vegetables", "varieties": []},
       "1.11.017": {"name": "taro", "category": "Root Vegetables", "varieties": []},
       "1.11.018": {"name": "yam", "category": "Root Vegetables", "varieties": ["white", "yellow"]},
-      
+
       "1.12.001": {"name": "tomato", "category": "Nightshades", "varieties": ["cherry", "grape", "roma", "beefsteak", "heirloom", "campari", "green"]},
       "1.12.002": {"name": "bell_pepper", "category": "Nightshades", "varieties": ["red", "green", "yellow", "orange", "purple"]},
       "1.12.003": {"name": "eggplant", "category": "Nightshades", "varieties": ["globe", "japanese", "chinese", "indian", "thai", "graffiti"]},
       "1.12.004": {"name": "chili_pepper", "category": "Nightshades", "varieties": ["jalapeno", "serrano", "habanero", "ghost", "thai", "cayenne", "poblano", "anaheim"]},
       "1.12.005": {"name": "tomatillo", "category": "Nightshades", "varieties": []},
-      
+
       "1.13.001": {"name": "broccoli", "category": "Cruciferous", "varieties": ["calabrese", "purple", "chinese"]},
       "1.13.002": {"name": "cauliflower", "category": "Cruciferous", "varieties": ["white", "orange", "purple", "green"]},
       "1.13.003": {"name": "brussels_sprouts", "category": "Cruciferous", "varieties": []},
       "1.13.004": {"name": "kohlrabi", "category": "Cruciferous", "varieties": ["green", "purple"]},
       "1.13.005": {"name": "romanesco", "category": "Cruciferous", "varieties": []},
-      
+
       "1.14.001": {"name": "zucchini", "category": "Squash", "varieties": ["green", "yellow"]},
       "1.14.002": {"name": "yellow_squash", "category": "Squash", "varieties": ["crookneck", "straightneck"]},
       "1.14.003": {"name": "butternut_squash", "category": "Squash", "varieties": []},
@@ -114,7 +114,7 @@
       "1.14.008": {"name": "kabocha_squash", "category": "Squash", "varieties": []},
       "1.14.009": {"name": "hubbard_squash", "category": "Squash", "varieties": ["red", "blue", "golden"]},
       "1.14.010": {"name": "pattypan_squash", "category": "Squash", "varieties": []},
-      
+
       "1.15.001": {"name": "cucumber", "category": "Other Vegetables", "varieties": ["english", "persian", "kirby", "japanese"]},
       "1.15.002": {"name": "celery", "category": "Other Vegetables", "varieties": []},
       "1.15.003": {"name": "corn", "category": "Other Vegetables", "varieties": ["sweet", "white", "bicolor"]},
@@ -128,7 +128,7 @@
       "1.15.011": {"name": "leek", "category": "Other Vegetables", "varieties": []},
       "1.15.012": {"name": "scallion", "category": "Other Vegetables", "varieties": []},
       "1.15.013": {"name": "shallot", "category": "Other Vegetables", "varieties": []},
-      
+
       "1.16.001": {"name": "basil", "category": "Herbs", "varieties": ["sweet", "thai", "lemon", "purple", "holy"]},
       "1.16.002": {"name": "parsley", "category": "Herbs", "varieties": ["flat_leaf", "curly"]},
       "1.16.003": {"name": "cilantro", "category": "Herbs", "varieties": []},
@@ -144,27 +144,27 @@
       "1.16.013": {"name": "marjoram", "category": "Herbs", "varieties": []},
       "1.16.014": {"name": "lavender", "category": "Herbs", "varieties": []},
       "1.16.015": {"name": "lemongrass", "category": "Herbs", "varieties": []},
-      
+
       "2.20.001": {"name": "chicken", "category": "Poultry", "varieties": ["cornish", "free_range", "organic"]},
       "2.20.002": {"name": "turkey", "category": "Poultry", "varieties": ["wild", "heritage"]},
       "2.20.003": {"name": "duck", "category": "Poultry", "varieties": ["pekin", "muscovy"]},
       "2.20.004": {"name": "goose", "category": "Poultry", "varieties": []},
       "2.20.005": {"name": "quail", "category": "Poultry", "varieties": []},
       "2.20.006": {"name": "cornish_hen", "category": "Poultry", "varieties": []},
-      
+
       "2.21.001": {"name": "beef", "category": "Beef", "varieties": ["angus", "wagyu", "kobe"]},
       "2.21.002": {"name": "veal", "category": "Beef", "varieties": []},
-      
+
       "2.22.001": {"name": "pork", "category": "Pork", "varieties": ["heritage", "berkshire", "mangalitsa"]},
       "2.22.002": {"name": "bacon", "category": "Pork", "varieties": ["regular", "thick_cut", "center_cut", "canadian"]},
       "2.22.003": {"name": "ham", "category": "Pork", "varieties": ["country", "city", "prosciutto", "serrano", "black_forest"]},
       "2.22.004": {"name": "sausage", "category": "Pork", "varieties": ["italian", "chorizo", "bratwurst", "andouille", "kielbasa", "breakfast", "merguez"]},
       "2.22.005": {"name": "pancetta", "category": "Pork", "varieties": []},
       "2.22.006": {"name": "guanciale", "category": "Pork", "varieties": []},
-      
+
       "2.23.001": {"name": "lamb", "category": "Lamb", "varieties": ["spring", "grass_fed", "grain_fed"]},
       "2.23.002": {"name": "mutton", "category": "Lamb", "varieties": []},
-      
+
       "2.30.001": {"name": "salmon", "category": "Fish", "varieties": ["atlantic", "sockeye", "coho", "chinook", "pink", "chum"]},
       "2.30.002": {"name": "tuna", "category": "Fish", "varieties": ["bluefin", "yellowfin", "albacore", "skipjack", "bigeye"]},
       "2.30.003": {"name": "cod", "category": "Fish", "varieties": ["atlantic", "pacific", "black"]},
@@ -183,7 +183,7 @@
       "2.30.016": {"name": "mackerel", "category": "Fish", "varieties": ["atlantic", "spanish", "king"]},
       "2.30.017": {"name": "catfish", "category": "Fish", "varieties": ["channel", "blue"]},
       "2.30.018": {"name": "monkfish", "category": "Fish", "varieties": []},
-      
+
       "2.31.001": {"name": "shrimp", "category": "Shellfish", "varieties": ["white", "tiger", "pink", "brown"]},
       "2.31.002": {"name": "crab", "category": "Shellfish", "varieties": ["blue", "dungeness", "king", "snow", "stone"]},
       "2.31.003": {"name": "lobster", "category": "Shellfish", "varieties": ["maine", "spiny", "rock"]},
@@ -193,17 +193,17 @@
       "2.31.007": {"name": "oysters", "category": "Shellfish", "varieties": ["pacific", "atlantic", "kumamoto", "olympia"]},
       "2.31.008": {"name": "squid", "category": "Shellfish", "varieties": []},
       "2.31.009": {"name": "octopus", "category": "Shellfish", "varieties": []},
-      
+
       "2.40.001": {"name": "tofu", "category": "Plant Proteins", "varieties": ["silken", "soft", "firm", "extra_firm"]},
       "2.40.002": {"name": "tempeh", "category": "Plant Proteins", "varieties": []},
       "2.40.003": {"name": "seitan", "category": "Plant Proteins", "varieties": []},
       "2.40.004": {"name": "tvp", "category": "Plant Proteins", "varieties": []},
       "2.40.005": {"name": "plant_ground", "category": "Plant Proteins", "varieties": []},
-      
+
       "2.41.001": {"name": "chicken_egg", "category": "Eggs", "varieties": ["white", "brown", "free_range", "organic"]},
       "2.41.002": {"name": "duck_egg", "category": "Eggs", "varieties": []},
       "2.41.003": {"name": "quail_egg", "category": "Eggs", "varieties": []},
-      
+
       "2.42.001": {"name": "black_beans", "category": "Legumes", "varieties": []},
       "2.42.002": {"name": "kidney_beans", "category": "Legumes", "varieties": ["light_red", "dark_red"]},
       "2.42.003": {"name": "chickpeas", "category": "Legumes", "varieties": []},
@@ -214,7 +214,7 @@
       "2.42.008": {"name": "navy_beans", "category": "Legumes", "varieties": []},
       "2.42.009": {"name": "cannellini_beans", "category": "Legumes", "varieties": []},
       "2.42.010": {"name": "lima_beans", "category": "Legumes", "varieties": ["baby", "large"]},
-      
+
       "2.43.001": {"name": "almonds", "category": "Nuts", "varieties": []},
       "2.43.002": {"name": "walnuts", "category": "Nuts", "varieties": ["english", "black"]},
       "2.43.003": {"name": "cashews", "category": "Nuts", "varieties": []},
@@ -225,7 +225,7 @@
       "2.43.008": {"name": "macadamia_nuts", "category": "Nuts", "varieties": []},
       "2.43.009": {"name": "pine_nuts", "category": "Nuts", "varieties": []},
       "2.43.010": {"name": "brazil_nuts", "category": "Nuts", "varieties": []},
-      
+
       "3.50.001": {"name": "whole_milk", "category": "Milk", "varieties": []},
       "3.50.002": {"name": "two_percent_milk", "category": "Milk", "varieties": []},
       "3.50.003": {"name": "skim_milk", "category": "Milk", "varieties": []},
@@ -235,7 +235,7 @@
       "3.50.007": {"name": "sour_cream", "category": "Milk", "varieties": []},
       "3.50.008": {"name": "evaporated_milk", "category": "Milk", "varieties": []},
       "3.50.009": {"name": "condensed_milk", "category": "Milk", "varieties": ["sweetened"]},
-      
+
       "3.51.001": {"name": "cheddar", "category": "Cheese", "varieties": ["mild", "medium", "sharp", "extra_sharp"]},
       "3.51.002": {"name": "mozzarella", "category": "Cheese", "varieties": ["fresh", "low_moisture", "part_skim"]},
       "3.51.003": {"name": "parmesan", "category": "Cheese", "varieties": ["reggiano", "grana_padano"]},
@@ -250,10 +250,10 @@
       "3.51.012": {"name": "monterey_jack", "category": "Cheese", "varieties": ["regular", "pepper_jack"]},
       "3.51.013": {"name": "gouda", "category": "Cheese", "varieties": ["young", "aged", "smoked"]},
       "3.51.014": {"name": "provolone", "category": "Cheese", "varieties": ["mild", "sharp"]},
-      
+
       "3.53.001": {"name": "salted_butter", "category": "Butter", "varieties": ["european_style", "cultured"]},
       "3.53.002": {"name": "unsalted_butter", "category": "Butter", "varieties": ["european_style", "cultured"]},
-      
+
       "4.60.001": {"name": "white_bread", "category": "Bread", "varieties": []},
       "4.60.002": {"name": "whole_wheat_bread", "category": "Bread", "varieties": []},
       "4.60.003": {"name": "sourdough", "category": "Bread", "varieties": []},
@@ -266,7 +266,7 @@
       "4.60.010": {"name": "english_muffin", "category": "Bread", "varieties": []},
       "4.60.011": {"name": "bagel", "category": "Bread", "varieties": ["plain", "everything", "sesame", "poppy"]},
       "4.60.012": {"name": "croissant", "category": "Bread", "varieties": ["plain", "butter", "chocolate"]},
-      
+
       "4.61.001": {"name": "white_rice", "category": "Rice", "varieties": ["long_grain", "short_grain", "medium_grain"]},
       "4.61.002": {"name": "brown_rice", "category": "Rice", "varieties": ["long_grain", "short_grain"]},
       "4.61.003": {"name": "basmati_rice", "category": "Rice", "varieties": []},
@@ -274,7 +274,7 @@
       "4.61.005": {"name": "wild_rice", "category": "Rice", "varieties": []},
       "4.61.006": {"name": "arborio_rice", "category": "Rice", "varieties": []},
       "4.61.007": {"name": "sushi_rice", "category": "Rice", "varieties": []},
-      
+
       "4.62.001": {"name": "spaghetti", "category": "Pasta", "varieties": []},
       "4.62.002": {"name": "penne", "category": "Pasta", "varieties": []},
       "4.62.003": {"name": "rigatoni", "category": "Pasta", "varieties": []},
@@ -287,7 +287,7 @@
       "4.62.010": {"name": "ravioli", "category": "Pasta", "varieties": ["cheese", "meat", "spinach"]},
       "4.62.011": {"name": "tortellini", "category": "Pasta", "varieties": ["cheese", "meat"]},
       "4.62.012": {"name": "gnocchi", "category": "Pasta", "varieties": ["potato", "ricotta"]},
-      
+
       "4.63.001": {"name": "quinoa", "category": "Other Grains", "varieties": ["white", "red", "black", "tricolor"]},
       "4.63.002": {"name": "oats", "category": "Other Grains", "varieties": ["rolled", "steel_cut", "instant", "quick"]},
       "4.63.003": {"name": "barley", "category": "Other Grains", "varieties": ["pearl", "hulled"]},
@@ -297,7 +297,7 @@
       "4.63.007": {"name": "cornmeal", "category": "Other Grains", "varieties": ["fine", "medium", "coarse"]},
       "4.63.008": {"name": "millet", "category": "Other Grains", "varieties": []},
       "4.63.009": {"name": "buckwheat", "category": "Other Grains", "varieties": ["groats", "flour"]},
-      
+
       "4.64.001": {"name": "all_purpose_flour", "category": "Flour", "varieties": ["bleached", "unbleached"]},
       "4.64.002": {"name": "bread_flour", "category": "Flour", "varieties": []},
       "4.64.003": {"name": "whole_wheat_flour", "category": "Flour", "varieties": []},
@@ -306,7 +306,7 @@
       "4.64.006": {"name": "rice_flour", "category": "Flour", "varieties": ["white", "brown"]},
       "4.64.007": {"name": "cornstarch", "category": "Flour", "varieties": []},
       "4.64.008": {"name": "tapioca_flour", "category": "Flour", "varieties": []},
-      
+
       "5.70.001": {"name": "olive_oil", "category": "Oils", "varieties": ["extra_virgin", "virgin", "light", "pure"]},
       "5.70.002": {"name": "vegetable_oil", "category": "Oils", "varieties": []},
       "5.70.003": {"name": "canola_oil", "category": "Oils", "varieties": []},
@@ -315,14 +315,14 @@
       "5.70.006": {"name": "sesame_oil", "category": "Oils", "varieties": ["toasted", "untoasted"]},
       "5.70.007": {"name": "peanut_oil", "category": "Oils", "varieties": []},
       "5.70.008": {"name": "grapeseed_oil", "category": "Oils", "varieties": []},
-      
+
       "5.71.001": {"name": "white_vinegar", "category": "Vinegars", "varieties": []},
       "5.71.002": {"name": "apple_cider_vinegar", "category": "Vinegars", "varieties": ["filtered", "unfiltered"]},
       "5.71.003": {"name": "balsamic_vinegar", "category": "Vinegars", "varieties": ["traditional", "commercial"]},
       "5.71.004": {"name": "red_wine_vinegar", "category": "Vinegars", "varieties": []},
       "5.71.005": {"name": "rice_vinegar", "category": "Vinegars", "varieties": ["seasoned", "unseasoned"]},
       "5.71.006": {"name": "sherry_vinegar", "category": "Vinegars", "varieties": []},
-      
+
       "5.73.001": {"name": "salt", "category": "Spices", "varieties": ["table", "kosher", "sea", "himalayan", "fleur_de_sel"]},
       "5.73.002": {"name": "black_pepper", "category": "Spices", "varieties": ["ground", "whole", "cracked"]},
       "5.73.003": {"name": "garlic_powder", "category": "Spices", "varieties": []},
@@ -333,26 +333,26 @@
       "5.73.008": {"name": "turmeric", "category": "Spices", "varieties": ["ground"]},
       "5.73.009": {"name": "cinnamon", "category": "Spices", "varieties": ["ground", "stick", "ceylon", "cassia"]},
       "5.73.010": {"name": "nutmeg", "category": "Spices", "varieties": ["ground", "whole"]},
-      
+
       "6.80.001": {"name": "still_water", "category": "Water", "varieties": ["tap", "filtered", "spring", "mineral"]},
       "6.80.002": {"name": "sparkling_water", "category": "Water", "varieties": ["plain", "flavored"]},
-      
+
       "6.83.001": {"name": "ground_coffee", "category": "Coffee", "varieties": ["arabica", "robusta", "blend"]},
       "6.83.002": {"name": "coffee_beans", "category": "Coffee", "varieties": ["arabica", "robusta", "blend"]},
       "6.83.003": {"name": "instant_coffee", "category": "Coffee", "varieties": []},
       "6.83.004": {"name": "black_tea", "category": "Tea", "varieties": ["ceylon", "assam", "earl_grey", "english_breakfast"]},
       "6.83.005": {"name": "green_tea", "category": "Tea", "varieties": ["sencha", "matcha", "gunpowder", "jasmine"]},
       "6.83.006": {"name": "herbal_tea", "category": "Tea", "varieties": ["chamomile", "peppermint", "ginger", "rooibos"]},
-      
+
       "7.90.001": {"name": "white_sugar", "category": "Sugars", "varieties": ["granulated", "caster", "superfine"]},
       "7.90.002": {"name": "brown_sugar", "category": "Sugars", "varieties": ["light", "dark"]},
       "7.90.003": {"name": "powdered_sugar", "category": "Sugars", "varieties": ["regular", "10x"]},
       "7.90.004": {"name": "raw_sugar", "category": "Sugars", "varieties": ["turbinado", "demerara", "muscovado"]},
-      
+
       "8.82.001": {"name": "frozen_pizza", "category": "Frozen Foods", "varieties": ["pepperoni", "cheese", "supreme", "margherita"]},
       "8.82.008": {"name": "frozen_waffles", "category": "Frozen Foods", "varieties": ["plain", "blueberry", "chocolate_chip"]},
       "8.82.014": {"name": "frozen_pancakes", "category": "Frozen Foods", "varieties": ["buttermilk", "blueberry"]},
-      
+
       "9.90.001": {"name": "gluten_free_bread", "category": "Dietary Alternatives", "varieties": []},
       "9.90.002": {"name": "gluten_free_pasta", "category": "Dietary Alternatives", "varieties": ["rice", "corn", "quinoa"]},
       "9.90.003": {"name": "cauliflower_rice", "category": "Dietary Alternatives", "varieties": []},
@@ -360,7 +360,7 @@
       "9.90.005": {"name": "almond_milk", "category": "Dietary Alternatives", "varieties": ["unsweetened", "vanilla", "chocolate"]},
       "9.90.006": {"name": "oat_milk", "category": "Dietary Alternatives", "varieties": ["unsweetened", "vanilla", "barista"]},
       "9.90.007": {"name": "coconut_milk", "category": "Dietary Alternatives", "varieties": ["full_fat", "light", "cream"]},
-  
+
       "5.72.001": {"name": "soy_sauce", "category": "Condiments & Sauces", "varieties": ["light", "dark", "low_sodium", "tamari", "shoyu"]},
       "5.72.002": {"name": "worcestershire_sauce", "category": "Condiments & Sauces", "varieties": []},
       "5.72.003": {"name": "fish_sauce", "category": "Condiments & Sauces", "varieties": ["thai", "vietnamese", "red_boat"]},
@@ -673,7 +673,7 @@
       "9.92.018": {"name": "stevia", "category": "Specialty Diet", "varieties": ["liquid", "powder"]},
       "9.92.019": {"name": "erythritol", "category": "Specialty Diet", "varieties": []},
       "9.92.020": {"name": "xylitol", "category": "Specialty Diet", "varieties": []},
-  
+
       "1.01.016": {"name": "tangerine", "category": "Tree Fruits", "varieties": ["clementine", "mandarin", "satsuma"]},
       "1.01.017": {"name": "kumquat", "category": "Tree Fruits", "varieties": ["oval", "round", "fukushu"]},
       "1.01.018": {"name": "yuzu", "category": "Tree Fruits", "varieties": []},

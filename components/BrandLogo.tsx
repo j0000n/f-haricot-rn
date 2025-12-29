@@ -37,50 +37,50 @@ export function BrandLogo({
 
   // Get logo source and path
   const logoSource = assets.logo;
-  
+
   // EARLY DETECTION: Check for React components FIRST (before any other logic)
   // SVG transformers can return components in various formats:
   // 1. Direct function component: typeof logoSource === "function"
   // 2. Object with default property: logoSource.default is a function
   // 3. Object with React component properties: $$typeof, displayName, render, prototype
-  
+
   const isDirectFunctionComponent = typeof logoSource === "function";
-  
-  const hasComponentInDefault = 
-    typeof logoSource === "object" && 
-    logoSource !== null && 
-    "default" in logoSource && 
+
+  const hasComponentInDefault =
+    typeof logoSource === "object" &&
+    logoSource !== null &&
+    "default" in logoSource &&
     typeof (logoSource as any).default === "function";
-  
-  const hasReactComponentProperties = 
-    typeof logoSource === "object" && 
-    logoSource !== null && 
+
+  const hasReactComponentProperties =
+    typeof logoSource === "object" &&
+    logoSource !== null &&
     ("$$typeof" in logoSource || "displayName" in logoSource || "render" in logoSource || "prototype" in logoSource);
-  
+
   const isReactComponent = isDirectFunctionComponent || hasComponentInDefault || hasReactComponentProperties;
-  
+
   // If it's a React component, render it immediately (don't pass to Image)
   if (isReactComponent) {
     try {
-      let LogoComponent: React.ComponentType<{ 
-        width?: number | string; 
-        height?: number | string; 
+      let LogoComponent: React.ComponentType<{
+        width?: number | string;
+        height?: number | string;
         style?: StyleProp<ImageStyle>;
       }>;
-      
+
       if (hasComponentInDefault) {
         LogoComponent = (logoSource as any).default;
       } else if (isDirectFunctionComponent) {
-        LogoComponent = logoSource as React.ComponentType<{ 
-          width?: number | string; 
-          height?: number | string; 
+        LogoComponent = logoSource as React.ComponentType<{
+          width?: number | string;
+          height?: number | string;
           style?: StyleProp<ImageStyle>;
         }>;
       } else {
         // Fallback: try to use it as-is
         LogoComponent = logoSource as any;
       }
-      
+
       return (
         <LogoComponent
           width={resolvedWidth}
@@ -93,7 +93,7 @@ export function BrandLogo({
       // Fall through to other rendering methods
     }
   }
-  
+
   // Get logo path - for custom themes, use the stored path; for built-in themes, try to determine from asset
   let logoPath: string | null = null;
   if (customTheme) {
@@ -106,7 +106,7 @@ export function BrandLogo({
       logoPath = logoSource.uri;
     }
   }
-  
+
   // Check if this is an SVG file based on path
   const isSvgPath = logoPath && (logoPath.endsWith(".svg") || logoPath.includes(".svg"));
 
@@ -130,12 +130,12 @@ export function BrandLogo({
   // A valid image source should be:
   // - A number (require() result for non-SVG images)
   // - An object with uri/localUri
-  const isValidImageSource = 
+  const isValidImageSource =
     typeof logoSource === "number" ||
-    (typeof logoSource === "object" && 
-     logoSource !== null && 
+    (typeof logoSource === "object" &&
+     logoSource !== null &&
      ("uri" in logoSource || "localUri" in logoSource));
-  
+
   // If it's not a valid image source and we have an SVG path, try to use SvgLogo as a fallback
   if (!isValidImageSource && isSvgPath && logoPath && SVG_LOGO_PATHS[logoPath]) {
     // Try to use SvgLogo even without logoFill if it's an SVG
@@ -149,7 +149,7 @@ export function BrandLogo({
       />
     );
   }
-  
+
   // Only use Image component if we have a valid source
   if (isValidImageSource) {
     return (
@@ -161,7 +161,7 @@ export function BrandLogo({
       />
     );
   }
-  
+
   // Final fallback: return null or a placeholder if we can't render anything
   console.warn("BrandLogo: Unable to render logo", {
     type: typeof logoSource,

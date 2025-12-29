@@ -373,10 +373,10 @@ Add component-level tokens to `styles/themes/types.ts`:
 ```typescript
 export type ThemeTokens = {
   // ... existing tokens ...
-  
+
   components: {
     tabBar: TabBarTokens;  // Already exists
-    
+
     // NEW COMPONENT TOKENS
     card: {
       padding: number;
@@ -385,7 +385,7 @@ export type ThemeTokens = {
       margin: number;            // Margin between cards
       imageHeight: number;       // Card image height
     };
-    
+
     button: {
       primary: {
         paddingHorizontal: number;
@@ -409,14 +409,14 @@ export type ThemeTokens = {
         paddingVertical: number;
       };
     };
-    
+
     list: {
       itemPadding: { horizontal: number; vertical: number };
       itemGap: number;
       borderRadius: number;
       headerPadding: { horizontal: number; vertical: number };
     };
-    
+
     header: {
       page: {
         paddingTop: number;
@@ -429,7 +429,7 @@ export type ThemeTokens = {
         gap: number;
       };
     };
-    
+
     input: {
       paddingHorizontal: number;
       paddingVertical: number;
@@ -437,13 +437,13 @@ export type ThemeTokens = {
       fontSize: number;
       labelGap: number;
     };
-    
+
     textArea: {
       minHeight: number;
       padding: number;
       borderRadius: number;
     };
-    
+
     rail: {
       headerGap: number;
       headerMarginBottom: number;

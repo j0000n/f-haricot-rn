@@ -431,4 +431,3 @@ export function CompactColorPicker({ value, onChange, colors, tokens }: CompactC
     </>
   );
 }
-

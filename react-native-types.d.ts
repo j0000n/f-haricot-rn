@@ -28,7 +28,7 @@ declare module "react-native" {
     LayoutAnimation,
     AccessibilityInfo,
   } from "react-native/types/index";
-  
+
   // Re-export types
   export type {
     ViewProps,
@@ -41,7 +41,7 @@ declare module "react-native" {
     ImageStyle,
     ViewStyle,
   } from "react-native/types/index";
-  
+
   // Re-export everything else
   export * from "react-native/types/index";
 }

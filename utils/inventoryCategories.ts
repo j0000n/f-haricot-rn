@@ -52,9 +52,3 @@ export function getPantryItems(items: InventoryDisplayItem[]): InventoryDisplayI
 export function getProteinItems(items: InventoryDisplayItem[]): InventoryDisplayItem[] {
   return filterByCategory(items, PROTEIN_CATEGORIES);
 }
-
-
-
-
-
-

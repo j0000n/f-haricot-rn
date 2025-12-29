@@ -145,4 +145,3 @@ export const classicTheme: ThemeDefinition = {
     logo: require("@/assets/images/haricot-logo.svg"),
   },
 };
-

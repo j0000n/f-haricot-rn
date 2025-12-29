@@ -62,4 +62,3 @@ export const AVAILABLE_LOGOS: LogoAsset[] = [
     source: require("@/assets/images/1990s.svg"),
   },
 ];
-

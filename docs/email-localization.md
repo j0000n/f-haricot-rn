@@ -23,18 +23,18 @@ const handleSendCode = async () => {
   const formData = new FormData();
   const cleanEmail = email.trim().toLowerCase();
   formData.append("email", cleanEmail);
-  
+
   const languageToSend = i18n.language; // e.g., "fr", "es", "en"
-  
+
   if (languageToSend) {
     formData.append("preferredLanguage", languageToSend);
-    
+
     // Use a relative URL to avoid SITE_URL validation issues
     // Convex Auth will resolve this relative URL against the configured SITE_URL
     const redirectTo = `/?preferredLanguage=${languageToSend}`;
     formData.append("redirectTo", redirectTo);
   }
-  
+
   await signIn("resend", formData);
 };
 ```
@@ -73,7 +73,7 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
       ): Promise<void> {
         const email = params.identifier;
         const token = params.token;
-        
+
         // Extract preferredLanguage from URL query params
         let preferredLanguageFromUrl: EmailLocale | undefined;
         try {
@@ -85,15 +85,15 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
         } catch (e) {
           // Handle URL parsing errors
         }
-        
+
         // Fallback: Check database for user's preferred language
-        const localePreference = preferredLanguageFromUrl 
+        const localePreference = preferredLanguageFromUrl
           ?? (await getPreferredLocale(ctx, email))
           ?? inferLocaleFromEmail(email);
-        
+
         // Use the locale to get localized email content
         const emailContent = getSignInEmailContent(localePreference, token, email);
-        
+
         // Send email with localized content
         await resend.emails.send({
           from: 'Haricot <signin@haricot.app>',
@@ -218,4 +218,3 @@ Simply ensure the language preference is included in the URL or context when tri
 
 - [Convex Auth Documentation](https://labs.convex.dev/auth)
 - [Auth.js Email Provider](https://authjs.dev/getting-started/providers/email)
-

@@ -227,7 +227,7 @@ export default function RecipeDetailScreen() {
 
   const nutritionFacts = useMemo(() => {
     const profile = recipe.nutritionProfile;
-    
+
     // Default values if nutrition profile is not available
     if (!profile) {
       return {
@@ -336,7 +336,7 @@ export default function RecipeDetailScreen() {
   }, [recipe.nutritionProfile, recipe.servings]);
 
   const dailyValues = useMemo(() => {
-    const userGoals = (currentUser as { nutritionGoals?: { targets?: { 
+    const userGoals = (currentUser as { nutritionGoals?: { targets?: {
       calories?: number | null;
       protein?: number | null;
       fat?: number | null;

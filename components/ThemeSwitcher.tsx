@@ -39,7 +39,7 @@ export function ThemeSwitcher({ variant = "default" }: ThemeSwitcherProps) {
 
   // Get saved custom theme share code from user profile
   const savedCustomThemeShareCode = (user as { customThemeShareCode?: string | null } | null)?.customThemeShareCode;
-  
+
   // Load saved custom theme if it exists and isn't already loaded
   const savedCustomThemeQuery = useQuery(
     api.customThemes.getThemeByShareCode,
@@ -116,11 +116,11 @@ export function ThemeSwitcher({ variant = "default" }: ThemeSwitcherProps) {
         };
         console.log("Applying custom theme:", themeData.name, themeData.shareCode);
         setCustomTheme(themeData);
-        
+
         // Save the share code to user profile for persistence
         // Also clear preferredTheme to ensure custom theme takes priority
         // Wait for this to complete to ensure persistence
-        updateProfile({ 
+        updateProfile({
           customThemeShareCode: customThemeQuery.shareCode,
           preferredTheme: null, // Clear built-in theme preference
         }).then(() => {
@@ -321,7 +321,7 @@ export function ThemeSwitcher({ variant = "default" }: ThemeSwitcherProps) {
                 // Re-apply the custom theme
                 setCustomTheme(customTheme);
                 // Save the share code to profile and clear built-in theme preference
-                updateProfile({ 
+                updateProfile({
                   customThemeShareCode: customTheme.shareCode,
                   preferredTheme: null, // Clear built-in theme to ensure custom theme persists
                 }).catch((error) => {

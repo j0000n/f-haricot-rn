@@ -203,10 +203,10 @@ Organized by store sections.
 Natural language for audio interfaces.
 
 ```
-"First, you'll need to dice 2 onions. 
+"First, you'll need to dice 2 onions.
 [PAUSE]
 Ready? Now heat some olive oil in a pan over medium heat.
-[PAUSE] 
+[PAUSE]
 Add your diced onions and sautÃ© them for about 5 minutes.
 You'll know they're ready when they turn golden.
 [PAUSE]
@@ -233,19 +233,19 @@ function decodeRecipe(
 ): DecodedRecipe {
   // 1. Parse encoded string
   const parsed = parseEncoded(encoded);
-  
+
   // 2. Translate components
   const translated = translateComponents(parsed, options.language);
-  
+
   // 3. Apply format
   const formatted = applyFormat(translated, options.format);
-  
+
   // 4. Convert units if needed
   const converted = convertUnits(formatted, options.units);
-  
+
   // 5. Add supplementary info
   const enriched = enrich(converted, options);
-  
+
   return enriched;
 }
 ```
@@ -310,17 +310,17 @@ function decodeRTL(encoded: string, lang: 'ar' | 'he'): string {
 ```typescript
 function decodeCJK(encoded: string, lang: 'zh' | 'ja' | 'ko'): string {
   const decoded = standardDecode(encoded, lang);
-  
+
   // Handle counters and particles
   if (lang === 'ja') {
     return addJapaneseCounters(decoded);
   }
-  
+
   // Handle measure words
   if (lang === 'zh') {
     return addChineseMeasureWords(decoded);
   }
-  
+
   return decoded;
 }
 ```
@@ -329,7 +329,7 @@ function decodeCJK(encoded: string, lang: 'zh' | 'ja' | 'ko'): string {
 
 ```typescript
 function decodeWithGender(
-  encoded: string, 
+  encoded: string,
   lang: 'es' | 'fr' | 'ru'
 ): string {
   const decoded = standardDecode(encoded, lang);
@@ -377,12 +377,12 @@ function handleMissingTranslation(
 ): string {
   // 1. Try fallback to English
   const englishTerm = getTranslation(code, 'en');
-  
+
   // 2. If found, return with indicator
   if (englishTerm) {
     return `[${englishTerm}]`; // Brackets indicate untranslated
   }
-  
+
   // 3. Return code as last resort
   return `{{${code}}}`;
 }
@@ -392,22 +392,22 @@ function handleMissingTranslation(
 ```typescript
 function validateEncoding(encoded: string): ValidationResult {
   const errors = [];
-  
+
   // Check food codes
   if (!validFoodCode(encoded)) {
     errors.push('Invalid food code');
   }
-  
+
   // Check qualifier order
   if (!validQualifierOrder(encoded)) {
     errors.push('Incorrect qualifier order');
   }
-  
+
   // Check parameters
   if (!validParameters(encoded)) {
     errors.push('Invalid parameters');
   }
-  
+
   return {
     valid: errors.length === 0,
     errors
@@ -445,7 +445,7 @@ describe('Recipe Decoder', () => {
     const decoded = decodeRecipe(encoded, {language: 'en'});
     expect(decoded).toBe('2 diced onions');
   });
-  
+
   test('handles missing translations', () => {
     const encoded = '9.99.999'; // Non-existent code
     const decoded = decodeRecipe(encoded, {language: 'es'});

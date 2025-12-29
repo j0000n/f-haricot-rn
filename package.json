@@ -43,8 +43,10 @@
     "reset": "npm run clean && npm install && npx expo install --fix",
     "reset-project": "node ./scripts/reset-project.js",
     "patch:expo-cli": "node scripts/patch-expo-cli.js",
-    "postinstall": "node scripts/patch-expo-cli.js",
-    "maildev": "maildev --smtp 1025 --web 1080 --disable-webhook"
+    "postinstall": "node scripts/patch-expo-cli.js && node scripts/install-git-hooks.js",
+    "maildev": "maildev --smtp 1025 --web 1080 --disable-webhook",
+    "format:whitespace": "node scripts/normalize-whitespace.js",
+    "hooks:install": "node scripts/install-git-hooks.js"
   },
   "dependencies": {
     "@auth/core": "^0.37.0",

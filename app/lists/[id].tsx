@@ -210,7 +210,7 @@ export default function ListDetailScreen() {
       />
 
       {!list ? (
-        <View style={[styles.scrollContent, { justifyContent: "center" }]}> 
+        <View style={[styles.scrollContent, { justifyContent: "center" }]}>
           <Text style={styles.title}>{t("lists.notFoundTitle")}</Text>
           <Text style={styles.description}>{t("lists.notFoundMessage")}</Text>
         </View>
@@ -425,7 +425,7 @@ export default function ListDetailScreen() {
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
               <Text style={styles.modalTitle}>{t("lists.editList")}</Text>
-              
+
               <Text style={styles.modalLabel}>{t("lists.listName")}</Text>
               <TextInput
                 value={editName}

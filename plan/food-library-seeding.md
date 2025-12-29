@@ -22,4 +22,3 @@ This plan keeps the Convex `foodLibrary` table as the single source of truth and
 
 ### 5) Ongoing maintenance
 - When adding new items at runtime (e.g., via `ensureProvisional`), schedule periodic reviews to promote or merge them back into `data/foodLibrarySeed.ts`, then rerun `foodLibrary.seed` so long-lived data stays normalized.
-

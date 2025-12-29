@@ -145,12 +145,12 @@ export default function AddInventoryModal() {
 
   useSpeechRecognitionEvent("error", (event) => {
     console.error("Speech recognition error:", event);
-    
+
     // Handle different error structures
     const errorCode = (event as { code?: number })?.code;
     const errorType = (event as { error?: string })?.error;
     const errorMessage = (event as { message?: string })?.message;
-    
+
     // "no-speech" (code 7) is a normal case - user didn't speak or mic didn't pick up sound
     // Don't show this as an error to the user
     if (errorCode === 7 || errorType === "no-speech") {
@@ -160,7 +160,7 @@ export default function AddInventoryModal() {
       setListening(false);
       return;
     }
-    
+
     // For other errors, show a user-friendly message
     if (errorMessage) {
       setError(errorMessage);
@@ -342,7 +342,7 @@ export default function AddInventoryModal() {
       // Dynamically import ImagePicker to avoid crash if native module isn't available
       const ImagePickerModule = await import("expo-image-picker");
       const ImagePicker = ImagePickerModule.default || ImagePickerModule;
-      
+
       const permission = await ImagePicker.requestCameraPermissionsAsync();
       if (!permission.granted) {
         setCameraPermissionDenied(true);
@@ -479,13 +479,13 @@ export default function AddInventoryModal() {
         }}
       />
 
-      <ScrollView 
+      <ScrollView
         style={styles.content}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={true}
       >
         <View style={styles.section}>
-      
+
           <Text style={styles.heading}>{t("inventoryCapture.captureHeading")}</Text>
           <Text style={styles.helperText}>{t("inventoryCapture.captureDescription")}</Text>
 

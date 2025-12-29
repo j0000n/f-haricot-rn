@@ -27,17 +27,17 @@ const getTranslationString = (
   language: SupportedLanguage,
 ): string => {
   const translation = translations[language] ?? translations[DEFAULT_LANGUAGE] ?? translations["en"];
-  
+
   // If it's a string, return it directly (for categoryTranslations and variety translations)
   if (typeof translation === "string") {
     return translation;
   }
-  
+
   // If it's an object with singular/plural, use singular (or plural if quantity > 1, but we'll use singular for now)
   if (translation && typeof translation === "object" && "singular" in translation) {
     return translation.singular;
   }
-  
+
   return "";
 };
 

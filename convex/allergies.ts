@@ -5,7 +5,7 @@ import { v } from "convex/values";
 /**
  * Verifies and maps user-entered allergy names to food codes.
  * This runs automatically when allergies are saved during onboarding.
- * 
+ *
  * TODO: Implement allergy verification logic:
  * - Map user-entered allergy names to standardized food codes
  * - Add fuzzy matching and multilingual support

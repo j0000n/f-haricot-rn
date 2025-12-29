@@ -68,7 +68,7 @@ function AuthenticatedApp() {
       return;
     }
 
-    const userData = user as { 
+    const userData = user as {
       preferredTheme?: string | null;
       customThemeShareCode?: string | null;
     } | null;
@@ -184,7 +184,7 @@ function AuthenticatedApp() {
       try {
         // When switching to a built-in theme, clear custom theme share code
         // (custom themes are handled separately via ThemeSwitcher)
-        await updateProfile({ 
+        await updateProfile({
           preferredTheme: nextTheme,
           customThemeShareCode: null, // Explicitly clear custom theme
         });

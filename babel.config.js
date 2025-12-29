@@ -19,7 +19,3 @@ module.exports = function (api) {
     ],
   };
 };
-
-
-
-

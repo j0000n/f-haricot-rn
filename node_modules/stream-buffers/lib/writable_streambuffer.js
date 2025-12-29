@@ -78,7 +78,7 @@ var WritableStreamBuffer = module.exports = function(opts) {
 			buffer.write(data, size, encoding || "utf8");
 			size += Buffer.byteLength(data);
 		}
-		
+
 		if(typeof callback === "function") { callback() ;}
 	};
 

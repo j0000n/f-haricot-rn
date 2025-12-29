@@ -26,9 +26,9 @@ export const generateRecipeImagePrompt = action({
   }),
   handler: async (ctx, args) => {
 
-   
 
-    
+
+
     // Default values
     const fill = args.fill ?? 0.95; // 0.90–0.96 recommended
     const background = args.background ?? "white seamless background";
@@ -96,9 +96,9 @@ export const generateIngredientImagePrompt = action({
   }),
   handler: async (ctx, args) => {
 
-   
 
-    
+
+
     // Default values
     const fill = args.fill ?? 0.95; // 0.90–0.96 recommended
     const background = args.background ?? "white seamless background";
@@ -114,7 +114,7 @@ export const generateIngredientImagePrompt = action({
       `(overhead top-down view), camera facing directly downward at 90°, flat-lay, ` +
       `${args.subject} in a ${args.vessel} on , ${background}, ` +
       // scale locks
-    
+
       `uniform margin ≈ ${borderPct}% on every side, all subjects visible unbroken, ` +
       // optics/lighting
       `no tilt, no perspective distortion, 50mm lens equivalent, f/8, ` +

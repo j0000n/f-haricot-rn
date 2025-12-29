@@ -383,7 +383,7 @@ export default function ListsScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>{t("lists.createList")}</Text>
-            
+
             <Text style={styles.modalLabel}>{t("lists.listName")}</Text>
             <TextInput
               value={newListName}

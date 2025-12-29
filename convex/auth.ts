@@ -145,10 +145,10 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
         console.log("[auth] sendVerificationRequest called");
         console.log("[auth] params.url:", params.url);
         console.log("[auth] params.identifier:", params.identifier);
-        
+
         const email = params.identifier;
         const token = params.token;
-        
+
         // Try to extract preferredLanguage from URL query params
         // The URL should have been modified to include preferredLanguage if it was in the original signIn params
         let preferredLanguageFromUrl: EmailLocale | undefined;
@@ -163,7 +163,7 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
         } catch (e) {
           console.log("[auth] Error parsing URL for preferredLanguage:", e);
         }
-        
+
         // Also check cache (keyed by email+token) as fallback
         const cacheKey = `${email.trim().toLowerCase()}:${token}`;
         const preferredLanguageFromCache = preferredLanguageCache.get(cacheKey);
@@ -171,13 +171,13 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
           console.log("[auth] Found preferredLanguage in cache:", preferredLanguageFromCache);
           preferredLanguageCache.delete(cacheKey); // Clean up after use
         }
-        
+
         // Log all attempts to find preferredLanguage
         console.log("[auth] preferredLanguage sources:", {
           fromUrl: preferredLanguageFromUrl,
           fromCache: preferredLanguageFromCache,
         });
-        
+
         const { Resend: ResendAPI } = await import("resend");
         const resend = new ResendAPI(process.env.AUTH_RESEND_KEY);
 
@@ -194,14 +194,14 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
         // Use preferredLanguage from URL or cache, then fall back to extractRequestedLocale
         const requestedLocale = preferredLanguageFromUrl ?? preferredLanguageFromCache ?? extractRequestedLocale(ctx);
         console.log("[auth] requestedLocale from extractRequestedLocale:", requestedLocale);
-        
+
         const localePreference =
           requestedLocale ?? (await getPreferredLocale(ctx, cleanEmail));
         console.log("[auth] localePreference (requested or from DB):", localePreference);
-        
+
         const locale = localePreference ?? inferLocaleFromEmail(cleanEmail);
         console.log("[auth] Final locale decision:", locale);
-        
+
         const emailContent = getSignInEmailContent(locale, token, cleanEmail);
 
         await resend.emails.send({

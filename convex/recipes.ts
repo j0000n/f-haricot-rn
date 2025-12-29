@@ -221,14 +221,14 @@ const normalizeMultilingual = (
 ): Record<typeof REQUIRED_LANGUAGES[number], string> => {
   const result: Record<string, string> = {};
   const source = obj || {};
-  
+
   // Use English as primary fallback, then the provided fallback, then empty string
   const englishFallback = source.en || fallback || "";
-  
+
   for (const lang of REQUIRED_LANGUAGES) {
     result[lang] = source[lang] || englishFallback;
   }
-  
+
   return result as Record<typeof REQUIRED_LANGUAGES[number], string>;
 };
 
@@ -1414,7 +1414,7 @@ ATTRIBUTION EXTRACTION:
 - Provide sourceHost as the hostname extracted from the URL
 - Extract date retrieved (use current date: ${new Date().toISOString().slice(0, 10)})
 
-Return JSON with fields: 
+Return JSON with fields:
 - recipeName (8 languages: en, es, zh, fr, ar, ja, vi, tl) - translate the recipe title
 - description (8 languages) - translate the recipe description
 - ingredients (ARRAY - include ALL ingredients):
@@ -1493,9 +1493,9 @@ Captured text: ${sourceSummary}`;
     // Validate that we extracted ingredients and steps
     const ingredientCount = (enhanced.ingredients || []).length;
     const stepCount = (enhanced.steps || []).length;
-    
+
     console.log(`[ingestUniversal] Extracted ${ingredientCount} ingredients and ${stepCount} steps from source`);
-    
+
     if (ingredientCount === 0) {
       console.warn(`[ingestUniversal] WARNING: No ingredients extracted from source`);
     }
@@ -1529,18 +1529,18 @@ Captured text: ${sourceSummary}`;
         if (!match) {
           status = "missing";
           validationSummary.missing += 1;
-          
+
           // Try to find similar items in the food library by name
           const ingredientNameLower = (ingredient.originalText || ingredient.displayText || "").toLowerCase();
           const similarItems = foodLibrary
-            .filter((entry) => 
+            .filter((entry) =>
               entry.name.toLowerCase().includes(ingredientNameLower) ||
               ingredientNameLower.includes(entry.name.toLowerCase())
             )
             .slice(0, 3)
             .map((entry) => entry.code);
-          
-          const nearby = similarItems.length > 0 
+
+          const nearby = similarItems.length > 0
             ? similarItems
             : foodLibrarySeed
                 .filter((entry) => entry.namespace === foodCode?.split(".")[0])
@@ -1563,14 +1563,14 @@ Captured text: ${sourceSummary}`;
         }
 
         const ingredientValidation = ingredient.validation ?? {};
-        
+
         // Normalize normalizedUnit to ensure it's one of the valid values or undefined
         let normalizedUnit: "g" | "ml" | "count" | undefined = ingredient.normalizedUnit;
         if (normalizedUnit && normalizedUnit !== "g" && normalizedUnit !== "ml" && normalizedUnit !== "count") {
           // Invalid normalizedUnit - set to undefined
           normalizedUnit = undefined;
         }
-        
+
         // Normalize displayQuantity to ensure it's a string or undefined
         let displayQuantity: string | undefined;
         const rawDisplayQuantity = ingredient.displayQuantity;
@@ -1587,7 +1587,7 @@ Captured text: ${sourceSummary}`;
         } else {
           displayQuantity = undefined;
         }
-        
+
         // Normalize displayUnit to ensure it's a string or undefined
         let displayUnit: string | undefined = ingredient.displayUnit;
         if (displayUnit !== undefined && displayUnit !== null) {
@@ -1597,7 +1597,7 @@ Captured text: ${sourceSummary}`;
         } else {
           displayUnit = undefined;
         }
-        
+
         // Normalize optional string fields - convert null to undefined
         const normalizeOptionalString = (value: any): string | undefined => {
           if (value === null || value === undefined) {
@@ -1608,11 +1608,11 @@ Captured text: ${sourceSummary}`;
           }
           return String(value);
         };
-        
+
         // Normalize optional string fields first
         const prep = normalizeOptionalString(ingredient.preparation);
         const origText = normalizeOptionalString(ingredient.originalText);
-        
+
         // Build the normalized ingredient object, explicitly handling null values
         const normalizedIngredient: any = {
           foodCode, // Ensure foodCode is always set
@@ -1626,7 +1626,7 @@ Captured text: ${sourceSummary}`;
             suggestions: ingredientValidation.suggestions || suggestions,
           },
         };
-        
+
         // Only include optional fields if they have valid values (not null/undefined)
         if (prep !== undefined) {
           normalizedIngredient.preparation = prep;
@@ -1640,14 +1640,14 @@ Captured text: ${sourceSummary}`;
         if (ingredient.normalizedQuantity !== undefined && ingredient.normalizedQuantity !== null) {
           normalizedIngredient.normalizedQuantity = ingredient.normalizedQuantity;
         }
-        
+
         return normalizedIngredient;
       }),
     );
 
     const now = Date.now();
     const encodingVersion = enhanced.encodingVersion || "URES-4.6";
-    
+
     // Normalize multilingual fields to ensure all required languages are present
     const normalizedRecipeName = normalizeMultilingual(
       enhanced.recipeName,
@@ -1657,7 +1657,7 @@ Captured text: ${sourceSummary}`;
       enhanced.description,
       enhanced.description?.en || "",
     );
-    
+
     const normalizedSourceSteps = (enhanced.steps || [])
       .map((step: any, index: number) => {
         const text =
@@ -1687,7 +1687,7 @@ Captured text: ${sourceSummary}`;
         };
       })
       .filter((step: { text: string }) => Boolean(step.text?.trim()));
-    
+
     // Normalize encodedSteps: if it's an array, convert to JSON string; if string, use as-is; otherwise undefined
     let normalizedEncodedSteps: string | undefined;
     if (enhanced.encodedSteps !== undefined && enhanced.encodedSteps !== null) {
@@ -1700,7 +1700,7 @@ Captured text: ${sourceSummary}`;
         normalizedEncodedSteps = JSON.stringify(enhanced.encodedSteps);
       }
     }
-    
+
     const rawAttribution = enhanced.attribution || {};
     const authorSocial = normalizeSocialHandles(rawAttribution.authorSocial);
     const sourceUrl = rawAttribution.sourceUrl || args.sourceUrl;
@@ -3161,7 +3161,7 @@ export const migrateStructuredAttributionFields = mutation({
  * Migration: Remove imageUrl field from recipe documents
  * This is a one-time migration to clean up old data after removing imageUrl from schema.
  * Run this once to fix schema validation errors.
- * 
+ *
  * Usage: Call this mutation once from the Convex dashboard or via the API to clean up old data.
  */
 export const migrateRemoveImageUrlFromRecipes = mutation({
@@ -3173,7 +3173,7 @@ export const migrateRemoveImageUrlFromRecipes = mutation({
   handler: async (ctx) => {
     // Get all recipes
     const recipes = await ctx.db.query("recipes").collect();
-    
+
     let updated = 0;
     for (const recipe of recipes) {
       // Check if recipe has imageUrl field (using type assertion to check)

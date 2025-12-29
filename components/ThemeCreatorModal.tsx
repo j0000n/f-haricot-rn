@@ -477,18 +477,18 @@ export function ThemeCreatorModal({
     const fallbackComponents: ThemeTokens["components"] = {
       card: { padding: 10, borderRadius: 12, gap: 8, margin: 8, imageHeight: 120 },
       button: {
-        primary: { 
-          paddingHorizontal: 20, 
-          paddingVertical: 12, 
-          borderRadius: 8, 
+        primary: {
+          paddingHorizontal: 20,
+          paddingVertical: 12,
+          borderRadius: 8,
           fontSize: 16,
           colorCustom: undefined,
           textColorCustom: undefined,
         },
         secondary: { paddingHorizontal: 16, paddingVertical: 12, borderRadius: 8, fontSize: 16 },
-        pill: { 
-          paddingHorizontal: 8, 
-          paddingVertical: 4, 
+        pill: {
+          paddingHorizontal: 8,
+          paddingVertical: 4,
           borderRadius: 8,
           colorCustom: undefined,
           textColorCustom: undefined,
@@ -515,7 +515,7 @@ export function ThemeCreatorModal({
     ): ThemeTokens["components"][K] => {
       return (tokens.components[key] || fallbackComponents[key]) as ThemeTokens["components"][K];
     };
-    
+
     return {
       card: getComponentToken("card"),
       button: getComponentToken("button"),
@@ -639,7 +639,7 @@ export function ThemeCreatorModal({
         const fallback = componentTokens[key as keyof typeof componentTokens];
         return (tokens.components[key] || fallback) as ThemeTokens["components"][K];
       };
-      
+
       setComponentTokens({
         card: getComponentToken("card"),
         button: getComponentToken("button"),
@@ -661,7 +661,7 @@ export function ThemeCreatorModal({
       setSelectedLogoPath(getCurrentLogoPath());
       setThemeName("");
       setMode("edit");
-      
+
       // Reset tabBar to current theme's tabBar configuration
       if (definition.tokens.components?.tabBar) {
         setTabBar(definition.tokens.components.tabBar);
@@ -798,7 +798,7 @@ export function ThemeCreatorModal({
 
     try {
       setIsSaving(true);
-      
+
       // Derive global tokens from component tokens for backward compatibility
       // Use component tokens as source of truth, estimate global tokens
       const derivedSpacing = {
@@ -811,23 +811,23 @@ export function ThemeCreatorModal({
         xl: 24,
         xxl: 40,
       };
-      
+
       const derivedPadding = {
         screen: componentTokens.header.page.paddingHorizontal || 12,
         section: componentTokens.header.page.paddingHorizontal || 16,
         card: componentTokens.card.padding,
         compact: componentTokens.button.pill.paddingHorizontal || 6,
       };
-      
+
       const derivedRadii = {
         sm: componentTokens.button.primary.borderRadius,
         md: componentTokens.card.borderRadius,
         lg: componentTokens.list.borderRadius,
       };
-      
+
       // Remove 'none' from spacing as it's not in the Convex validator
       const { none, ...spacingWithoutNone } = derivedSpacing;
-      
+
       const result = await createTheme({
         name: finalThemeName,
         colors: {
@@ -849,7 +849,7 @@ export function ThemeCreatorModal({
       if (onThemeCreated) {
         onThemeCreated(result.shareCode);
       }
-      
+
       onClose();
 
       Alert.alert(
@@ -1052,7 +1052,7 @@ export function ThemeCreatorModal({
                   <Text style={[styles.subsectionTitle, { color: colors.textPrimary }]}>
                     {t("themeCreator.colors.textSection")}
                   </Text>
-                  
+
                   {/* Text Colors Preview */}
                   <View
                     style={{
@@ -1125,7 +1125,7 @@ export function ThemeCreatorModal({
                   <Text style={[styles.subsectionTitle, { color: colors.textPrimary }]}>
                     {t("themeCreator.colors.interactiveSection")}
                   </Text>
-                  
+
                   {/* Interactive Colors Preview */}
                   <View
                     style={{
@@ -1216,7 +1216,7 @@ export function ThemeCreatorModal({
                   <Text style={[styles.subsectionTitle, { color: colors.textPrimary }]}>
                     {t("themeCreator.colors.statusSection")}
                   </Text>
-                  
+
                   {/* Status Colors Preview */}
                   <View
                     style={{
@@ -1321,7 +1321,7 @@ export function ThemeCreatorModal({
                 <Text style={[styles.sectionDescription, { color: colors.textSecondary }]}>
                   Customize card components used throughout the app (recipe cards, inventory cards, etc.)
                 </Text>
-                
+
                 {/* Card Preview */}
                 <View
                   style={{
@@ -1454,7 +1454,7 @@ export function ThemeCreatorModal({
                 {/* Primary Button */}
                 <View style={styles.inputGroup}>
                   <Text style={[styles.subsectionTitle, { color: colors.textPrimary, marginTop: 0 }]}>Primary Button</Text>
-                  
+
                   {/* Preview */}
                   <View
                     style={{
@@ -1466,10 +1466,10 @@ export function ThemeCreatorModal({
                       alignItems: "center",
                     }}
                   >
-                    <Text style={{ 
-                      color: componentTokens.button.primary.textColorCustom || colors.accentOnPrimary, 
-                      fontSize: componentTokens.button.primary.fontSize, 
-                      fontFamily: tokens.fontFamilies.semiBold 
+                    <Text style={{
+                      color: componentTokens.button.primary.textColorCustom || colors.accentOnPrimary,
+                      fontSize: componentTokens.button.primary.fontSize,
+                      fontFamily: tokens.fontFamilies.semiBold
                     }}>
                       Primary Button
                     </Text>
@@ -1682,7 +1682,7 @@ export function ThemeCreatorModal({
                 {/* Pill Button */}
                 <View style={styles.inputGroup}>
                   <Text style={[styles.subsectionTitle, { color: colors.textPrimary }]}>Pill Button</Text>
-                  
+
                   {/* Preview */}
                   <View
                     style={{
@@ -1696,9 +1696,9 @@ export function ThemeCreatorModal({
                       alignSelf: "flex-start",
                     }}
                   >
-                    <Text style={{ 
-                      color: componentTokens.button.pill.textColorCustom || colors.textPrimary, 
-                      fontSize: tokens.typography.small 
+                    <Text style={{
+                      color: componentTokens.button.pill.textColorCustom || colors.textPrimary,
+                      fontSize: tokens.typography.small
                     }}>
                       Pill Button
                     </Text>
@@ -2064,7 +2064,7 @@ export function ThemeCreatorModal({
                       Page description or subtitle
                     </Text>
                   </View>
-                  
+
                   {/* Section Header Preview */}
                   <View
                     style={{
@@ -2083,7 +2083,7 @@ export function ThemeCreatorModal({
 
                 <View style={styles.inputGroup}>
                   <Text style={[styles.subsectionTitle, { color: colors.textPrimary, marginTop: 0 }]}>Page Header</Text>
-                  
+
                   <View style={styles.inputGroup}>
                     <View style={styles.sliderRow}>
                       <Text style={[styles.label, { color: colors.textPrimary }]}>Padding Horizontal</Text>
@@ -2107,7 +2107,7 @@ export function ThemeCreatorModal({
 
                 <View style={styles.inputGroup}>
                   <Text style={[styles.subsectionTitle, { color: colors.textPrimary }]}>Section Header</Text>
-                  
+
                   <View style={styles.inputGroup}>
                     <View style={styles.sliderRow}>
                       <Text style={[styles.label, { color: colors.textPrimary }]}>Margin Bottom</Text>
@@ -2203,7 +2203,7 @@ export function ThemeCreatorModal({
                   // Determine which font family key corresponds to this typography type
                   let fontFamilyKey: keyof typeof fontFamilies = "regular";
                   let previewFontFamily = fontFamilies.regular;
-                  
+
                   if (key === "title") {
                     fontFamilyKey = "display";
                     previewFontFamily = fontFamilies.display || fontFamilies.bold;
@@ -2258,7 +2258,7 @@ export function ThemeCreatorModal({
                           Size: {value}px • Font: {previewFontFamily}
                         </Text>
                       </View>
-                      
+
                       {/* Font Selector for this typography type */}
                       <View style={{ marginBottom: tokens.spacing.md }}>
                         <Text style={[styles.label, { color: colors.textPrimary, marginBottom: tokens.spacing.xs }]}>
@@ -2274,7 +2274,7 @@ export function ThemeCreatorModal({
                           tokens={tokens}
                         />
                       </View>
-                      
+
                       {/* Size Slider */}
                       <View style={styles.sliderRow}>
                         <Text style={[styles.label, { color: colors.textPrimary }]}>Size</Text>
@@ -2338,7 +2338,7 @@ export function ThemeCreatorModal({
                       const isActive = activeTab === tab;
                       const tabLabel = tab.charAt(0).toUpperCase() + tab.slice(1);
                       const iconName = tabBar.icon?.names[tab] || "circle";
-                      
+
                       return (
                         <Pressable
                           key={tab}
@@ -2854,7 +2854,7 @@ export function ThemeCreatorModal({
               const isActive = activeTab === tab;
               const tabLabel = tab.charAt(0).toUpperCase() + tab.slice(1);
               const iconName = tabBar.icon?.names[tab] || "circle";
-              
+
               return (
                 <Pressable
                   key={tab}

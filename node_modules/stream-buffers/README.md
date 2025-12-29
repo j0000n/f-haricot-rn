@@ -44,7 +44,7 @@ myWritableStreamBuffer.write(myBuffer);
 myWritableStreamBuffer.write("\u00bd + \u00bc = \u00be", "utf8");
 ```
 
-You can query the size of the data being held in the Buffer, and also how big the Buffer's max capacity currently is: 
+You can query the size of the data being held in the Buffer, and also how big the Buffer's max capacity currently is:
 
 ```js
 myWritableStreamBuffer.write("ASDF");
@@ -62,7 +62,7 @@ myWritableStreamBuffer.getContentsAsString("utf8", 5);	// Gets first 5 bytes as 
 ```
 
 Care should be taken when getting encoded strings from WritableStream, as it doesn't really care about the contents (multi-byte characters will not be respected).
- 
+
 Destroying or ending the WritableStream will not delete the contents of Buffer, but will disallow any further writes:
 
 ```js
@@ -71,11 +71,11 @@ myWritableStreamBuffer.destroy();
 
 myWritableStreamBuffer.getContents();		// Returns ASDF in Buffer.
 myWritableStreamBuffer.write("Yeah?");		// No effect.
-```	
+```
 
 ### Readable StreamBuffer
 
-Readable Stream Buffers can have data inserted in them, which will then be pumped out via standard readable stream data events. The data to be sent out is held in a Buffer, which can grow in much the same way as a WritableStream Buffer does, if data is being put in Buffer faster than it's being pumped out. 
+Readable Stream Buffers can have data inserted in them, which will then be pumped out via standard readable stream data events. The data to be sent out is held in a Buffer, which can grow in much the same way as a WritableStream Buffer does, if data is being put in Buffer faster than it's being pumped out.
 
 The frequency in which chunks are pumped out, and the size of the chunks themselves can be configured in the constructor. The initial size and increment amount of internal Buffer can be configured too.
 
@@ -100,7 +100,7 @@ myReadableStreamBuffer.put(aBuffer);
 myReadableStreamBuffer.put("A String", "utf8");
 ```
 
-Chunks are pumped out via standard readable stream spec: 
+Chunks are pumped out via standard readable stream spec:
 
 ```js
 myReadableStreamBuffer.on("data", function(data) {
@@ -109,7 +109,7 @@ myReadableStreamBuffer.on("data", function(data) {
 });
 ```
 
-Chunks are pumped out by the interval that you specified in frequency. Setting the frequency to 0 will immediately stream the data (also in chunks), even if the stream has not been piped to a destination. This is useful for unit testing. 
+Chunks are pumped out by the interval that you specified in frequency. Setting the frequency to 0 will immediately stream the data (also in chunks), even if the stream has not been piped to a destination. This is useful for unit testing.
 
 setEncoding() for streams is respected too:
 
@@ -120,9 +120,9 @@ myReadableStreamBuffer.on("data", function(data) {
 });
 ```
 
-Pause and resume are also implemented. pause()'ing stream will allow buffer to continue accumulating, but will not pump any of that data out until it is resume()'d again. 
+Pause and resume are also implemented. pause()'ing stream will allow buffer to continue accumulating, but will not pump any of that data out until it is resume()'d again.
 
-Destroying the stream will immediately purge the buffer, unless destroySoon() is called, in which case the rest of the buffer will be written out. Either way, any further attempts to put data in the Buffer will be silently ignored. 
+Destroying the stream will immediately purge the buffer, unless destroySoon() is called, in which case the rest of the buffer will be written out. Either way, any further attempts to put data in the Buffer will be silently ignored.
 
 ```js
 myReadableStreamBuffer.destroySoon();

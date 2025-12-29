@@ -79,7 +79,7 @@ export default function SignIn() {
     const formData = new FormData();
     const cleanEmail = email.trim().toLowerCase();
     formData.append("email", cleanEmail);
-    
+
     const languageToSend = i18n.language;
     console.log("[SignIn] Current i18n.language:", languageToSend);
     if (languageToSend) {

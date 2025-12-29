@@ -191,7 +191,7 @@ export function ThemeProvider({
       // If initialThemeName is a valid built-in theme, the user has explicitly selected it
       // and we should respect that choice over the saved custom theme
       const isBuiltInTheme = initialThemeName && isThemeName(initialThemeName);
-      
+
       if (!isBuiltInTheme) {
         // Only set if it's different from what's already loaded to prevent infinite loop
         setCustomTheme((current) => {
@@ -374,7 +374,7 @@ export function ThemeProvider({
 
   const definition = useMemo(() => {
     console.log("definition useMemo running - themeName:", themeName, "customTheme:", customTheme ? `${customTheme.name} (${customTheme.shareCode})` : "null");
-    
+
     if (accessibilityPreferences.highContrastMode === "light") {
       return getThemeDefinition("highContrastLight");
     }
@@ -398,7 +398,7 @@ export function ThemeProvider({
         surfaceSubdued: customTheme.colors.surfaceSubdued ?? customTheme.colors.overlay ?? customTheme.colors.surface,
         surfaceMuted: customTheme.colors.surfaceMuted ?? customTheme.colors.overlay ?? customTheme.colors.surface,
       };
-      
+
       const tabBarTokens: ThemeTokens["components"]["tabBar"] = customTheme.tabBar
         ? {
             ...customTheme.tabBar,
@@ -452,13 +452,13 @@ export function ThemeProvider({
           logo: (() => {
             // Handle different logo asset path formats
             const assetPath = customTheme.logoAsset;
-            
+
             // First, try to find the logo in AVAILABLE_LOGOS
             const matchedLogo = AVAILABLE_LOGOS.find((logo) => logo.path === assetPath);
             if (matchedLogo) {
               return matchedLogo.source;
             }
-            
+
             // Fallback: handle path-based mapping for any path starting with @/assets/images/
             if (assetPath.startsWith("@/assets/images/")) {
               const imageName = assetPath.replace("@/assets/images/", "");
@@ -476,7 +476,7 @@ export function ThemeProvider({
               };
               return logoMap[imageName] || { uri: assetPath };
             }
-            
+
             // Final fallback: return as URI
             return { uri: assetPath };
           })(),
@@ -551,7 +551,7 @@ export function ThemeProvider({
   const setCustomThemeHandler = useCallback(
     (theme: CustomThemeData | null) => {
       console.log("setCustomThemeHandler called with theme:", theme ? `${theme.name} (${theme.shareCode})` : "null");
-      
+
       // Use React's automatic batching - both updates will be batched together
       // This ensures the useMemo sees both values updated in the same render
       if (theme) {

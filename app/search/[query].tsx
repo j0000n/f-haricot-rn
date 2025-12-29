@@ -81,7 +81,7 @@ export default function SearchResultsScreen() {
   // Combine search and filter results
   const recipes = useMemo(() => {
     const searchRecipes = (searchResults ?? []) as Recipe[];
-    
+
     // If filters are applied, use filtered results and then filter by search term
     if (selectedDietary.length > 0 || selectedCuisines.length > 0 || maxCookTime !== null) {
       const filtered = (filteredResults ?? []) as Recipe[];
@@ -98,7 +98,7 @@ export default function SearchResultsScreen() {
         )
       );
     }
-    
+
     return searchRecipes;
   }, [searchResults, filteredResults, trimmedSearchTerm, selectedDietary, selectedCuisines, maxCookTime]);
 

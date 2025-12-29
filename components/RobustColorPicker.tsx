@@ -408,6 +408,3 @@ export function RobustColorPicker({ value, onChange, colors, tokens }: ColorPick
     </>
   );
 }
-
-
-
