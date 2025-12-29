@@ -18,6 +18,7 @@ import {
 import { clearPendingUserType, getPendingUserType } from "@/utils/pendingUserType";
 import { FONT_SOURCES } from "@/utils/fonts";
 import { AnalyticsProvider } from "@/components/AnalyticsProvider";
+import CrashReporter from "@/components/CrashReporter";
 import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import { ConvexReactClient, useConvexAuth, useMutation, useQuery } from "convex/react";
 import { useFonts } from "expo-font";
@@ -382,6 +383,7 @@ export default function RootLayout() {
       }
     >
       <AnalyticsProvider>
+        <CrashReporter />
         <AuthenticatedApp />
       </AnalyticsProvider>
     </ConvexAuthProvider>
