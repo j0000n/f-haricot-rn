@@ -1,0 +1,1 @@
+# all components for the app/profile.tsx page go in this directory, once we have everything broken into components, delete this markdown file
