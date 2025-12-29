@@ -1,1 +1,12 @@
-export type EmailLocale = "en" | "es" | "zh" | "fr" | "tl" | "vi" | "ar";
+export type EmailLocale =
+  | "en"
+  | "en-US"
+  | "en-CA"
+  | "es"
+  | "zh"
+  | "fr"
+  | "fr-FR"
+  | "fr-CA"
+  | "tl"
+  | "vi"
+  | "ar";

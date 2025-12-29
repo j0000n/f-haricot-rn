@@ -10,7 +10,19 @@ import type { Theme } from "@auth/core/types";
 const preferredLanguageCache = new Map<string, EmailLocale>();
 
 const isEmailLocale = (value: string): value is EmailLocale => {
-  return ["en", "es", "fr", "zh", "tl", "vi", "ar"].includes(value);
+  return [
+    "en",
+    "en-US",
+    "en-CA",
+    "es",
+    "fr",
+    "fr-FR",
+    "fr-CA",
+    "zh",
+    "tl",
+    "vi",
+    "ar",
+  ].includes(value);
 };
 
 const extractRequestedLocale = (ctx: any): EmailLocale | undefined => {

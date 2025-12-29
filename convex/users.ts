@@ -179,9 +179,13 @@ export const updateProfile = mutation({
     preferredLanguage: v.optional(
       v.union(
         v.literal("en"),
+        v.literal("en-US"),
+        v.literal("en-CA"),
         v.literal("es"),
         v.literal("zh"),
         v.literal("fr"),
+        v.literal("fr-FR"),
+        v.literal("fr-CA"),
         v.literal("tl"),
         v.literal("vi"),
         v.literal("ar"),
