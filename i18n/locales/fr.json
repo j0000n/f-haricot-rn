@@ -462,6 +462,11 @@
     "dsarDeleteSuccessMessage": "Votre compte a été supprimé.",
     "dsarDeleteErrorTitle": "Échec de la suppression",
     "dsarDeleteErrorMessage": "Nous n'avons pas pu supprimer votre compte. Veuillez réessayer.",
+    "legalTitle": "Juridique",
+    "legalDesc": "Consultez notre politique de confidentialité, nos conditions et l'avis de consentement.",
+    "privacyPolicy": "Politique de confidentialité",
+    "termsOfService": "Conditions d'utilisation",
+    "consentNotice": "Avis de consentement",
     "nutritionTitle": "Nutrition goals",
     "nutritionDesc": "Set your intent now and adjust targets later as you learn what works.",
     "nutritionStarter": "Starter profile",
@@ -569,6 +574,89 @@
     "timerPause": "Pause",
     "timerReset": "Réinitialiser",
     "notFound": "Recette introuvable"
+  },
+  "legal": {
+    "privacy": {
+      "title": "Politique de confidentialité",
+      "updated": "Dernière mise à jour : 2025-01-01",
+      "intro": "Cette politique explique quelles données personnelles Haricot collecte, comment nous les utilisons et vos choix.",
+      "sections": {
+        "collect": {
+          "title": "Ce que nous collectons",
+          "body": "Nous collectons les informations de compte (email, nom), les préférences de profil, les informations du foyer, les tâches et les scans que vous soumettez."
+        },
+        "use": {
+          "title": "Comment nous utilisons les données",
+          "body": "Nous utilisons vos données pour fournir le service, personnaliser les recommandations et améliorer le produit."
+        },
+        "share": {
+          "title": "Partage",
+          "body": "Nous partageons des données avec des prestataires qui nous aident à exploiter l'application (hébergement, email, analytique, traitement IA)."
+        },
+        "retention": {
+          "title": "Conservation",
+          "body": "Nous conservons les données uniquement le temps nécessaire aux finalités décrites ou selon les exigences légales."
+        },
+        "rights": {
+          "title": "Vos droits",
+          "body": "Vous შეგიძლიათ accéder, exporter, corriger ou supprimer vos données depuis l'écran Profil."
+        },
+        "contact": {
+          "title": "Contact",
+          "body": "Questions? Écrivez-nous à privacy@haricot.app."
+        }
+      }
+    },
+    "terms": {
+      "title": "Conditions d'utilisation",
+      "updated": "Dernière mise à jour : 2025-01-01",
+      "intro": "En utilisant Haricot, vous acceptez ces conditions.",
+      "sections": {
+        "use": {
+          "title": "Utilisation du service",
+          "body": "Utilisez Haricot à des fins personnelles et légales, et respectez les lois applicables."
+        },
+        "accounts": {
+          "title": "Comptes",
+          "body": "Gardez vos identifiants sécurisés et avertissez-nous en cas d'utilisation non autorisée."
+        },
+        "content": {
+          "title": "Contenu",
+          "body": "Vous conservez la propriété du contenu que vous soumettez; vous nous accordez l'autorisation de le traiter pour fournir le service."
+        },
+        "disclaimer": {
+          "title": "Avertissement",
+          "body": "Haricot est fourni tel quel sans garanties. Nous ne fournissons pas de conseils médicaux."
+        },
+        "termination": {
+          "title": "Résiliation",
+          "body": "Vous pouvez supprimer votre compte à tout moment. Nous pouvons suspendre les comptes qui enfreignent ces conditions."
+        }
+      }
+    },
+    "consent": {
+      "title": "Avis de consentement",
+      "updated": "Dernière mise à jour : 2025-01-01",
+      "intro": "Nous demandons un consentement avant de collecter certaines données sensibles.",
+      "sections": {
+        "analytics": {
+          "title": "Analytique",
+          "body": "L'analytique est désactivée par défaut. Vous pouvez l'activer ou la désactiver dans Profil."
+        },
+        "sessionReplay": {
+          "title": "Relecture de session",
+          "body": "La relecture de session est facultative et ne fonctionne que si l'analytique est activée."
+        },
+        "location": {
+          "title": "Localisation",
+          "body": "La localisation est utilisée uniquement pour les vérifications de proximité QR lors du scan."
+        },
+        "voice": {
+          "title": "Voix",
+          "body": "Les transcriptions vocales sont envoyées à notre fournisseur de traitement pour mapper les éléments d'inventaire."
+        }
+      }
+    }
   },
   "ingredient": {
     "notFound": "Ingredient not found",

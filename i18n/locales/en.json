@@ -464,6 +464,11 @@
     "dsarDeleteSuccessMessage": "Your account has been deleted.",
     "dsarDeleteErrorTitle": "Delete failed",
     "dsarDeleteErrorMessage": "We couldn't delete your account. Please try again.",
+    "legalTitle": "Legal",
+    "legalDesc": "Review our privacy policy, terms, and consent notice.",
+    "privacyPolicy": "Privacy policy",
+    "termsOfService": "Terms of service",
+    "consentNotice": "Consent notice",
     "nutritionTitle": "Nutrition goals",
     "nutritionDesc": "Set your intent now and adjust targets later as you learn what works.",
     "nutritionStarter": "Starter profile",
@@ -573,6 +578,89 @@
     "timerPause": "Pause",
     "timerReset": "Reset",
     "notFound": "Recipe not found"
+  },
+  "legal": {
+    "privacy": {
+      "title": "Privacy policy",
+      "updated": "Last updated: 2025-01-01",
+      "intro": "This policy explains what personal data Haricot collects, how we use it, and your choices.",
+      "sections": {
+        "collect": {
+          "title": "What we collect",
+          "body": "We collect account details (email, name), profile preferences, household info, tasks, and scan events you choose to submit."
+        },
+        "use": {
+          "title": "How we use data",
+          "body": "We use your data to provide the service, personalize recommendations, and improve the product."
+        },
+        "share": {
+          "title": "Sharing",
+          "body": "We share data with service providers that help us run the app (hosting, email, analytics, AI processing)."
+        },
+        "retention": {
+          "title": "Retention",
+          "body": "We keep data only as long as needed for the purposes described or as required by law."
+        },
+        "rights": {
+          "title": "Your rights",
+          "body": "You can access, export, correct, or delete your data from the Profile screen."
+        },
+        "contact": {
+          "title": "Contact",
+          "body": "Questions? Email us at privacy@haricot.app."
+        }
+      }
+    },
+    "terms": {
+      "title": "Terms of service",
+      "updated": "Last updated: 2025-01-01",
+      "intro": "By using Haricot, you agree to these terms.",
+      "sections": {
+        "use": {
+          "title": "Use of the service",
+          "body": "Use Haricot for personal, lawful purposes and follow applicable laws."
+        },
+        "accounts": {
+          "title": "Accounts",
+          "body": "Keep your login details secure and notify us if you suspect unauthorized use."
+        },
+        "content": {
+          "title": "Content",
+          "body": "You retain ownership of content you submit; you grant us permission to process it to deliver the service."
+        },
+        "disclaimer": {
+          "title": "Disclaimer",
+          "body": "Haricot is provided as-is without warranties. We do not provide medical advice."
+        },
+        "termination": {
+          "title": "Termination",
+          "body": "You can delete your account at any time. We may suspend accounts that violate these terms."
+        }
+      }
+    },
+    "consent": {
+      "title": "Consent notice",
+      "updated": "Last updated: 2025-01-01",
+      "intro": "We ask for consent before collecting certain sensitive data.",
+      "sections": {
+        "analytics": {
+          "title": "Analytics",
+          "body": "Analytics are off by default. You can enable or disable them in Profile."
+        },
+        "sessionReplay": {
+          "title": "Session replay",
+          "body": "Session replay is optional and only runs if analytics are enabled."
+        },
+        "location": {
+          "title": "Location",
+          "body": "Location is used only for QR proximity checks when you scan a code."
+        },
+        "voice": {
+          "title": "Voice",
+          "body": "Voice transcripts are sent to our processing provider to map inventory items."
+        }
+      }
+    }
   },
   "ingredient": {
     "notFound": "Ingredient not found",

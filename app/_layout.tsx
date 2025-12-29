@@ -341,6 +341,7 @@ function AuthenticatedAppShell({ isAuthenticated, isLoading, user }: Authenticat
         <Stack.Screen name="tasks/[id]" />
         <Stack.Screen name="profile" options={{ title: t("profile.title").toUpperCase() }} />
         <Stack.Screen name="webview/[id]" options={{ headerShown: false }} />
+        <Stack.Screen name="legal/[doc]" />
         <Stack.Screen name="onboarding" options={{ headerShown: false }} />
       </Stack>
     </View>

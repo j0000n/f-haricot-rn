@@ -8,6 +8,7 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { useMutation, useQuery } from "convex/react";
 import { Alert, Clipboard, Pressable, ScrollView, Text, View, Platform } from "react-native";
 import { useTranslation } from "@/i18n/useTranslation";
+import { useRouter } from "expo-router";
 import { createDisplayEntries } from "@/utils/formatting";
 import {
   createEmptyNutritionGoals,
@@ -28,6 +29,7 @@ import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { ProfileInfoCard } from "@/components/profile/ProfileInfoCard";
 import { PrivacyCard } from "@/components/profile/PrivacyCard";
 import { DsarCard } from "@/components/profile/DsarCard";
+import { LegalCard } from "@/components/profile/LegalCard";
 import type {
   HouseholdChild,
   HouseholdDetails,
@@ -66,6 +68,7 @@ export default function ProfileScreen() {
   const updateProfile = useMutation(api.users.updateProfile);
   const exportMyData = useMutation(api.dsar.exportMyData);
   const deleteMyAccount = useMutation(api.dsar.deleteMyAccount);
+  const router = useRouter();
   const { signOut } = useAuthActions();
   const entries = createDisplayEntries(
     user as Record<string, unknown> | null | undefined,
@@ -939,6 +942,10 @@ export default function ProfileScreen() {
     await handlePrivacyUpdate(nextAnalytics, value);
   };
 
+  const handleOpenLegal = (doc: "privacy" | "terms" | "consent") => {
+    router.push(`/legal/${doc}`);
+  };
+
   const handleExportData = async () => {
     if (isExporting || isDeletingAccount) {
       return;
@@ -1123,6 +1130,7 @@ export default function ProfileScreen() {
           onToggleAnalytics={handleToggleAnalytics}
           onToggleSessionReplay={handleToggleSessionReplay}
         />
+        <LegalCard onOpenDoc={handleOpenLegal} />
         <DsarCard
           isExporting={isExporting}
           isDeleting={isDeletingAccount}
