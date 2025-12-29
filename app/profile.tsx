@@ -6,7 +6,7 @@ import type { AccessibilityPreferences, BaseTextSize } from "@/styles/tokens";
 import { useTheme, useThemedStyles } from "@/styles/tokens";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useMutation, useQuery } from "convex/react";
-import { Alert, Clipboard, Pressable, ScrollView, View } from "react-native";
+import { Alert, Clipboard, Pressable, ScrollView, Text, View } from "react-native";
 import { useTranslation } from "@/i18n/useTranslation";
 import { createDisplayEntries } from "@/utils/formatting";
 import {
