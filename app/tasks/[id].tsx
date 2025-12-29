@@ -6,6 +6,7 @@ import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { Alert, Platform, Pressable, ScrollView, Text, View } from "react-native";
 import { useEffect } from "react";
 import { useThemedStyles } from "@/styles/tokens";
+import { useTranslation } from "@/i18n/useTranslation";
 
 export default function TaskDetail() {
   const { id } = useLocalSearchParams<{ id: Id<"tasks"> }>();
@@ -14,6 +15,7 @@ export default function TaskDetail() {
   const toggleTask = useMutation(api.tasks.toggle);
   const deleteTask = useMutation(api.tasks.remove);
   const styles = useThemedStyles(createTaskDetailStyles);
+  const { t } = useTranslation();
 
   // Redirect if task is deleted or not found
   useEffect(() => {
@@ -27,14 +29,14 @@ export default function TaskDetail() {
       await toggleTask({ id });
     } catch (error) {
       console.error("Error toggling task:", error);
-      Alert.alert("Error", "Could not update task");
+      Alert.alert(t("tasks.error"), t("tasks.errorUpdate"));
     }
   };
 
   const handleDelete = async () => {
     // Use native confirm dialog on web, Alert.alert on mobile
     if (Platform.OS === "web") {
-      const confirmed = confirm("Are you sure you want to delete this task?");
+      const confirmed = confirm(t("tasks.deleteConfirmMessage"));
       if (!confirmed) return;
 
       try {
@@ -42,16 +44,16 @@ export default function TaskDetail() {
         // Navigation happens automatically via useEffect when task becomes null
       } catch (error) {
         console.error("Error deleting task:", error);
-        alert("Error: Could not delete task");
+        alert(t("tasks.errorDeleteMessage"));
       }
     } else {
       Alert.alert(
-        "Delete Task",
-        "Are you sure you want to delete this task?",
+        t("tasks.deleteConfirmTitle"),
+        t("tasks.deleteConfirmMessage"),
         [
-          { text: "Cancel", style: "cancel" },
+          { text: t("tasks.cancel"), style: "cancel" },
           {
-            text: "Delete",
+            text: t("common.delete"),
             style: "destructive",
             onPress: async () => {
               try {
@@ -59,7 +61,7 @@ export default function TaskDetail() {
                 // Navigation happens automatically via useEffect when task becomes null
               } catch (error) {
                 console.error("Error deleting task:", error);
-                Alert.alert("Error", "Could not delete task");
+                Alert.alert(t("tasks.error"), t("tasks.errorDelete"));
               }
             },
           },
@@ -73,8 +75,8 @@ export default function TaskDetail() {
   if (task === undefined) {
     return (
       <View style={styles.container}>
-        <Stack.Screen options={{ title: "Loading..." }} />
-        <Text style={styles.loadingText}>Loading task...</Text>
+        <Stack.Screen options={{ title: t("tasks.loading") }} />
+        <Text style={styles.loadingText}>{t("tasks.loadingTask")}</Text>
       </View>
     );
   }
@@ -83,8 +85,8 @@ export default function TaskDetail() {
   if (task === null) {
     return (
       <View style={styles.container}>
-        <Stack.Screen options={{ title: "Task Not Found" }} />
-        <Text style={styles.loadingText}>Task not found...</Text>
+        <Stack.Screen options={{ title: t("tasks.notFoundTitle") }} />
+        <Text style={styles.loadingText}>{t("tasks.notFoundMessage")}</Text>
       </View>
     );
   }
@@ -93,36 +95,36 @@ export default function TaskDetail() {
     <View style={styles.container}>
       <Stack.Screen
         options={{
-          title: "Task Details",
-          headerBackTitle: "Back",
+          title: t("tasks.taskDetails"),
+          headerBackTitle: t("tasks.back"),
         }}
       />
 
       <ScrollView style={styles.content}>
         <View style={styles.section}>
-          <Text style={styles.label}>Title</Text>
+          <Text style={styles.label}>{t("tasks.titleLabel")}</Text>
           <Text style={styles.title}>{task.title}</Text>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.label}>Description</Text>
+          <Text style={styles.label}>{t("tasks.descriptionLabel")}</Text>
           <Text style={styles.description}>{task.description}</Text>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.label}>Status</Text>
+          <Text style={styles.label}>{t("tasks.status")}</Text>
           <Pressable style={styles.statusButton} onPress={handleToggle}>
             <Text style={styles.statusText}>
-              {task.isCompleted ? "✓ Completed" : "○ Not Completed"}
+              {task.isCompleted ? t("tasks.completed") : t("tasks.notCompleted")}
             </Text>
-            <Text style={styles.statusHint}>Tap to toggle</Text>
+            <Text style={styles.statusHint}>{t("tasks.tapToToggle")}</Text>
           </Pressable>
         </View>
       </ScrollView>
 
       <View style={styles.actions}>
         <Pressable style={styles.deleteButton} onPress={handleDelete}>
-          <Text style={styles.deleteButtonText}>Delete Task</Text>
+          <Text style={styles.deleteButtonText}>{t("tasks.deleteTask")}</Text>
         </Pressable>
       </View>
     </View>

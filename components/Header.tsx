@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { StyleSheet, Text, TextStyle, View } from "react-native";
+import { StyleSheet, Text, View, type TextStyle } from "react-native";
 import { useTheme } from "@/styles/tokens";
 import type { ThemeTokens } from "@/styles/themes/types";
 

@@ -168,7 +168,7 @@ const createHomeStyles = (tokens: ThemeTokens) =>
     sourcePill: {
       paddingHorizontal: tokens.spacing.md,
       paddingVertical: tokens.spacing.xs,
-      borderRadius: tokens.radii.full,
+      borderRadius: tokens.radii.round,
       borderWidth: tokens.borderWidths.thin,
       borderColor: tokens.colors.border,
       backgroundColor: tokens.colors.overlay,

@@ -308,7 +308,7 @@ export default function NutritionGoalsScreen() {
                 </Text>
                 <TextInput
                   value={targets.calories ?? ""}
-                  onChangeText={(value) => handleTargetChange("calories", value)}
+                  onChangeText={(value: string) => handleTargetChange("calories", value)}
                   keyboardType="numeric"
                   style={[onboardingStyles.textField, { flex: 1 }]}
                   placeholder="e.g. 2000"
@@ -320,7 +320,7 @@ export default function NutritionGoalsScreen() {
                 </Text>
                 <TextInput
                   value={targets.protein ?? ""}
-                  onChangeText={(value) => handleTargetChange("protein", value)}
+                  onChangeText={(value: string) => handleTargetChange("protein", value)}
                   keyboardType="numeric"
                   style={[onboardingStyles.textField, { flex: 1 }]}
                   placeholder="e.g. 150"
@@ -334,7 +334,7 @@ export default function NutritionGoalsScreen() {
                 </Text>
                 <TextInput
                   value={targets.fat ?? ""}
-                  onChangeText={(value) => handleTargetChange("fat", value)}
+                  onChangeText={(value: string) => handleTargetChange("fat", value)}
                   keyboardType="numeric"
                   style={[onboardingStyles.textField, { flex: 1 }]}
                   placeholder="e.g. 70"
@@ -346,7 +346,7 @@ export default function NutritionGoalsScreen() {
                 </Text>
                 <TextInput
                   value={targets.carbohydrates ?? ""}
-                  onChangeText={(value) => handleTargetChange("carbohydrates", value)}
+                  onChangeText={(value: string) => handleTargetChange("carbohydrates", value)}
                   keyboardType="numeric"
                   style={[onboardingStyles.textField, { flex: 1 }]}
                   placeholder="e.g. 230"
@@ -410,7 +410,7 @@ export default function NutritionGoalsScreen() {
                         {isActive ? (
                           <TextInput
                             value={targets[fieldKey] ?? ""}
-                            onChangeText={(value) => handleTargetChange(fieldKey, value)}
+                            onChangeText={(value: string) => handleTargetChange(fieldKey, value)}
                             keyboardType="numeric"
                             style={[onboardingStyles.textField, { width: 120 }]}
                             placeholder="Target"
@@ -455,7 +455,7 @@ export default function NutritionGoalsScreen() {
                 </Text>
                 <Switch
                   value={displayPreferences.showPerMealTargets}
-                  onValueChange={(value) =>
+                  onValueChange={(value: boolean) =>
                     setDisplayPreferences((current) => ({
                       ...current,
                       showPerMealTargets: value,
@@ -484,7 +484,7 @@ export default function NutritionGoalsScreen() {
                 </Text>
                 <Switch
                   value={displayPreferences.showProteinOnly}
-                  onValueChange={(value) =>
+                  onValueChange={(value: boolean) =>
                     setDisplayPreferences((current) => ({
                       ...current,
                       showProteinOnly: value,
@@ -513,7 +513,7 @@ export default function NutritionGoalsScreen() {
                 </Text>
                 <Switch
                   value={displayPreferences.hideCalories}
-                  onValueChange={(value) =>
+                  onValueChange={(value: boolean) =>
                     setDisplayPreferences((current) => ({
                       ...current,
                       hideCalories: value,
@@ -542,7 +542,7 @@ export default function NutritionGoalsScreen() {
                 </Text>
                 <Switch
                   value={displayPreferences.showWarnings}
-                  onValueChange={(value) =>
+                  onValueChange={(value: boolean) =>
                     setDisplayPreferences((current) => ({
                       ...current,
                       showWarnings: value,
@@ -560,7 +560,7 @@ export default function NutritionGoalsScreen() {
                     </Text>
                     <TextInput
                       value={String(displayPreferences.mealCount ?? "")}
-                      onChangeText={(value) =>
+                      onChangeText={(value: string) =>
                         setDisplayPreferences((current) => ({
                           ...current,
                           mealCount:

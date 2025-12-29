@@ -46,7 +46,7 @@ export default function TabsLayout() {
         </View>
         <TabList style={tabStyles.tabList}>
           {tabs.map((tab) => (
-            <TabTrigger key={tab.name} name={tab.name} href={tab.href} asChild>
+            <TabTrigger key={tab.name} name={tab.name} href={tab.href as any} asChild>
               <TabButton tabKey={tab.name} label={t(tab.labelKey)} />
             </TabTrigger>
           ))}

@@ -228,7 +228,23 @@ export function ThemeProvider({
             typography: { ...fallbackTokens.typography, ...typography },
             fontFamilies,
             logoAsset,
-            tabBar,
+            tabBar: tabBar
+              ? {
+                  ...tabBar,
+                  icon: tabBar.icon
+                    ? {
+                        ...tabBar.icon,
+                        names: {
+                          home: tabBar.icon.names.home ?? "home",
+                          kitchen: tabBar.icon.names.kitchen ?? "shopping-cart",
+                          lists: tabBar.icon.names.lists ?? "list",
+                          creator: (tabBar.icon.names as any).creator ?? "edit",
+                          vendor: (tabBar.icon.names as any).vendor ?? "store",
+                        },
+                      }
+                    : undefined,
+                }
+              : undefined,
           } satisfies CustomThemeData;
         });
         setThemeName((current) => (current === "custom" ? current : "custom"));

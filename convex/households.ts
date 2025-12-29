@@ -138,6 +138,7 @@ const normalizeAllergyList = (allergies: string[]) => {
   return Array.from(new Set(trimmed));
 };
 
+// TODO(privacy): define retention/erasure rules for household profiles, inventory, and children data.
 const requireHouseholdMembership = async (
   ctx: MutationCtx
 ): Promise<{ user: UserDoc; household: HouseholdDoc }> => {

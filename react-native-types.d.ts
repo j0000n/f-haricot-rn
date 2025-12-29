@@ -9,6 +9,7 @@ declare module "react-native" {
     View,
     Text,
     Image,
+    ImageBackground,
     ScrollView,
     Pressable,
     TextInput,
@@ -40,6 +41,7 @@ declare module "react-native" {
     StyleProp,
     ImageStyle,
     ViewStyle,
+    TextStyle,
   } from "react-native/types/index";
 
   // Re-export everything else

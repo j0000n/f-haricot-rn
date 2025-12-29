@@ -43,8 +43,8 @@ const createListDetailStyles = (tokens: ThemeTokens) =>
       borderColor: tokens.colors.border,
     },
     deleteButton: {
-      backgroundColor: tokens.colors.error || tokens.colors.surface,
-      borderColor: tokens.colors.error || tokens.colors.border,
+      backgroundColor: tokens.colors.danger || tokens.colors.surface,
+      borderColor: tokens.colors.danger || tokens.colors.border,
     },
     actionButtonText: {
       fontSize: tokens.typography.small,
@@ -52,7 +52,7 @@ const createListDetailStyles = (tokens: ThemeTokens) =>
       color: tokens.colors.textPrimary,
     },
     deleteButtonText: {
-      color: tokens.colors.errorOnSurface || tokens.colors.textPrimary,
+      color: tokens.colors.danger || tokens.colors.textPrimary,
     },
     title: {
       fontFamily: tokens.fontFamilies.display,

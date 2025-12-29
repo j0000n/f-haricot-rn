@@ -196,7 +196,7 @@ const WebViewScreen = () => {
             }}
           >
             <Text style={[styles.backText, { color: tokens.colors.surface }]}>
-              Open in Browser
+              {t("home.openInBrowser")}
             </Text>
           </Pressable>
         </View>

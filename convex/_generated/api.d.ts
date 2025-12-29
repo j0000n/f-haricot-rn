@@ -12,6 +12,7 @@ import type * as allergies from "../allergies.js";
 import type * as auth from "../auth.js";
 import type * as customThemes from "../customThemes.js";
 import type * as dietary from "../dietary.js";
+import type * as dsar from "../dsar.js";
 import type * as fileUrls from "../fileUrls.js";
 import type * as foodLibrary from "../foodLibrary.js";
 import type * as households from "../households.js";
@@ -48,6 +49,7 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   customThemes: typeof customThemes;
   dietary: typeof dietary;
+  dsar: typeof dsar;
   fileUrls: typeof fileUrls;
   foodLibrary: typeof foodLibrary;
   households: typeof households;

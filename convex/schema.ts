@@ -54,6 +54,8 @@ const schema = defineSchema({
     motionPreference: v.optional(
       v.union(v.literal("system"), v.literal("reduce"), v.literal("standard"))
     ),
+    analyticsOptIn: v.optional(v.boolean()),
+    sessionReplayOptIn: v.optional(v.boolean()),
     preferredLanguage: v.optional(
       v.union(
         v.literal("en"),

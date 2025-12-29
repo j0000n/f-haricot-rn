@@ -116,7 +116,7 @@ export function NutritionGoalsCard({
             <Text style={styles.manageLabel}>{t("onboarding.nutritionGoals.calories")}</Text>
             <TextInput
               value={nutritionTargetsInput.calories ?? ""}
-              onChangeText={(value) => onTargetChange("calories", value)}
+              onChangeText={(value: string) => onTargetChange("calories", value)}
               style={styles.goalInput}
               placeholder="2000"
               placeholderTextColor={tokens.colors.textMuted}
@@ -127,7 +127,7 @@ export function NutritionGoalsCard({
             <Text style={styles.manageLabel}>{t("onboarding.nutritionGoals.protein")}</Text>
             <TextInput
               value={nutritionTargetsInput.protein ?? ""}
-              onChangeText={(value) => onTargetChange("protein", value)}
+              onChangeText={(value: string) => onTargetChange("protein", value)}
               style={styles.goalInput}
               placeholder="150"
               placeholderTextColor={tokens.colors.textMuted}
@@ -140,7 +140,7 @@ export function NutritionGoalsCard({
             <Text style={styles.manageLabel}>{t("onboarding.nutritionGoals.fat")}</Text>
             <TextInput
               value={nutritionTargetsInput.fat ?? ""}
-              onChangeText={(value) => onTargetChange("fat", value)}
+              onChangeText={(value: string) => onTargetChange("fat", value)}
               style={styles.goalInput}
               placeholder="70"
               placeholderTextColor={tokens.colors.textMuted}
@@ -151,7 +151,7 @@ export function NutritionGoalsCard({
             <Text style={styles.manageLabel}>{t("onboarding.nutritionGoals.carbs")}</Text>
             <TextInput
               value={nutritionTargetsInput.carbohydrates ?? ""}
-              onChangeText={(value) => onTargetChange("carbohydrates", value)}
+              onChangeText={(value: string) => onTargetChange("carbohydrates", value)}
               style={styles.goalInput}
               placeholder="230"
               placeholderTextColor={tokens.colors.textMuted}
@@ -186,7 +186,7 @@ export function NutritionGoalsCard({
               {isActive ? (
                 <TextInput
                   value={nutritionTargetsInput[valueKey] ?? ""}
-                  onChangeText={(value) => onTargetChange(valueKey, value)}
+                  onChangeText={(value: string) => onTargetChange(valueKey, value)}
                   style={styles.goalInput}
                   placeholder="Target"
                   placeholderTextColor={tokens.colors.textMuted}
@@ -204,7 +204,7 @@ export function NutritionGoalsCard({
           <Text style={styles.goalOptionTitle}>{t("onboarding.nutritionGoals.perMeal")}</Text>
           <Switch
             value={normalizedNutritionGoals.displayPreferences.showPerMealTargets}
-            onValueChange={(value) => onPreferenceToggle("showPerMealTargets", value)}
+            onValueChange={(value: boolean) => onPreferenceToggle("showPerMealTargets", value)}
             thumbColor={tokens.colors.accentOnPrimary}
             trackColor={{ false: tokens.colors.border, true: tokens.colors.accent }}
           />
@@ -213,7 +213,7 @@ export function NutritionGoalsCard({
           <Text style={styles.goalOptionTitle}>{t("onboarding.nutritionGoals.proteinOnly")}</Text>
           <Switch
             value={normalizedNutritionGoals.displayPreferences.showProteinOnly}
-            onValueChange={(value) => onPreferenceToggle("showProteinOnly", value)}
+            onValueChange={(value: boolean) => onPreferenceToggle("showProteinOnly", value)}
             thumbColor={tokens.colors.accentOnPrimary}
             trackColor={{ false: tokens.colors.border, true: tokens.colors.accent }}
           />
@@ -222,7 +222,7 @@ export function NutritionGoalsCard({
           <Text style={styles.goalOptionTitle}>{t("onboarding.nutritionGoals.hideCalories")}</Text>
           <Switch
             value={normalizedNutritionGoals.displayPreferences.hideCalories}
-            onValueChange={(value) => onPreferenceToggle("hideCalories", value)}
+            onValueChange={(value: boolean) => onPreferenceToggle("hideCalories", value)}
             thumbColor={tokens.colors.accentOnPrimary}
             trackColor={{ false: tokens.colors.border, true: tokens.colors.accent }}
           />
@@ -231,7 +231,7 @@ export function NutritionGoalsCard({
           <Text style={styles.goalOptionTitle}>{t("onboarding.nutritionGoals.warnings")}</Text>
           <Switch
             value={normalizedNutritionGoals.displayPreferences.showWarnings}
-            onValueChange={(value) => onPreferenceToggle("showWarnings", value)}
+            onValueChange={(value: boolean) => onPreferenceToggle("showWarnings", value)}
             thumbColor={tokens.colors.accentOnPrimary}
             trackColor={{ false: tokens.colors.border, true: tokens.colors.accent }}
           />

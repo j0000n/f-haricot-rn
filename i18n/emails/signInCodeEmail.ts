@@ -139,7 +139,6 @@ export const getSignInEmailContent = (locale: string | undefined, token: string,
       ${brandMark}
       <h1 style="text-align:center;font-size:24px;font-weight:800;margin:0 0 12px 0;">${copy.heading}: <strong style="color:#e314c4;letter-spacing:2px;"> ${token}</strong></h1>
       ${codeBoxes}
-      <p style="text-align:center;font-size:18px;margin:0 0 12px 0;"><strong style="color:#e314c4;letter-spacing:2px;">${token}</strong></p>
       <p style="text-align:center;font-size:16px;margin:0 0 8px 0;">${copy.expires}</p>
       <p style="text-align:center;font-size:14px;margin:0 0 16px 0;">${copy.ignore}</p>
       <p style="text-align:center;font-size:14px;margin:0 0 24px 0;">${copy.signOff}</p>

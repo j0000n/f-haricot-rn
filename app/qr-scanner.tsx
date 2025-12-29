@@ -18,6 +18,7 @@ import {
   useCameraPermissions,
 } from "expo-camera";
 import * as Location from "expo-location";
+import { useTranslation } from "@/i18n/useTranslation";
 
 const ROUNDING_FACTOR = 100;
 
@@ -30,6 +31,7 @@ export default function QrScanner() {
     useState<Location.PermissionStatus | null>(null);
   const recordScan = useMutation(api.qrEvents.recordScan);
   type RecordScanResponse = Awaited<ReturnType<typeof recordScan>>;
+  const { t } = useTranslation();
   const [error, setError] = useState<string | null>(null);
   const [lastPayload, setLastPayload] = useState<string | null>(null);
   const [serverResult, setServerResult] = useState<RecordScanResponse | null>(null);
@@ -43,9 +45,9 @@ export default function QrScanner() {
     setLocationPermission(locationResponse.status);
 
     if (!cameraResponse.granted || locationResponse.status !== "granted") {
-      setError("Camera and location access are required to start scanning.");
+      setError(t("qrScanner.permissionsRequired"));
     }
-  }, [requestCameraPermission]);
+  }, [requestCameraPermission, t]);
 
   useEffect(() => {
     void requestPermissions();
@@ -57,7 +59,7 @@ export default function QrScanner() {
         return;
       }
       if (!cameraPermission?.granted) {
-        setError("Enable camera access to scan codes.");
+        setError(t("qrScanner.cameraRequired"));
         return;
       }
       setIsProcessing(true);
@@ -77,7 +79,7 @@ export default function QrScanner() {
         setLocationPermission(locationStatus);
 
         if (locationStatus !== "granted") {
-          setError("Location access is needed to validate proximity.");
+          setError(t("qrScanner.locationRequired"));
           setHasCaptured(false);
           return;
         }
@@ -95,13 +97,20 @@ export default function QrScanner() {
 
         setServerResult(response);
       } catch (err) {
-        setError((err as Error).message ?? "Unable to process scan.");
+        setError((err as Error).message ?? t("qrScanner.errorProcessing"));
         setHasCaptured(false);
       } finally {
         setIsProcessing(false);
       }
     },
-    [cameraPermission?.granted, hasCaptured, isProcessing, locationPermission, recordScan],
+    [
+      cameraPermission?.granted,
+      hasCaptured,
+      isProcessing,
+      locationPermission,
+      recordScan,
+      t,
+    ],
   );
 
   const resetScanner = () => {
@@ -113,23 +122,23 @@ export default function QrScanner() {
 
   const statusMessage = useMemo(() => {
     if (serverResult?.paired) {
-      return "Both devices confirmed at the same place.";
+      return t("qrScanner.statusPaired");
     }
     if (serverResult) {
-      return "Waiting for another phone to scan this QR nearby.";
+      return t("qrScanner.statusWaiting");
     }
     if (hasCaptured) {
-      return "Processing scan…";
+      return t("qrScanner.statusProcessing");
     }
-    return "Hold the QR code inside the frame to start.";
-  }, [hasCaptured, serverResult]);
+    return t("qrScanner.statusIdle");
+  }, [hasCaptured, serverResult, t]);
 
   const cameraActive =
     Boolean(cameraPermission?.granted) && isFocused && locationPermission === "granted";
 
   return (
     <>
-      <Stack.Screen options={{ title: "QR scanner" }} />
+      <Stack.Screen options={{ title: t("qrScanner.title") }} />
       <View style={styles.container}>
         <View style={styles.cameraContainer}>
           {cameraActive ? (
@@ -142,24 +151,23 @@ export default function QrScanner() {
             />
           ) : (
             <View style={styles.permissionCard}>
-              <Text style={styles.permissionTitle}>Enable camera & location</Text>
+              <Text style={styles.permissionTitle}>{t("qrScanner.permissionTitle")}</Text>
               <Text style={styles.permissionCopy}>
-                We need both permissions to keep the camera running and confirm that
-                devices are in the same place when scanning.
+                {t("qrScanner.permissionCopy")}
               </Text>
               <Pressable
                 onPress={requestPermissions}
                 style={styles.actionButton}
                 accessibilityRole="button"
               >
-                <Text style={styles.actionButtonText}>Grant permissions</Text>
+                <Text style={styles.actionButtonText}>{t("qrScanner.permissionButton")}</Text>
               </Pressable>
             </View>
           )}
         </View>
 
         <View style={styles.content}>
-          <Text style={styles.headline}>Scan to verify together</Text>
+          <Text style={styles.headline}>{t("qrScanner.headline")}</Text>
           <Text style={styles.body}>{statusMessage}</Text>
 
           <View style={styles.qrFrame}>
@@ -167,15 +175,15 @@ export default function QrScanner() {
               {isProcessing ? (
                 <ActivityIndicator color={tokens.colors.accent} />
               ) : (
-                <Text style={styles.body}>Place the QR in view</Text>
+                <Text style={styles.body}>{t("qrScanner.framePrompt")}</Text>
               )}
             </View>
           </View>
 
           <View style={styles.metadata}>
-            <Text style={styles.metadataLabel}>Last scanned</Text>
+            <Text style={styles.metadataLabel}>{t("qrScanner.lastScannedLabel")}</Text>
             <Text style={styles.metadataValue}>
-              {lastPayload ? lastPayload : "No scans yet"}
+              {lastPayload ? lastPayload : t("qrScanner.noScansYet")}
             </Text>
           </View>
 
@@ -184,15 +192,17 @@ export default function QrScanner() {
               <View style={styles.statusPill}>
                 <Text style={styles.statusText}>
                   {serverResult.paired
-                    ? "Paired with a nearby device"
-                    : "Awaiting a matching scan"}
+                    ? t("qrScanner.pairedStatus")
+                    : t("qrScanner.awaitingMatch")}
                 </Text>
               </View>
               {serverResult.proximityMeters ? (
                 <Text style={styles.metadataValue}>
-                  ~
-                  {Math.round(serverResult.proximityMeters * ROUNDING_FACTOR) /
-                    ROUNDING_FACTOR} m apart
+                  {t("qrScanner.proximityMeters", {
+                    distance:
+                      Math.round(serverResult.proximityMeters * ROUNDING_FACTOR) /
+                      ROUNDING_FACTOR,
+                  })}
                 </Text>
               ) : null}
             </View>
@@ -207,7 +217,7 @@ export default function QrScanner() {
             disabled={isProcessing}
           >
             <Text style={styles.actionButtonText}>
-              {isProcessing ? "Resetting…" : "Scan another code"}
+              {isProcessing ? t("qrScanner.resetting") : t("qrScanner.scanAnother")}
             </Text>
           </Pressable>
         </View>

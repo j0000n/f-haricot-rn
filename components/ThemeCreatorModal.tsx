@@ -583,6 +583,8 @@ export function ThemeCreatorModal({
           home: "home",
           kitchen: "shopping-cart",
           lists: "list",
+          creator: "edit",
+          vendor: "store",
         },
       },
     };
@@ -2417,6 +2419,8 @@ export function ThemeCreatorModal({
                                   home: "home",
                                   kitchen: "shopping-cart",
                                   lists: "list",
+                                  creator: "edit",
+                                  vendor: "store",
                                 },
                               },
                         }))
@@ -2472,6 +2476,8 @@ export function ThemeCreatorModal({
                                       home: tab === "home" ? iconName : "home",
                                       kitchen: tab === "kitchen" ? iconName : "shopping-cart",
                                       lists: tab === "lists" ? iconName : "list",
+                                      creator: "edit",
+                                      vendor: "store",
                                     },
                                   },
                             }))
@@ -2517,6 +2523,8 @@ export function ThemeCreatorModal({
                                     home: "home",
                                     kitchen: "shopping-cart",
                                     lists: "list",
+                                    creator: "edit",
+                                    vendor: "store",
                                   },
                                 },
                           }))

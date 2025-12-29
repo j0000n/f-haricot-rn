@@ -246,7 +246,7 @@ const createAddTaskStyles = (tokens: ThemeTokens) =>
       gap: tokens.spacing.sm,
     },
     chip: {
-      borderRadius: tokens.radii.full,
+      borderRadius: tokens.radii.round,
       borderWidth: tokens.borderWidths.thin,
       borderColor: tokens.colors.border,
       paddingVertical: tokens.spacing.xs,

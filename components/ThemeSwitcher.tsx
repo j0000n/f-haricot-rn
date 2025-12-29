@@ -55,8 +55,6 @@ export function ThemeSwitcher({ variant = "default" }: ThemeSwitcherProps) {
   // Don't auto-load if user has switched to a built-in theme
   useEffect(() => {
     if (savedCustomThemeQuery && savedCustomThemeShareCode && !customTheme && themeName === "custom") {
-      console.log("Loading saved custom theme:", savedCustomThemeQuery.name, savedCustomThemeQuery.shareCode);
-
       const fallbackTokens = getThemeDefinition(defaultThemeName).tokens;
 
       setCustomTheme({
@@ -73,7 +71,23 @@ export function ThemeSwitcher({ variant = "default" }: ThemeSwitcherProps) {
         typography: { ...fallbackTokens.typography, ...savedCustomThemeQuery.typography },
         fontFamilies: savedCustomThemeQuery.fontFamilies,
         logoAsset: savedCustomThemeQuery.logoAsset,
-        tabBar: savedCustomThemeQuery.tabBar,
+        tabBar: savedCustomThemeQuery.tabBar
+          ? {
+              ...savedCustomThemeQuery.tabBar,
+              icon: savedCustomThemeQuery.tabBar.icon
+                ? {
+                    ...savedCustomThemeQuery.tabBar.icon,
+                    names: {
+                      home: savedCustomThemeQuery.tabBar.icon.names.home ?? "home",
+                      kitchen: savedCustomThemeQuery.tabBar.icon.names.kitchen ?? "shopping-cart",
+                      lists: savedCustomThemeQuery.tabBar.icon.names.lists ?? "list",
+                      creator: (savedCustomThemeQuery.tabBar.icon.names as any).creator ?? "edit",
+                      vendor: (savedCustomThemeQuery.tabBar.icon.names as any).vendor ?? "store",
+                    },
+                  }
+                : undefined,
+            }
+          : undefined,
       });
     }
   }, [savedCustomThemeQuery, savedCustomThemeShareCode, customTheme, setCustomTheme, themeName]);
@@ -112,9 +126,24 @@ export function ThemeSwitcher({ variant = "default" }: ThemeSwitcherProps) {
           typography: { ...fallbackTokens.typography, ...customThemeQuery.typography },
           fontFamilies: customThemeQuery.fontFamilies,
           logoAsset: customThemeQuery.logoAsset,
-          tabBar: customThemeQuery.tabBar,
+          tabBar: customThemeQuery.tabBar
+            ? {
+                ...customThemeQuery.tabBar,
+                icon: customThemeQuery.tabBar.icon
+                  ? {
+                      ...customThemeQuery.tabBar.icon,
+                      names: {
+                        home: customThemeQuery.tabBar.icon.names.home ?? "home",
+                        kitchen: customThemeQuery.tabBar.icon.names.kitchen ?? "shopping-cart",
+                        lists: customThemeQuery.tabBar.icon.names.lists ?? "list",
+                        creator: (customThemeQuery.tabBar.icon.names as any).creator ?? "edit",
+                        vendor: (customThemeQuery.tabBar.icon.names as any).vendor ?? "store",
+                      },
+                    }
+                  : undefined,
+              }
+            : undefined,
         };
-        console.log("Applying custom theme:", themeData.name, themeData.shareCode);
         setCustomTheme(themeData);
 
         // Save the share code to user profile for persistence
@@ -453,7 +482,6 @@ export function ThemeSwitcher({ variant = "default" }: ThemeSwitcherProps) {
           setShareCode("");
         }}
         onThemeCreated={async (code) => {
-          console.log("Theme created with code:", code);
           // Automatically apply the newly created theme
           // Clear shareCode input first so the useEffect knows this came from ThemeCreatorModal
           setShareCode("");

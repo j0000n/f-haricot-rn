@@ -2,6 +2,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 
+// TODO(privacy): add a retention policy + scheduled cleanup for QR location events.
 const EARTH_RADIUS_METERS = 6371000;
 const MAX_TIME_DIFF_MS = 2 * 60 * 1000;
 const MAX_DISTANCE_METERS = 50;

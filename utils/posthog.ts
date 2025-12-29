@@ -3,11 +3,10 @@ const POSTHOG_API_KEY =
 
 const POSTHOG_HOST = process.env.EXPO_PUBLIC_POSTHOG_HOST ?? "https://us.i.posthog.com";
 
-const POSTHOG_OPTIONS = {
+const POSTHOG_BASE_OPTIONS = {
   host: POSTHOG_HOST,
   captureApplicationLifecycleEvents: true,
   captureScreens: true,
-  enableSessionReplay: true,
 };
 
-export { POSTHOG_API_KEY, POSTHOG_HOST, POSTHOG_OPTIONS };
+export { POSTHOG_API_KEY, POSTHOG_HOST, POSTHOG_BASE_OPTIONS };

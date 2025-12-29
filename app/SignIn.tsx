@@ -81,21 +81,13 @@ export default function SignIn() {
     formData.append("email", cleanEmail);
 
     const languageToSend = i18n.language;
-    console.log("[SignIn] Current i18n.language:", languageToSend);
     if (languageToSend) {
       formData.append("preferredLanguage", languageToSend);
       // Use a relative URL to avoid SITE_URL validation issues
       // Convex Auth will resolve this relative URL against the configured SITE_URL
       const redirectTo = `/?preferredLanguage=${languageToSend}`;
       formData.append("redirectTo", redirectTo);
-      console.log("[SignIn] Appended redirectTo with preferredLanguage:", redirectTo);
-      console.log("[SignIn] Appended preferredLanguage to formData:", languageToSend);
-    } else {
-      console.log("[SignIn] No language to append, i18n.language is falsy");
     }
-
-    // Log FormData contents (for debugging)
-    console.log("[SignIn] FormData created with email:", cleanEmail, "and preferredLanguage:", languageToSend || "none");
 
     if (userTypeSelection) {
       await savePendingUserType(userTypeSelection);
@@ -104,7 +96,6 @@ export default function SignIn() {
     }
 
     try {
-      console.log("[SignIn] Calling signIn('resend', formData)");
       await signIn("resend", formData);
       setStep("codeSent");
       setSubmitting(false);
@@ -239,12 +230,12 @@ export default function SignIn() {
                 {codeDigits.map((digit, index) => (
                   <TextInput
                     key={`code-${languageKey}-${index}`}
-                    ref={(ref) => {
+                    ref={(ref: any) => {
                       codeInputRefs.current[index] = ref;
                     }}
                     style={styles.codeInput}
                     value={digit}
-                    onChangeText={(value) => handleCodeChange(value, index)}
+                    onChangeText={(value: string) => handleCodeChange(value, index)}
                     keyboardType="number-pad"
                     autoFocus={index === 0}
                     inputMode="numeric"
@@ -252,7 +243,7 @@ export default function SignIn() {
                     returnKeyType="done"
                     onSubmitEditing={Keyboard.dismiss}
                     textAlign="center"
-                    onKeyPress={({ nativeEvent }) =>
+                    onKeyPress={({ nativeEvent }: { nativeEvent: { key: string } }) =>
                       handleCodeKeyPress(index, nativeEvent.key)
                     }
                   />

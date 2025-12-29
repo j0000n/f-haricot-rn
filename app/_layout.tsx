@@ -372,17 +372,17 @@ export default function RootLayout() {
   }
 
   return (
-    <AnalyticsProvider>
-      <ConvexAuthProvider
-        client={convex}
-        storage={
-          Platform.OS === "android" || Platform.OS === "ios"
-            ? secureStorage
-            : undefined
-        }
-      >
+    <ConvexAuthProvider
+      client={convex}
+      storage={
+        Platform.OS === "android" || Platform.OS === "ios"
+          ? secureStorage
+          : undefined
+      }
+    >
+      <AnalyticsProvider>
         <AuthenticatedApp />
-      </ConvexAuthProvider>
-    </AnalyticsProvider>
+      </AnalyticsProvider>
+    </ConvexAuthProvider>
   );
 }

@@ -694,7 +694,7 @@ export default function AddInventoryModal() {
                           style={styles.suggestionInput}
                           keyboardType="numeric"
                           value={String(suggestion.quantity)}
-                          onChangeText={(value) => {
+                          onChangeText={(value: string) => {
                             const nextValue = Number(value.replace(/[^\d]/g, ""));
                             updateSuggestion(index, {
                               quantity: Number.isFinite(nextValue) && nextValue > 0 ? nextValue : 1,

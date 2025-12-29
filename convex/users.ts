@@ -174,6 +174,8 @@ export const updateProfile = mutation({
     motionPreference: v.optional(
       v.union(v.literal("system"), v.literal("reduce"), v.literal("standard"))
     ),
+    analyticsOptIn: v.optional(v.boolean()),
+    sessionReplayOptIn: v.optional(v.boolean()),
     preferredLanguage: v.optional(
       v.union(
         v.literal("en"),
@@ -220,6 +222,7 @@ export const updateProfile = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    // TODO(privacy): define retention/erasure rules for profile data and tie into DSAR workflows.
     const userId = await getAuthUserId(ctx);
     if (userId === null) {
       throw new Error("User must be authenticated to update profile");
@@ -283,6 +286,12 @@ export const updateProfile = mutation({
     }
     if (args.motionPreference !== undefined) {
       updates.motionPreference = args.motionPreference;
+    }
+    if (args.analyticsOptIn !== undefined) {
+      updates.analyticsOptIn = args.analyticsOptIn;
+    }
+    if (args.sessionReplayOptIn !== undefined) {
+      updates.sessionReplayOptIn = args.sessionReplayOptIn;
     }
     if (args.preferredLanguage !== undefined) {
       updates.preferredLanguage = args.preferredLanguage;

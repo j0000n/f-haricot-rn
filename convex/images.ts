@@ -341,7 +341,6 @@ export const generateAndProcessImages = internalAction({
     };
 
     // Step 3: Call the external generate-and-process endpoint
-    console.log('input', promptResult.input, 'sizes', sizes);
     const endpointUrl = "https://brief-veriee-haricot-2c03792a.koyeb.app/generate-and-process";
     const response = await fetch(endpointUrl, {
       method: "POST",

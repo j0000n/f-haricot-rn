@@ -6,12 +6,13 @@ import type { AccessibilityPreferences, BaseTextSize } from "@/styles/tokens";
 import { useTheme, useThemedStyles } from "@/styles/tokens";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useMutation, useQuery } from "convex/react";
-import { Alert, Clipboard, Pressable, ScrollView, Text, View } from "react-native";
+import { Alert, Clipboard, Pressable, ScrollView, Text, View, Platform } from "react-native";
 import { useTranslation } from "@/i18n/useTranslation";
 import { createDisplayEntries } from "@/utils/formatting";
 import {
   createEmptyNutritionGoals,
   derivePerMealTargets,
+  GOAL_PRESETS,
   mergePresetDefaults,
   sanitizeNumber,
   type NutritionGoals,
@@ -25,6 +26,8 @@ import { NutritionGoalsCard } from "@/components/profile/NutritionGoalsCard";
 import { PendingMembersModal } from "@/components/profile/PendingMembersModal";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { ProfileInfoCard } from "@/components/profile/ProfileInfoCard";
+import { PrivacyCard } from "@/components/profile/PrivacyCard";
+import { DsarCard } from "@/components/profile/DsarCard";
 import type {
   HouseholdChild,
   HouseholdDetails,
@@ -61,6 +64,8 @@ export default function ProfileScreen() {
     api.households.removeHouseholdChild
   );
   const updateProfile = useMutation(api.users.updateProfile);
+  const exportMyData = useMutation(api.dsar.exportMyData);
+  const deleteMyAccount = useMutation(api.dsar.deleteMyAccount);
   const { signOut } = useAuthActions();
   const entries = createDisplayEntries(
     user as Record<string, unknown> | null | undefined,
@@ -102,6 +107,11 @@ export default function ProfileScreen() {
   const [editingChildName, setEditingChildName] = useState("");
   const [editingChildAllergies, setEditingChildAllergies] = useState<string[]>([]);
   const [editingChildAllergyInput, setEditingChildAllergyInput] = useState("");
+  const [analyticsOptIn, setAnalyticsOptIn] = useState(false);
+  const [sessionReplayOptIn, setSessionReplayOptIn] = useState(false);
+  const [isSavingPrivacy, setIsSavingPrivacy] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
   useEffect(() => {
     if (
@@ -185,6 +195,13 @@ export default function ProfileScreen() {
         sodium: formatNumber(defaultGoals.targets?.sodium),
       });
     }
+
+    const privacySettings = user as {
+      analyticsOptIn?: boolean | null;
+      sessionReplayOptIn?: boolean | null;
+    } | null;
+    setAnalyticsOptIn(Boolean(privacySettings?.analyticsOptIn));
+    setSessionReplayOptIn(Boolean(privacySettings?.sessionReplayOptIn));
   }, [user]);
 
   useEffect(() => {
@@ -889,6 +906,129 @@ export default function ProfileScreen() {
     }
   };
 
+  const handlePrivacyUpdate = async (
+    nextAnalyticsOptIn: boolean,
+    nextSessionReplayOptIn: boolean
+  ) => {
+    setAnalyticsOptIn(nextAnalyticsOptIn);
+    setSessionReplayOptIn(nextSessionReplayOptIn);
+
+    try {
+      setIsSavingPrivacy(true);
+      await updateProfile({
+        analyticsOptIn: nextAnalyticsOptIn,
+        sessionReplayOptIn: nextSessionReplayOptIn,
+      });
+    } catch (error) {
+      console.error("Failed to update privacy preferences", error);
+      Alert.alert(t("profile.somethingWrong"), t("profile.errorSavePrivacy"));
+      setAnalyticsOptIn(Boolean((user as any)?.analyticsOptIn));
+      setSessionReplayOptIn(Boolean((user as any)?.sessionReplayOptIn));
+    } finally {
+      setIsSavingPrivacy(false);
+    }
+  };
+
+  const handleToggleAnalytics = async (value: boolean) => {
+    const nextSessionReplay = value ? sessionReplayOptIn : false;
+    await handlePrivacyUpdate(value, nextSessionReplay);
+  };
+
+  const handleToggleSessionReplay = async (value: boolean) => {
+    const nextAnalytics = value ? true : analyticsOptIn;
+    await handlePrivacyUpdate(nextAnalytics, value);
+  };
+
+  const handleExportData = async () => {
+    if (isExporting || isDeletingAccount) {
+      return;
+    }
+
+    try {
+      setIsExporting(true);
+      const payload = await exportMyData({});
+      const serialized = JSON.stringify(payload, null, 2);
+
+      if (Platform.OS === "web") {
+        try {
+          const clipboard = typeof navigator !== "undefined" ? navigator.clipboard : undefined;
+          if (clipboard?.writeText) {
+            await clipboard.writeText(serialized);
+          } else {
+            Clipboard.setString(serialized);
+          }
+        } catch {
+          Clipboard.setString(serialized);
+        }
+
+        try {
+          if (typeof document !== "undefined" && typeof URL !== "undefined") {
+            const blob = new Blob([serialized], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `haricot-export-${Date.now()}.json`;
+            link.click();
+            URL.revokeObjectURL(url);
+          }
+        } catch {
+          // Clipboard fallback already handled above.
+        }
+      } else {
+        Clipboard.setString(serialized);
+      }
+
+      Alert.alert(t("profile.dsarExportSuccessTitle"), t("profile.dsarExportSuccessMessage"));
+    } catch (error) {
+      console.error("Failed to export data", error);
+      Alert.alert(t("profile.dsarExportErrorTitle"), t("profile.dsarExportErrorMessage"));
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const confirmDeleteAccount = async () => {
+    if (isDeletingAccount || isExporting) {
+      return;
+    }
+
+    if (Platform.OS === "web") {
+      const confirmed = confirm(t("profile.dsarDeleteConfirmMessage"));
+      if (!confirmed) {
+        return;
+      }
+      await handleDeleteAccount();
+      return;
+    }
+
+    Alert.alert(
+      t("profile.dsarDeleteConfirmTitle"),
+      t("profile.dsarDeleteConfirmMessage"),
+      [
+        { text: t("common.cancel"), style: "cancel" },
+        {
+          text: t("common.delete"),
+          style: "destructive",
+          onPress: () => void handleDeleteAccount(),
+        },
+      ]
+    );
+  };
+
+  const handleDeleteAccount = async () => {
+    try {
+      setIsDeletingAccount(true);
+      await deleteMyAccount({});
+      Alert.alert(t("profile.dsarDeleteSuccessTitle"), t("profile.dsarDeleteSuccessMessage"));
+      await signOut();
+    } catch (error) {
+      console.error("Failed to delete account", error);
+      Alert.alert(t("profile.dsarDeleteErrorTitle"), t("profile.dsarDeleteErrorMessage"));
+    } finally {
+      setIsDeletingAccount(false);
+    }
+  };
+
   const handleDismissPendingModal = () => {
     setIsPendingModalVisible(false);
   };
@@ -976,6 +1116,19 @@ export default function ProfileScreen() {
 
         <AppearanceCard />
         <LanguageCard />
+        <PrivacyCard
+          analyticsOptIn={analyticsOptIn}
+          sessionReplayOptIn={sessionReplayOptIn}
+          isSaving={isSavingPrivacy}
+          onToggleAnalytics={handleToggleAnalytics}
+          onToggleSessionReplay={handleToggleSessionReplay}
+        />
+        <DsarCard
+          isExporting={isExporting}
+          isDeleting={isDeletingAccount}
+          onExport={handleExportData}
+          onDelete={confirmDeleteAccount}
+        />
         <AccessibilityCard
           accessibilityPreferences={accessibilityPreferences}
           isUpdatingAccessibility={isUpdatingAccessibility}

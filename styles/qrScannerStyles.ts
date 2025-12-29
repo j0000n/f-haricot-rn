@@ -93,7 +93,7 @@ const createQrScannerStyles = (tokens: ThemeTokens) =>
     statusPill: {
       paddingHorizontal: tokens.spacing.md,
       paddingVertical: tokens.spacing.xs,
-      borderRadius: tokens.radii.full,
+      borderRadius: tokens.radii.round,
       backgroundColor: tokens.colors.overlay,
       borderWidth: tokens.borderWidths.hairline,
       borderColor: tokens.colors.border,
