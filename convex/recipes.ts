@@ -1702,12 +1702,26 @@ Captured text: ${sourceSummary}`;
     }
 
     const rawAttribution = enhanced.attribution || {};
+    const normalizeAuthorName = (value: unknown): string | undefined => {
+      if (typeof value === "string") {
+        const trimmed = value.trim();
+        return trimmed ? trimmed : undefined;
+      }
+      if (value && typeof value === "object" && "name" in value) {
+        const candidate = (value as { name?: unknown }).name;
+        if (typeof candidate === "string") {
+          const trimmed = candidate.trim();
+          return trimmed ? trimmed : undefined;
+        }
+      }
+      return undefined;
+    };
     const authorSocial = normalizeSocialHandles(rawAttribution.authorSocial);
     const sourceUrl = rawAttribution.sourceUrl || args.sourceUrl;
     const sourceHost = rawAttribution.sourceHost || normalizeHost(sourceUrl);
     const normalizedSourceHost = sourceHost?.toLowerCase();
     const authorName = rawAttribution.authorName || rawAttribution.author || enhanced.author;
-    const normalizedAuthorName = authorName?.trim();
+    const normalizedAuthorName = normalizeAuthorName(authorName);
     const authorNameLookup = normalizedAuthorName?.toLowerCase();
     const authorWebsite = rawAttribution.authorWebsite?.trim();
 

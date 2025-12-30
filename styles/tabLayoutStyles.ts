@@ -50,6 +50,7 @@ const createTabLayoutStyles = (tokens: ThemeTokens) => {
       flex: 1,
       backgroundColor: tabBar.slotBackground,
       minHeight: tokens.spacing.none,
+      overflowY:"scroll",
     },
     tabList: {
       flexDirection: "row",
