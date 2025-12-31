@@ -161,9 +161,7 @@ export default function ProfileScreen() {
   const [isSavingPrivacy, setIsSavingPrivacy] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
-  const [expandedSections, setExpandedSections] = useState<ProfileSectionId[]>([
-    "household",
-  ]);
+  const [expandedSections, setExpandedSections] = useState<ProfileSectionId[]>([]);
 
   useEffect(() => {
     if (
@@ -1244,10 +1242,11 @@ export default function ProfileScreen() {
           styles={styles}
         >
           <ProfileInfoCard entries={entries} hasUser={Boolean(user)} />
-          <Pressable style={styles.logoutButton} onPress={() => void signOut()}>
+
+        </ProfileAccordion>
+        <Pressable style={styles.logoutButton} onPress={() => void signOut()}>
             <Text style={styles.logoutText}>{t("profile.logOut")}</Text>
           </Pressable>
-        </ProfileAccordion>
       </ScrollView>
     </View>
   );
