@@ -5,6 +5,7 @@ import { Rail } from "@/components/Rail";
 import { RecipeRail } from "@/components/RecipeRail";
 import { RecipeRailCompact } from "@/components/RecipeRailCompact";
 import { NutrientRail } from "@/components/NutrientRail";
+import { Swipe } from "@/components/Swipe";
 
 import { api } from "@/convex/_generated/api";
 import { useInventoryDisplay } from "@/hooks/useInventoryDisplay";
@@ -252,6 +253,10 @@ export default function HomeScreen() {
     router.push(`/recipe/${recipe._id}`);
   };
 
+  const handleCookNow = (recipe: Recipe) => {
+    router.push(`/recipe/${recipe._id}`);
+  };
+
   const handleDishPress = (dish: NutrientDish) => {
     // Navigate to search for recipes related to this nutrient dish
     router.push(`/search/${encodeURIComponent(dish.name)}`);
@@ -435,6 +440,19 @@ export default function HomeScreen() {
         ]}
         contentContainerStyle={styles.scrollContent}
       >
+        <View style={styles.swipeSection}>
+          <Swipe
+            recipes={recipeList}
+            userPreferences={{
+              dietaryRestrictions: (user?.dietaryRestrictions ?? []) as string[],
+              favoriteCuisines: (user?.favoriteCuisines ?? []) as string[],
+              cookingStylePreferences: (user?.cookingStylePreferences ?? []) as string[],
+              allergies: (user?.allergies ?? []) as string[],
+            }}
+            inventoryCodes={userInventoryCodes}
+            onCookNow={handleCookNow}
+          />
+        </View>
         {userType ? (
           <View style={styles.userTypeBanner}>
             <Text style={styles.userTypeLabel}>
