@@ -1,5 +1,4 @@
 import { Swipe } from "@/components/Swipe";
-import { PageHeader } from "@/components/PageHeader";
 import { useInventoryDisplay } from "@/hooks/useInventoryDisplay";
 import createHomeStyles from "@/styles/homeStyles";
 import { useThemedStyles } from "@/styles/tokens";
@@ -46,7 +45,6 @@ export default function SwipeScreen() {
 
   return (
     <View style={styles.container}>
-      <PageHeader title="Swipe recipes" />
       <Swipe
         recipes={recipeList}
         userPreferences={{

@@ -410,10 +410,13 @@ const styles = StyleSheet.create({
     paddingTop: 24,
     paddingBottom: 32,
     backgroundColor: "#0f1115",
+    alignItems: "center",
+    justifyContent: "center",
   },
   card: {
     position: "absolute",
     width: "100%",
+    maxWidth: 420,
     height: "100%",
     borderRadius: 24,
     backgroundColor: "#1a1f27",
