@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import createProfileStyles from "@/styles/profileStyles";
@@ -47,6 +47,52 @@ const HIDDEN_USER_FIELDS = new Set(["householdId", "pendingHouseholdId"]);
 const sanitizeAllergy = (value: string) => value.trim();
 const formatNumber = (value: number | null | undefined) =>
   typeof value === "number" && Number.isFinite(value) ? String(value) : "";
+
+type ProfileSectionId =
+  | "household"
+  | "dietary"
+  | "appearance"
+  | "privacy"
+  | "account";
+
+type ProfileAccordionProps = {
+  title: string;
+  description?: string;
+  expanded: boolean;
+  onToggle: () => void;
+  styles: ReturnType<typeof createProfileStyles>;
+  children: ReactNode;
+};
+
+const ProfileAccordion = ({
+  title,
+  description,
+  expanded,
+  onToggle,
+  styles,
+  children,
+}: ProfileAccordionProps) => (
+  <View style={styles.accordion}>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ expanded }}
+      accessibilityLabel={title}
+      accessibilityHint={expanded ? "Collapse section" : "Expand section"}
+      onPress={onToggle}
+    >
+      <View style={styles.accordionHeader}>
+        <View style={styles.accordionHeaderText}>
+          <Text style={styles.accordionTitle}>{title}</Text>
+          {description ? (
+            <Text style={styles.accordionDescription}>{description}</Text>
+          ) : null}
+        </View>
+        <Text style={styles.accordionIndicator}>{expanded ? "–" : "+"}</Text>
+      </View>
+    </Pressable>
+    {expanded ? <View style={styles.accordionContent}>{children}</View> : null}
+  </View>
+);
 
 export default function ProfileScreen() {
   const user = useQuery(api.users.getCurrentUser);
@@ -115,6 +161,9 @@ export default function ProfileScreen() {
   const [isSavingPrivacy, setIsSavingPrivacy] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [expandedSections, setExpandedSections] = useState<ProfileSectionId[]>([
+    "household",
+  ]);
 
   useEffect(() => {
     if (
@@ -1040,6 +1089,14 @@ export default function ProfileScreen() {
     setIsPendingModalVisible(false);
   };
 
+  const handleToggleSection = (section: ProfileSectionId) => {
+    setExpandedSections((current) =>
+      current.includes(section)
+        ? current.filter((entry) => entry !== section)
+        : [...current, section]
+    );
+  };
+
   return (
     <View style={styles.container}>
       <PendingMembersModal
@@ -1054,103 +1111,143 @@ export default function ProfileScreen() {
       <ProfileHeader user={user as Record<string, unknown> | null | undefined} />
 
       <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
-        <HouseholdCard
-          isHouseholdLoading={isHouseholdLoading}
-          household={household}
-          householdDetails={householdDetails}
-          isHouseholdMember={isHouseholdMember}
-          isHouseholdPending={isHouseholdPending}
-          confirmedMembers={confirmedMembers as HouseholdMember[]}
-          pendingMembers={pendingMembers as PendingMember[]}
-          copyFeedback={copyFeedback}
-          householdMessage={householdMessage}
-          confirmingMember={confirmingMember}
-          isManagingHousehold={isManagingHousehold}
-          manageBusy={manageBusy}
-          desiredCode={desiredCode}
-          allergies={allergies}
-          pendingAllergy={pendingAllergy}
-          isSavingAllergies={isSavingAllergies}
-          allergyMessage={allergyMessage}
-          householdChildren={householdChildren as HouseholdChild[]}
-          newChildName={newChildName}
-          newChildAllergyInput={newChildAllergyInput}
-          newChildAllergies={newChildAllergies}
-          childMessage={childMessage}
-          childActionBusy={childActionBusy}
-          editingChildId={editingChildId}
-          editingChildName={editingChildName}
-          editingChildAllergies={editingChildAllergies}
-          editingChildAllergyInput={editingChildAllergyInput}
-          onCopyCode={handleCopyCode}
-          onConfirmMember={handleConfirmMember}
-          onToggleManage={handleToggleManage}
-          onDesiredCodeChange={handleDesiredCodeChange}
-          onChangeCode={handleChangeCode}
-          onLeaveHousehold={handleLeaveHousehold}
-          onPendingAllergyChange={setPendingAllergy}
-          onAddAllergy={handleAddAllergy}
-          onRemoveAllergy={handleRemoveAllergy}
-          onSaveAllergies={handleSaveAllergies}
-          onStartEditingChild={handleStartEditingChild}
-          onEditingChildNameChange={setEditingChildName}
-          onEditingChildAllergyInputChange={setEditingChildAllergyInput}
-          onAddEditingChildAllergy={handleAddEditingChildAllergy}
-          onRemoveEditingChildAllergy={handleRemoveEditingChildAllergy}
-          onSaveChild={handleSaveChild}
-          onDeleteChild={handleDeleteChild}
-          onNewChildNameChange={setNewChildName}
-          onNewChildAllergyInputChange={setNewChildAllergyInput}
-          onAddNewChildAllergy={handleAddNewChildAllergy}
-          onRemoveNewChildAllergy={handleRemoveNewChildAllergy}
-          onCreateChild={handleCreateChild}
-        />
+        <ProfileAccordion
+          title="My household"
+          description="Manage household members, children, and allergy details."
+          expanded={expandedSections.includes("household")}
+          onToggle={() => handleToggleSection("household")}
+          styles={styles}
+        >
+          <HouseholdCard
+            isHouseholdLoading={isHouseholdLoading}
+            household={household}
+            householdDetails={householdDetails}
+            isHouseholdMember={isHouseholdMember}
+            isHouseholdPending={isHouseholdPending}
+            confirmedMembers={confirmedMembers as HouseholdMember[]}
+            pendingMembers={pendingMembers as PendingMember[]}
+            copyFeedback={copyFeedback}
+            householdMessage={householdMessage}
+            confirmingMember={confirmingMember}
+            isManagingHousehold={isManagingHousehold}
+            manageBusy={manageBusy}
+            desiredCode={desiredCode}
+            allergies={allergies}
+            pendingAllergy={pendingAllergy}
+            isSavingAllergies={isSavingAllergies}
+            allergyMessage={allergyMessage}
+            householdChildren={householdChildren as HouseholdChild[]}
+            newChildName={newChildName}
+            newChildAllergyInput={newChildAllergyInput}
+            newChildAllergies={newChildAllergies}
+            childMessage={childMessage}
+            childActionBusy={childActionBusy}
+            editingChildId={editingChildId}
+            editingChildName={editingChildName}
+            editingChildAllergies={editingChildAllergies}
+            editingChildAllergyInput={editingChildAllergyInput}
+            onCopyCode={handleCopyCode}
+            onConfirmMember={handleConfirmMember}
+            onToggleManage={handleToggleManage}
+            onDesiredCodeChange={handleDesiredCodeChange}
+            onChangeCode={handleChangeCode}
+            onLeaveHousehold={handleLeaveHousehold}
+            onPendingAllergyChange={setPendingAllergy}
+            onAddAllergy={handleAddAllergy}
+            onRemoveAllergy={handleRemoveAllergy}
+            onSaveAllergies={handleSaveAllergies}
+            onStartEditingChild={handleStartEditingChild}
+            onEditingChildNameChange={setEditingChildName}
+            onEditingChildAllergyInputChange={setEditingChildAllergyInput}
+            onAddEditingChildAllergy={handleAddEditingChildAllergy}
+            onRemoveEditingChildAllergy={handleRemoveEditingChildAllergy}
+            onSaveChild={handleSaveChild}
+            onDeleteChild={handleDeleteChild}
+            onNewChildNameChange={setNewChildName}
+            onNewChildAllergyInputChange={setNewChildAllergyInput}
+            onAddNewChildAllergy={handleAddNewChildAllergy}
+            onRemoveNewChildAllergy={handleRemoveNewChildAllergy}
+            onCreateChild={handleCreateChild}
+          />
+        </ProfileAccordion>
 
-        <NutritionGoalsCard
-          normalizedNutritionGoals={normalizedNutritionGoals}
-          nutritionTargetsInput={nutritionTargetsInput}
-          perMealNutritionPreview={perMealNutritionPreview}
-          isSavingNutritionGoals={isSavingNutritionGoals}
-          nutritionMessage={nutritionMessage}
-          onSelectPreset={handleSelectNutritionPreset}
-          onToggleCategory={handleToggleNutritionCategory}
-          onToggleMetric={handleToggleNutritionMetric}
-          onTargetChange={handleNutritionTargetChange}
-          onPreferenceToggle={handleNutritionPreferenceToggle}
-          onMealCountChange={handleNutritionMealCountChange}
-          onSaveNutritionGoals={handleSaveNutritionGoals}
-        />
+        <ProfileAccordion
+          title="Dietary requirements"
+          description="Adjust nutrition goals and tracking preferences."
+          expanded={expandedSections.includes("dietary")}
+          onToggle={() => handleToggleSection("dietary")}
+          styles={styles}
+        >
+          <NutritionGoalsCard
+            normalizedNutritionGoals={normalizedNutritionGoals}
+            nutritionTargetsInput={nutritionTargetsInput}
+            perMealNutritionPreview={perMealNutritionPreview}
+            isSavingNutritionGoals={isSavingNutritionGoals}
+            nutritionMessage={nutritionMessage}
+            onSelectPreset={handleSelectNutritionPreset}
+            onToggleCategory={handleToggleNutritionCategory}
+            onToggleMetric={handleToggleNutritionMetric}
+            onTargetChange={handleNutritionTargetChange}
+            onPreferenceToggle={handleNutritionPreferenceToggle}
+            onMealCountChange={handleNutritionMealCountChange}
+            onSaveNutritionGoals={handleSaveNutritionGoals}
+          />
+        </ProfileAccordion>
 
-        <AppearanceCard />
-        <LanguageCard />
-        <PrivacyCard
-          analyticsOptIn={analyticsOptIn}
-          sessionReplayOptIn={sessionReplayOptIn}
-          isSaving={isSavingPrivacy}
-          onToggleAnalytics={handleToggleAnalytics}
-          onToggleSessionReplay={handleToggleSessionReplay}
-        />
-        <LegalCard onOpenDoc={handleOpenLegal} />
-        <DsarCard
-          isExporting={isExporting}
-          isDeleting={isDeletingAccount}
-          onExport={handleExportData}
-          onDelete={confirmDeleteAccount}
-        />
-        <AccessibilityCard
-          accessibilityPreferences={accessibilityPreferences}
-          isUpdatingAccessibility={isUpdatingAccessibility}
-          onSelectTextSize={handleSelectTextSize}
-          onToggleHighContrast={handleToggleHighContrast}
-          onToggleDyslexia={handleToggleDyslexia}
-          onSelectMotionPreference={handleSelectMotionPreference}
-        />
+        <ProfileAccordion
+          title="App appearance"
+          description="Customize the look, language, and accessibility preferences."
+          expanded={expandedSections.includes("appearance")}
+          onToggle={() => handleToggleSection("appearance")}
+          styles={styles}
+        >
+          <AppearanceCard />
+          <LanguageCard />
+          <AccessibilityCard
+            accessibilityPreferences={accessibilityPreferences}
+            isUpdatingAccessibility={isUpdatingAccessibility}
+            onSelectTextSize={handleSelectTextSize}
+            onToggleHighContrast={handleToggleHighContrast}
+            onToggleDyslexia={handleToggleDyslexia}
+            onSelectMotionPreference={handleSelectMotionPreference}
+          />
+        </ProfileAccordion>
 
-        <ProfileInfoCard entries={entries} hasUser={Boolean(user)} />
+        <ProfileAccordion
+          title="Privacy & security"
+          description="Control analytics, legal docs, and your data rights."
+          expanded={expandedSections.includes("privacy")}
+          onToggle={() => handleToggleSection("privacy")}
+          styles={styles}
+        >
+          <PrivacyCard
+            analyticsOptIn={analyticsOptIn}
+            sessionReplayOptIn={sessionReplayOptIn}
+            isSaving={isSavingPrivacy}
+            onToggleAnalytics={handleToggleAnalytics}
+            onToggleSessionReplay={handleToggleSessionReplay}
+          />
+          <LegalCard onOpenDoc={handleOpenLegal} />
+          <DsarCard
+            isExporting={isExporting}
+            isDeleting={isDeletingAccount}
+            onExport={handleExportData}
+            onDelete={confirmDeleteAccount}
+          />
+        </ProfileAccordion>
 
-        <Pressable style={styles.logoutButton} onPress={() => void signOut()}>
-          <Text style={styles.logoutText}>{t("profile.logOut")}</Text>
-        </Pressable>
+        <ProfileAccordion
+          title="Account information"
+          description="Review account details or sign out."
+          expanded={expandedSections.includes("account")}
+          onToggle={() => handleToggleSection("account")}
+          styles={styles}
+        >
+          <ProfileInfoCard entries={entries} hasUser={Boolean(user)} />
+          <Pressable style={styles.logoutButton} onPress={() => void signOut()}>
+            <Text style={styles.logoutText}>{t("profile.logOut")}</Text>
+          </Pressable>
+        </ProfileAccordion>
       </ScrollView>
     </View>
   );
