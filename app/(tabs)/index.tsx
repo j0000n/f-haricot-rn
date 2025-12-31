@@ -252,6 +252,7 @@ export default function HomeScreen() {
     router.push(`/recipe/${recipe._id}`);
   };
 
+
   const handleDishPress = (dish: NutrientDish) => {
     // Navigate to search for recipes related to this nutrient dish
     router.push(`/search/${encodeURIComponent(dish.name)}`);
@@ -435,6 +436,16 @@ export default function HomeScreen() {
         ]}
         contentContainerStyle={styles.scrollContent}
       >
+        <View style={styles.swipeSection}>
+          <Link href="/swipe" asChild>
+            <Pressable style={styles.swipeLink} accessibilityRole="button">
+              <Text style={styles.swipeTitle}>Swipe recipes</Text>
+              <Text style={styles.swipeSubtitle}>
+                Discover personalized recipes with a Tinder-style swipe.
+              </Text>
+            </Pressable>
+          </Link>
+        </View>
         {userType ? (
           <View style={styles.userTypeBanner}>
             <Text style={styles.userTypeLabel}>

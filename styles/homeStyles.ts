@@ -65,6 +65,33 @@ const createHomeStyles = (tokens: ThemeTokens) =>
       paddingTop: tokens.spacing.lg,
       paddingBottom: tokens.layout.fabOffset + tokens.spacing.lg,
     },
+    swipeSection: {
+      marginHorizontal: tokens.spacing.lg,
+      marginBottom: tokens.spacing.xl,
+      borderRadius: tokens.radii.lg,
+      overflow: "hidden",
+      backgroundColor: tokens.colors.surface,
+      shadowColor: tokens.shadows.card.shadowColor,
+      shadowOffset: tokens.shadows.card.shadowOffset,
+      shadowOpacity: tokens.shadows.card.shadowOpacity,
+      shadowRadius: tokens.shadows.card.shadowRadius,
+      elevation: tokens.shadows.card.elevation,
+    },
+    swipeLink: {
+      padding: tokens.spacing.lg,
+      gap: tokens.spacing.xs,
+    },
+    swipeTitle: {
+      fontSize: tokens.typography.heading,
+      fontFamily: tokens.fontFamilies.semiBold,
+      color: tokens.colors.textPrimary,
+    },
+    swipeSubtitle: {
+      fontSize: tokens.typography.body,
+      fontFamily: tokens.fontFamilies.regular,
+      color: tokens.colors.textSecondary,
+      lineHeight: tokens.typography.body * tokens.lineHeights.normal,
+    },
     userTypeBanner: {
       marginHorizontal: tokens.spacing.lg,
       marginBottom: tokens.spacing.md,
