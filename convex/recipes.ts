@@ -987,6 +987,12 @@ export const extractRecipeMetadata = action({
           stepNumber: v.number(),
           text: v.string(),
           timeInMinutes: v.optional(v.number()),
+          temperature: v.optional(
+            v.object({
+              unit: v.string(),
+              value: v.number(),
+            })
+          ),
         })
       )
     ),
@@ -1672,11 +1678,13 @@ Captured text: ${sourceSummary}`;
         const timeInMinutes =
           typeof step?.timeInMinutes === "number" ? step.timeInMinutes : undefined;
 
-        const temperature =
+        const temperature:
+          | { value: number; unit: "F" | "C" }
+          | undefined =
           step?.temperature &&
           typeof step.temperature.value === "number" &&
           (step.temperature.unit === "F" || step.temperature.unit === "C")
-            ? { value: step.temperature.value, unit: step.temperature.unit }
+            ? { value: step.temperature.value, unit: step.temperature.unit as "F" | "C" }
             : undefined;
 
         return {
@@ -2738,6 +2746,12 @@ export const createRecipeWithImage = action({
           v.object({
             stepNumber: v.number(),
             text: v.string(),
+            temperature: v.optional(
+              v.object({
+                unit: v.string(),
+                value: v.number(),
+              })
+            ),
           })
         )
       ),
@@ -2991,6 +3005,13 @@ export const insertFromIngestion = mutation({
           v.object({
             stepNumber: v.number(),
             text: v.string(),
+            timeInMinutes: v.optional(v.number()),
+            temperature: v.optional(
+              v.object({
+                unit: v.union(v.literal("F"), v.literal("C")),
+                value: v.number(),
+              })
+            ),
           })
         )
       ),
