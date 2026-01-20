@@ -1829,7 +1829,9 @@ Captured text: ${sourceSummary}`;
 
         // Normalize normalizedUnit to ensure it's one of the valid values or undefined
         let normalizedUnit: "g" | "ml" | "count" | undefined = ingredient.normalizedUnit;
-        if (normalizedUnit && normalizedUnit !== "g" && normalizedUnit !== "ml" && normalizedUnit !== "count") {
+        if (normalizedUnit === null || normalizedUnit === undefined) {
+          normalizedUnit = undefined;
+        } else if (normalizedUnit !== "g" && normalizedUnit !== "ml" && normalizedUnit !== "count") {
           // Invalid normalizedUnit - set to undefined
           normalizedUnit = undefined;
         }
