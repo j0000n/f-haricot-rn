@@ -358,6 +358,207 @@ const normalizeSocialHandles = (social?: any) => {
   return Object.keys(normalized).length > 0 ? normalized : undefined;
 };
 
+const URL_SOURCE_TYPES = new Set<SourceType>([
+  "website",
+  "blog",
+  "pinterest",
+  "youtube",
+  "instagram",
+  "tiktok",
+  "facebook",
+  "twitter",
+  "reddit",
+]);
+
+const decodeHtmlEntities = (value: string) =>
+  value
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, "\"")
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)));
+
+const stripHtmlTags = (value: string) => {
+  const withoutScripts = value.replace(
+    /<(script|style|noscript)[^>]*>[\s\S]*?<\/\1>/gi,
+    "",
+  );
+  const withLineBreaks = withoutScripts
+    .replace(/<\s*br\s*\/?>/gi, "\n")
+    .replace(/<\/\s*p\s*>/gi, "\n")
+    .replace(/<\/\s*li\s*>/gi, "\n");
+  const withoutTags = withLineBreaks.replace(/<[^>]+>/g, " ");
+  const decoded = decodeHtmlEntities(withoutTags);
+  return decoded.replace(/\s+\n/g, "\n").replace(/\n{3,}/g, "\n\n").replace(/\s{2,}/g, " ").trim();
+};
+
+const extractMetaContent = (html: string, key: string) => {
+  const regex = new RegExp(
+    `<meta[^>]+(?:property|name)=[\\"']${key}[\\\"'][^>]+content=[\\"']([^\\\"']+)[\\\"'][^>]*>`,
+    "i",
+  );
+  const match = html.match(regex);
+  return match?.[1] ? decodeHtmlEntities(match[1].trim()) : undefined;
+};
+
+const extractTagText = (html: string, tag: string) => {
+  const regex = new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`, "i");
+  const match = html.match(regex);
+  return match?.[1] ? stripHtmlTags(match[1]) : undefined;
+};
+
+const extractReadableText = (html: string) => {
+  const article = extractTagText(html, "article");
+  if (article) return article;
+  const main = extractTagText(html, "main");
+  if (main) return main;
+  const body = extractTagText(html, "body");
+  return body;
+};
+
+const parseJsonLd = (raw: string) => {
+  try {
+    return JSON.parse(raw);
+  } catch (error) {
+    console.warn("[ingestUniversal] Failed to parse JSON-LD:", error);
+    return undefined;
+  }
+};
+
+const isRecipeType = (typeValue: unknown) => {
+  if (!typeValue) return false;
+  if (typeof typeValue === "string") {
+    return typeValue.toLowerCase().includes("recipe");
+  }
+  if (Array.isArray(typeValue)) {
+    return typeValue.some((entry) => typeof entry === "string" && entry.toLowerCase().includes("recipe"));
+  }
+  return false;
+};
+
+const collectRecipeNodes = (node: any): any[] => {
+  if (!node) return [];
+  if (Array.isArray(node)) {
+    return node.flatMap((item) => collectRecipeNodes(item));
+  }
+  if (typeof node !== "object") return [];
+  if (isRecipeType(node["@type"])) {
+    return [node];
+  }
+  if (node["@graph"]) {
+    return collectRecipeNodes(node["@graph"]);
+  }
+  return [];
+};
+
+const normalizeInstructionText = (value: unknown): string[] => {
+  if (!value) return [];
+  if (typeof value === "string") {
+    return [value];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap((entry) => normalizeInstructionText(entry));
+  }
+  if (typeof value === "object") {
+    const textValue =
+      (value as { text?: unknown }).text ??
+      (value as { name?: unknown }).name ??
+      (value as { itemListElement?: unknown }).itemListElement;
+    return normalizeInstructionText(textValue);
+  }
+  return [];
+};
+
+const extractRecipeStructuredText = (html: string) => {
+  const jsonLdMatches = Array.from(
+    html.matchAll(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi),
+  );
+
+  const recipeNodes: any[] = [];
+  for (const match of jsonLdMatches) {
+    const parsed = parseJsonLd(match[1]);
+    if (!parsed) continue;
+    recipeNodes.push(...collectRecipeNodes(parsed));
+  }
+
+  const recipeNode = recipeNodes.find((node) => isRecipeType(node["@type"])) ?? recipeNodes[0];
+  const jsonLdIngredients = Array.isArray(recipeNode?.recipeIngredient)
+    ? recipeNode.recipeIngredient
+    : Array.isArray(recipeNode?.ingredients)
+      ? recipeNode.ingredients
+      : [];
+  const jsonLdInstructions = normalizeInstructionText(recipeNode?.recipeInstructions);
+
+  const microdataIngredients = Array.from(
+    html.matchAll(/itemprop=["']recipeIngredient["'][^>]*content=["']([^"']+)["'][^>]*>/gi),
+  ).map((match) => decodeHtmlEntities(match[1].trim()));
+  const microdataIngredientTags = Array.from(
+    html.matchAll(/itemprop=["']recipeIngredient["'][^>]*>([\s\S]*?)<\/[^>]+>/gi),
+  ).map((match) => stripHtmlTags(match[1]));
+
+  const microdataInstructions = Array.from(
+    html.matchAll(/itemprop=["']recipeInstructions["'][^>]*content=["']([^"']+)["'][^>]*>/gi),
+  ).map((match) => decodeHtmlEntities(match[1].trim()));
+  const microdataInstructionTags = Array.from(
+    html.matchAll(/itemprop=["']recipeInstructions["'][^>]*>([\s\S]*?)<\/[^>]+>/gi),
+  ).map((match) => stripHtmlTags(match[1]));
+
+  const ingredients = [
+    ...jsonLdIngredients,
+    ...microdataIngredients,
+    ...microdataIngredientTags,
+  ].map((entry) => stripHtmlTags(String(entry))).filter(Boolean);
+  const instructions = [
+    ...jsonLdInstructions,
+    ...microdataInstructions,
+    ...microdataInstructionTags,
+  ].map((entry) => stripHtmlTags(String(entry))).filter(Boolean);
+
+  return { ingredients, instructions };
+};
+
+const formatStructuredRecipeText = (ingredients: string[], instructions: string[]) => {
+  const sections: string[] = [];
+  if (ingredients.length > 0) {
+    sections.push(`Ingredients:\n${ingredients.map((item) => `- ${item}`).join("\n")}`);
+  }
+  if (instructions.length > 0) {
+    sections.push(`Instructions:\n${instructions.map((step, index) => `${index + 1}. ${step}`).join("\n")}`);
+  }
+  return sections.join("\n\n").trim();
+};
+
+const fetchSourceHtml = async (url: string) => {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 12000);
+  try {
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent": "HaricotRecipeIngest/1.0",
+        Accept: "text/html,application/xhtml+xml",
+      },
+      signal: controller.signal,
+    });
+    if (!response.ok) {
+      console.warn(`[ingestUniversal] Failed to fetch HTML: ${response.status} ${response.statusText}`);
+      return undefined;
+    }
+    const contentType = response.headers.get("content-type") || "";
+    if (!contentType.includes("text/html")) {
+      console.warn(`[ingestUniversal] Skipping non-HTML content type: ${contentType}`);
+      return undefined;
+    }
+    return await response.text();
+  } catch (error) {
+    console.warn("[ingestUniversal] Failed to fetch HTML:", error);
+    return undefined;
+  } finally {
+    clearTimeout(timeout);
+  }
+};
+
 const parseLegacyAuthorAttribution = (author?: string) => {
   if (!author) {
     return { authorName: undefined, authorWebsite: undefined, authorSocial: undefined };
@@ -1391,12 +1592,51 @@ export const ingestUniversal = action({
     const foodLibrary = await ctx.runQuery(api.foodLibrary.listAll, {});
     const translationGuides = await ctx.runQuery(api.translationGuides.listAll, {});
 
+    let htmlStructuredSummary: string | undefined;
+    let htmlFallbackSummary: string | undefined;
+    let htmlIngredientCount = 0;
+    let htmlInstructionCount = 0;
+
+    if (args.sourceUrl && URL_SOURCE_TYPES.has(args.sourceType as SourceType)) {
+      const html = await fetchSourceHtml(args.sourceUrl);
+      if (html) {
+        const { ingredients, instructions } = extractRecipeStructuredText(html);
+        htmlIngredientCount = ingredients.length;
+        htmlInstructionCount = instructions.length;
+        const structuredText = formatStructuredRecipeText(ingredients, instructions);
+        if (structuredText) {
+          htmlStructuredSummary = structuredText;
+        }
+
+        if (!htmlStructuredSummary) {
+          const ogTitle = extractMetaContent(html, "og:title") || extractTagText(html, "title");
+          const ogDescription =
+            extractMetaContent(html, "og:description") ||
+            extractMetaContent(html, "description") ||
+            args.socialMetadata?.description;
+          const readableText = extractReadableText(html);
+          htmlFallbackSummary = [ogTitle, ogDescription, readableText]
+            .filter((value): value is string => Boolean(value && value.trim()))
+            .join("\n\n")
+            .trim();
+        }
+      }
+    }
+
     const sourceSummary =
+      htmlStructuredSummary ||
+      htmlFallbackSummary ||
       args.rawText ||
       args.extractedText ||
       args.socialMetadata?.description ||
       args.socialMetadata?.title ||
       "Provide a universal recipe representation for ingestion.";
+
+    const sourceHostForLog = normalizeHost(args.sourceUrl);
+    console.info(
+      `[ingestUniversal] Source host: ${sourceHostForLog ?? "unknown"}, summary length: ${sourceSummary.length}, ` +
+        `ingredients: ${htmlIngredientCount}, instructions: ${htmlInstructionCount}`,
+    );
 
     const prompt = `You are the Universal Recipe Encoding System (URES) ingestion agent. Produce strict JSON for Convex mutation.
 
