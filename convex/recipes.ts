@@ -1876,11 +1876,61 @@ Captured text: ${sourceSummary}`;
         const prep = normalizeOptionalString(ingredient.preparation);
         const origText = normalizeOptionalString(ingredient.originalText);
 
+        const parseDisplayQuantity = (value?: string) => {
+          if (!value) return undefined;
+          const trimmed = value.trim();
+          if (!trimmed) return undefined;
+          const fractionMatch = trimmed.match(/^(\d+)\s+(\d+)\/(\d+)$/);
+          if (fractionMatch) {
+            const whole = Number(fractionMatch[1]);
+            const numerator = Number(fractionMatch[2]);
+            const denominator = Number(fractionMatch[3]);
+            if (denominator !== 0) return whole + numerator / denominator;
+          }
+          const simpleFraction = trimmed.match(/^(\d+)\/(\d+)$/);
+          if (simpleFraction) {
+            const numerator = Number(simpleFraction[1]);
+            const denominator = Number(simpleFraction[2]);
+            if (denominator !== 0) return numerator / denominator;
+          }
+          const parsed = Number.parseFloat(trimmed.replace(/[^\d.]+/g, ""));
+          return Number.isFinite(parsed) ? parsed : undefined;
+        };
+
+        let quantity: number;
+        if (typeof ingredient.quantity === "number" && Number.isFinite(ingredient.quantity)) {
+          quantity = ingredient.quantity;
+        } else {
+          const parsedQuantity =
+            parseDisplayQuantity(displayQuantity) ??
+            (typeof ingredient.normalizedQuantity === "number" && Number.isFinite(ingredient.normalizedQuantity)
+              ? ingredient.normalizedQuantity
+              : undefined);
+          if (parsedQuantity !== undefined) {
+            quantity = parsedQuantity;
+          } else {
+            console.warn("[ingestUniversal] Invalid ingredient quantity, defaulting to 0", {
+              originalText: origText,
+              displayQuantity,
+            });
+            quantity = 0;
+          }
+        }
+
+        let unit: string;
+        if (typeof ingredient.unit === "string" && ingredient.unit.trim()) {
+          unit = ingredient.unit.trim();
+        } else if (displayUnit) {
+          unit = displayUnit;
+        } else {
+          unit = "count";
+        }
+
         // Build the normalized ingredient object, explicitly handling null values
         const normalizedIngredient: any = {
           foodCode, // Ensure foodCode is always set
-          quantity: ingredient.quantity,
-          unit: ingredient.unit,
+          quantity,
+          unit,
           normalizedUnit, // Ensure normalizedUnit is valid or undefined
           displayQuantity, // Ensure displayQuantity is a string or undefined
           displayUnit, // Ensure displayUnit is a string or undefined
