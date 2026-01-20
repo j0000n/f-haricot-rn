@@ -96,7 +96,7 @@ export default function ListDetailScreen() {
           language,
         });
 
-        return `${formatIngredientQuantity(ingredient)} · ${name}`;
+        return `${formatIngredientQuantity(ingredient, { language, t })} · ${name}`;
       });
 
       return {

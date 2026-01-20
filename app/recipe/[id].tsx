@@ -17,6 +17,7 @@ import type { Recipe } from "@/types/recipe";
 import type { ThemeTokens } from "@/styles/themes/types";
 import { useThemedStyles, useTokens } from "@/styles/tokens";
 import { decodeEncodedSteps } from "@/utils/decodeEncodedSteps";
+import { getRecipeLanguage } from "@/utils/translation";
 
 // Conditionally import WebView - it requires native code
 let WebView: typeof import("react-native-webview").WebView | null = null;
@@ -95,6 +96,7 @@ function estimateServingSize(
 function formatServingSizeAsFraction(
   servingSize: string,
   servingsPerContainer: number,
+  t: (key: string) => string,
 ): string {
   // If only 1 serving, always return original
   if (servingsPerContainer === 1) {
@@ -113,7 +115,7 @@ function formatServingSizeAsFraction(
 
   // Format as fraction
   const fraction = `1/${servingsPerContainer}`;
-  return `${fraction} of container`;
+  return `${fraction} ${t("recipe.nutrition.ofContainer")}`;
 }
 
 const createStyles = (tokens: ThemeTokens) =>
@@ -275,7 +277,8 @@ export default function RecipeDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const recipeId = useMemo(() => (Array.isArray(id) ? id[0] : id), [id]);
   const { t, i18n } = useTranslation();
-  const language = (i18n.language || "en") as keyof Recipe["recipeName"];
+  // Map i18n language code (e.g., "fr-FR") to recipe language code (e.g., "fr")
+  const recipeLanguage = getRecipeLanguage(i18n.language || "en") as keyof Recipe["recipeName"];
   const styles = useThemedStyles<Styles>(createStyles);
   const tokens = useTokens();
   const [isRunnerMode, setIsRunnerMode] = useState(false);
@@ -315,7 +318,7 @@ export default function RecipeDetailScreen() {
         // Decode steps for this method (if encodedSteps exists) or use sourceSteps
         return decodeEncodedSteps(
           method.encodedSteps,
-          language,
+          recipeLanguage,
           "cards",
           method.steps,
           translationGuides ?? undefined,
@@ -326,7 +329,7 @@ export default function RecipeDetailScreen() {
     // Fallback to regular decodedSteps (for single-method or when no method selected)
     return decodeEncodedSteps(
       recipe.encodedSteps,
-      language,
+      recipeLanguage,
       "cards",
       recipe.sourceSteps,
       translationGuides ?? undefined,
@@ -337,7 +340,7 @@ export default function RecipeDetailScreen() {
     recipe.cookingMethods,
     recipe.encodedSteps,
     recipe.sourceSteps,
-    language,
+    recipeLanguage,
     translationGuides,
   ]);
 
@@ -353,12 +356,12 @@ export default function RecipeDetailScreen() {
     () =>
       decodeEncodedSteps(
         recipe.encodedSteps,
-        language,
+        recipeLanguage,
         "cards",
         recipe.sourceSteps,
         translationGuides ?? undefined,
       ),
-    [language, recipe.encodedSteps, recipe.sourceSteps, translationGuides],
+    [recipeLanguage, recipe.encodedSteps, recipe.sourceSteps, translationGuides],
   );
 
   const attributionDetails = useMemo(() => {
@@ -413,7 +416,7 @@ export default function RecipeDetailScreen() {
         <Stack.Screen options={headerOptions} />
         <RecipeRunner
           recipe={recipe}
-          language={language}
+          language={recipeLanguage}
           translationGuides={translationGuides ?? undefined}
           onExit={() => setIsRunnerMode(false)}
         />
@@ -430,7 +433,7 @@ export default function RecipeDetailScreen() {
       estimateServingSize(recipe.mealTypeTags, recipe.recipeName);
 
     // Format serving size as fraction of container if generic
-    const servingSize = formatServingSizeAsFraction(rawServingSize, recipe.servings);
+    const servingSize = formatServingSizeAsFraction(rawServingSize, recipe.servings, t);
 
     // Default values if nutrition profile is not available
     if (!profile) {
@@ -440,8 +443,8 @@ export default function RecipeDetailScreen() {
         calories: 0,
         nutrients: [],
         notes: [
-          "* Nutrition information is not available for this recipe.",
-          "* The % Daily Value (DV) tells you how much a nutrient in a serving of food contributes to a daily diet. 2,000 Calories a day is used for general nutrition advice.",
+          t("recipe.nutrition.nutritionNotAvailable"),
+          t("recipe.nutrition.dailyValueNote"),
         ],
         caloriesPerGram: {
           fat: 9,
@@ -464,7 +467,7 @@ export default function RecipeDetailScreen() {
     if (profile.fatPerServing > 0) {
       nutrients.push({
         key: "totalFat",
-        label: "Total Fat",
+        label: t("recipe.nutrition.totalFat"),
         amount: `${profile.fatPerServing} g`,
         percentDailyValue: Math.round((profile.fatPerServing / 78) * 100),
         isHeader: true,
@@ -475,7 +478,7 @@ export default function RecipeDetailScreen() {
     if (profile.carbsPerServing > 0) {
       nutrients.push({
         key: "totalCarbohydrate",
-        label: "Total Carbohydrate",
+        label: t("recipe.nutrition.totalCarbohydrate"),
         amount: `${profile.carbsPerServing} g`,
         percentDailyValue: Math.round((profile.carbsPerServing / 275) * 100),
         isHeader: true,
@@ -484,7 +487,7 @@ export default function RecipeDetailScreen() {
       if (profile.fiberPerServing !== undefined && profile.fiberPerServing > 0) {
         nutrients.push({
           key: "dietaryFiber",
-          label: "Dietary Fiber",
+          label: t("recipe.nutrition.dietaryFiber"),
           amount: `${profile.fiberPerServing} g`,
           percentDailyValue: Math.round((profile.fiberPerServing / 28) * 100),
           isSubItem: true,
@@ -494,7 +497,7 @@ export default function RecipeDetailScreen() {
       if (profile.sugarsPerServing !== undefined && profile.sugarsPerServing > 0) {
         nutrients.push({
           key: "totalSugars",
-          label: "Total Sugars",
+          label: t("recipe.nutrition.totalSugars"),
           amount: `${profile.sugarsPerServing} g`,
           isSubItem: true,
         });
@@ -505,7 +508,7 @@ export default function RecipeDetailScreen() {
     if (profile.proteinPerServing > 0) {
       nutrients.push({
         key: "protein",
-        label: "Protein",
+        label: t("recipe.nutrition.protein"),
         amount: `${profile.proteinPerServing} g`,
         percentDailyValue: Math.round((profile.proteinPerServing / 50) * 100),
         isHeader: true,
@@ -516,7 +519,7 @@ export default function RecipeDetailScreen() {
     if (profile.sodiumPerServing !== undefined && profile.sodiumPerServing > 0) {
       nutrients.push({
         key: "sodium",
-        label: "Sodium",
+        label: t("recipe.nutrition.sodium"),
         amount: `${profile.sodiumPerServing} mg`,
         percentDailyValue: Math.round((profile.sodiumPerServing / 2300) * 100),
         isHeader: true,
@@ -529,7 +532,7 @@ export default function RecipeDetailScreen() {
       calories: profile.caloriesPerServing,
       nutrients,
       notes: [
-        "* The % Daily Value (DV) tells you how much a nutrient in a serving of food contributes to a daily diet. 2,000 Calories a day is used for general nutrition advice.",
+        t("recipe.nutrition.dailyValueNote"),
       ],
       caloriesPerGram: {
         fat: 9,
@@ -537,7 +540,7 @@ export default function RecipeDetailScreen() {
         protein: 4,
       },
     };
-  }, [recipe.nutritionProfile, recipe.servings, recipe.mealTypeTags, recipe.recipeName]);
+  }, [recipe.nutritionProfile, recipe.servings, recipe.mealTypeTags, recipe.recipeName, t]);
 
   const dailyValues = useMemo(() => {
     const userGoals = (currentUser as { nutritionGoals?: { targets?: {
@@ -614,7 +617,7 @@ export default function RecipeDetailScreen() {
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <RecipeHeader
             recipe={recipe}
-            language={language}
+            language={recipeLanguage}
             onStartCooking={() => setIsRunnerMode(true)}
             userInventory={inventoryCodes}
           />
@@ -622,7 +625,7 @@ export default function RecipeDetailScreen() {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{t("recipe.description")}</Text>
             <Text style={styles.description}>
-              {recipe.description[language] || recipe.description.en}
+              {recipe.description[recipeLanguage] || recipe.description.en}
             </Text>
           </View>
 
@@ -633,7 +636,7 @@ export default function RecipeDetailScreen() {
             <IngredientsList
               ingredients={recipe.ingredients}
               userInventory={inventoryCodes}
-              language={language}
+              language={recipeLanguage}
             />
           </View>
 
@@ -666,7 +669,7 @@ export default function RecipeDetailScreen() {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{t("recipe.nutrition", { defaultValue: "Nutrition" })}</Text>
+            <Text style={styles.sectionTitle}>{t("recipe.nutrition.nutritionFacts")}</Text>
             <NutritionLabel
               facts={nutritionFacts}
               goalContext="user"

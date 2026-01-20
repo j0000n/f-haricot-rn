@@ -2508,6 +2508,14 @@ export const ingestUniversal = action({
 
     const prompt = `You are the Universal Recipe Encoding System (URES) ingestion agent. Produce strict JSON for Convex mutation.
 
+CRITICAL JSON FORMATTING REQUIREMENTS:
+- Return ONLY valid JSON - no markdown code blocks, no explanations, no comments
+- All strings must be properly escaped (use \\" for quotes inside strings)
+- All commas must be correct (no trailing commas before closing brackets/braces)
+- All brackets [ ] and braces { } must be properly balanced
+- Double-check your JSON syntax before returning - it must parse without errors
+- If a field value contains special characters, ensure they are properly escaped
+
 CRITICAL REQUIREMENTS:
 ${socialMediaContext}
 1. Extract ALL ingredients from the source - do not skip any, even if they seem optional or have notes
@@ -2630,7 +2638,7 @@ Captured text: ${sourceSummary}`;
         messages: [
           {
             role: "system",
-            content: "You are a deterministic URES encoder. Always emit valid JSON only.",
+            content: "You are a deterministic URES encoder. CRITICAL: Return ONLY valid JSON. No markdown code blocks, no explanations, no comments. Ensure all strings are properly escaped, all commas are correct, and all brackets/braces are balanced. Double-check your JSON syntax before returning.",
           },
           { role: "user", content: prompt },
         ],
@@ -2653,7 +2661,92 @@ Captured text: ${sourceSummary}`;
       jsonText = jsonText.replace(/^```json\n?/, "").replace(/```$/, "").trim();
     }
 
-    const enhanced = JSON.parse(jsonText);
+    // Try to parse JSON, with repair attempts for common issues
+    let enhanced: any;
+    try {
+      enhanced = JSON.parse(jsonText);
+    } catch (parseError) {
+      const errorPos = (parseError as Error).message.match(/position (\d+)/)?.[1];
+      console.error(`[ingestUniversal] JSON parse error: ${(parseError as Error).message}`);
+      if (errorPos) {
+        const pos = parseInt(errorPos, 10);
+        console.error(`[ingestUniversal] JSON around error position (${pos}): ${jsonText.substring(Math.max(0, pos - 100), Math.min(jsonText.length, pos + 100))}`);
+      }
+      
+      // Attempt JSON repair for common issues
+      let repairedJson = jsonText;
+      
+      // Fix trailing commas before closing braces/brackets
+      repairedJson = repairedJson.replace(/,(\s*[}\]])/g, '$1');
+      
+      // Fix missing commas between object properties (look for } followed by " or number)
+      repairedJson = repairedJson.replace(/}\s*"/g, '}, "');
+      repairedJson = repairedJson.replace(/}\s*(\d)/g, '}, $1');
+      
+      try {
+        enhanced = JSON.parse(repairedJson);
+        console.log(`[ingestUniversal] Successfully parsed JSON after automatic repair`);
+      } catch (retryError) {
+        // If automatic repair fails, try asking LLM to fix the JSON
+        console.warn(`[ingestUniversal] Automatic JSON repair failed, attempting LLM-based repair...`);
+        try {
+          const repairResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${openAiKey}`,
+            },
+            body: JSON.stringify({
+              model: "gpt-4o-mini",
+              temperature: 0,
+              messages: [
+                {
+                  role: "system",
+                  content: "You are a JSON repair tool. Fix the malformed JSON and return ONLY the corrected JSON, no explanations.",
+                },
+                {
+                  role: "user",
+                  content: `Fix this malformed JSON. Return ONLY the corrected valid JSON:\n\n${jsonText.substring(0, 8000)}`,
+                },
+              ],
+            }),
+          });
+
+          if (repairResponse.ok) {
+            const repairPayload = await repairResponse.json();
+            const repairMessage = repairPayload?.choices?.[0]?.message?.content;
+            if (repairMessage) {
+              let repairJsonText = repairMessage.trim();
+              if (repairJsonText.startsWith("```")) {
+                repairJsonText = repairJsonText.replace(/^```json\n?/, "").replace(/```$/, "").trim();
+              }
+              enhanced = JSON.parse(repairJsonText);
+              console.log(`[ingestUniversal] Successfully parsed JSON after LLM repair`);
+            } else {
+              throw new Error("LLM repair returned no content");
+            }
+          } else {
+            throw new Error(`LLM repair request failed: ${repairResponse.status}`);
+          }
+        } catch (llmRepairError) {
+          // If LLM repair also fails, log the full JSON for debugging and throw a helpful error
+          console.error(`[ingestUniversal] Failed to parse JSON even after LLM repair attempt`);
+          console.error(`[ingestUniversal] Original parse error: ${(parseError as Error).message}`);
+          console.error(`[ingestUniversal] LLM repair error: ${(llmRepairError as Error).message}`);
+          console.error(`[ingestUniversal] JSON length: ${jsonText.length} characters`);
+          console.error(`[ingestUniversal] JSON preview (first 1000 chars): ${jsonText.substring(0, 1000)}`);
+          if (jsonText.length > 1000) {
+            console.error(`[ingestUniversal] JSON preview (last 1000 chars): ${jsonText.substring(Math.max(0, jsonText.length - 1000))}`);
+          }
+          throw new Error(
+            `Failed to parse JSON from LLM response after repair attempts. ` +
+            `Original error: ${(parseError as Error).message}. ` +
+            `This usually means the LLM returned severely malformed JSON. ` +
+            `Check the Convex logs for the raw JSON content.`
+          );
+        }
+      }
+    }
 
     // Validate that we extracted ingredients and steps
     const ingredientCount = (enhanced.ingredients || []).length;
@@ -2778,7 +2871,38 @@ Captured text: ${sourceSummary}`;
 
         // Normalize optional string fields first
         const prep = normalizeOptionalString(ingredient.preparation);
-        const origText = normalizeOptionalString(ingredient.originalText);
+        let origText = normalizeOptionalString(ingredient.originalText);
+
+        // Clean originalText to remove duplicated quantity/unit information and malformed patterns
+        if (origText) {
+          // Remove patterns like "1 tablespoon 2½ tablespoons" or "1 lb 2 lbs"
+          origText = origText.replace(/\b\d+\s+\w+\s+(\d+[½¼¾]?\s*\w+)/gi, "$1");
+          // Remove patterns like "1 tablespoon 2 tablespoons" -> "2 tablespoons"
+          origText = origText.replace(/\b\d+\s+(\w+)\s+(\d+)\s+\1s?\b/gi, "$2 $1$3");
+          
+          // More aggressive: Remove leading quantity/unit patterns (e.g., "2 lbs", "1/2 cup", "2½ tablespoons")
+          // This handles cases where quantity/unit appears at the start
+          origText = origText.replace(
+            /^\s*\d+[½¼¾]?\s*(cup|cups|tablespoon|tablespoons|teaspoon|teaspoons|pound|pounds|lb|lbs|ounce|ounces|oz|gram|grams|g|milliliter|milliliters|ml|tbsp|tsp|count|clove|cloves|piece|pieces|item|items)\s+/gi,
+            ""
+          );
+          
+          // Remove fraction patterns at the start (e.g., "1/2 cup", "¾ cup")
+          origText = origText.replace(/^\s*\d+\/\d+\s+(cup|cups|tablespoon|tablespoons|teaspoon|teaspoons|pound|pounds|lb|lbs|ounce|ounces|oz|gram|grams|g|milliliter|milliliters|ml|tbsp|tsp)\s+/gi, "");
+          
+          // Remove Unicode fraction patterns (e.g., "½ cup", "¼ cup")
+          origText = origText.replace(/^\s*[½¼¾]\s+(cup|cups|tablespoon|tablespoons|teaspoon|teaspoons|pound|pounds|lb|lbs|ounce|ounces|oz|gram|grams|g|milliliter|milliliters|ml|tbsp|tsp)\s+/gi, "");
+          
+          // Remove duplicated words (e.g., "lean ground lean" -> "lean ground")
+          origText = origText.replace(/\b(\w+)\s+\1\b/gi, "$1");
+          
+          // Remove parenthetical notes that contain instructions or notes (e.g., "(or other non-dairy milk) *see note")
+          origText = origText.replace(/\s*\([^)]*\)/g, "");
+          origText = origText.replace(/\s*\*[^*]*\*/g, "");
+          
+          // Remove extra whitespace
+          origText = origText.replace(/\s+/g, " ").trim();
+        }
 
         const parseDisplayQuantity = (value?: string) => {
           if (!value) return undefined;
@@ -2827,7 +2951,58 @@ Captured text: ${sourceSummary}`;
         } else if (displayUnit) {
           unit = displayUnit;
         } else {
-          unit = "count";
+          // Validate unit: if quantity > 0 and not a count-based ingredient, require a unit
+          // For count-based ingredients (like "1 egg"), unit should be "count"
+          // For others, try to infer from originalText or default to "count"
+          if (quantity > 0 && origText) {
+            // Try to extract unit from originalText
+            const unitMatch = origText.match(/\b(cup|cups|tablespoon|tablespoons|teaspoon|teaspoons|pound|pounds|ounce|ounces|gram|grams|milliliter|milliliters|lb|lbs|oz|g|ml|tbsp|tsp)\b/i);
+            if (unitMatch) {
+              // Normalize common abbreviations
+              const matchedUnit = unitMatch[1].toLowerCase();
+              const unitMap: Record<string, string> = {
+                "tbsp": "tablespoon",
+                "tsp": "teaspoon",
+                "lb": "pound",
+                "lbs": "pound",
+                "oz": "ounce",
+                "g": "gram",
+                "ml": "milliliter",
+              };
+              unit = unitMap[matchedUnit] || matchedUnit;
+            } else {
+              // Check if it's a count-based ingredient (e.g., "1 egg", "2 cloves")
+              const countPattern = /\b\d+\s+(egg|clove|piece|item|count)\b/i;
+              if (countPattern.test(origText)) {
+                unit = "count";
+              } else {
+                // Default to "count" if we can't determine
+                unit = "count";
+                console.warn("[ingestUniversal] Could not determine unit, defaulting to 'count'", {
+                  originalText: origText,
+                  quantity,
+                });
+              }
+            }
+          } else {
+            unit = "count";
+          }
+        }
+
+        // Ensure displayQuantity and displayUnit are set for fractions
+        // If we have a fraction in originalText but not in displayQuantity, extract it
+        if (!displayQuantity && origText) {
+          const fractionMatch = origText.match(/(\d+\s*[½¼¾]|\d+\/\d+)/);
+          if (fractionMatch) {
+            displayQuantity = fractionMatch[1].trim();
+          }
+        }
+        if (!displayUnit && origText && unit !== "count") {
+          // Try to extract unit from originalText for display
+          const unitMatch = origText.match(/\b(cup|cups|tablespoon|tablespoons|teaspoon|teaspoons|pound|pounds|ounce|ounces|gram|grams|milliliter|milliliters)\b/i);
+          if (unitMatch) {
+            displayUnit = unitMatch[1];
+          }
         }
 
         // Build the normalized ingredient object, explicitly handling null values
