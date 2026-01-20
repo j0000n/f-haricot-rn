@@ -1,12 +1,13 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
 
 import type { TranslationGuideRow } from "@/data/translationGuideSeed";
 import { useTranslation } from "@/i18n/useTranslation";
 import type { Recipe } from "@/types/recipe";
 import type { ThemeTokens } from "@/styles/themes/types";
-import { useThemedStyles } from "@/styles/tokens";
+import { useThemedStyles, useTokens } from "@/styles/tokens";
 import { decodeEncodedSteps } from "@/utils/decodeEncodedSteps";
+import { TabSwitcher } from "@/components/TabSwitcher";
 
 interface RecipeRunnerProps {
   recipe: Recipe;
@@ -166,16 +167,54 @@ export const RecipeRunner: React.FC<RecipeRunnerProps> = ({
   onExit,
 }) => {
   const styles = useThemedStyles<Styles>(createStyles);
+  const tokens = useTokens();
   const { t } = useTranslation();
   const [currentStep, setCurrentStep] = useState(0);
+  const [selectedCookingMethod, setSelectedCookingMethod] = useState<string | null>(null);
 
-  const steps = decodeEncodedSteps(
+  // Determine if recipe has multiple cooking methods
+  const hasMultipleMethods = recipe.cookingMethods && recipe.cookingMethods.length >= 2;
+
+  // Set default selected method on mount
+  useEffect(() => {
+    if (hasMultipleMethods && !selectedCookingMethod && recipe.cookingMethods) {
+      setSelectedCookingMethod(recipe.cookingMethods[0].methodName);
+    }
+  }, [hasMultipleMethods, selectedCookingMethod, recipe.cookingMethods]);
+
+  // Determine which steps to use
+  const steps = useMemo(() => {
+    if (hasMultipleMethods && selectedCookingMethod) {
+      // Find selected method's steps
+      const method = recipe.cookingMethods!.find((m) => m.methodName === selectedCookingMethod);
+      if (method) {
+        return decodeEncodedSteps(
+          method.encodedSteps,
+          language,
+          "runner",
+          method.steps,
+          translationGuides,
+        );
+      }
+    }
+
+    // Fallback to regular steps
+    return decodeEncodedSteps(
+      recipe.encodedSteps,
+      language,
+      "runner",
+      recipe.sourceSteps,
+      translationGuides,
+    );
+  }, [
+    hasMultipleMethods,
+    selectedCookingMethod,
+    recipe.cookingMethods,
     recipe.encodedSteps,
-    language,
-    "runner",
     recipe.sourceSteps,
+    language,
     translationGuides,
-  );
+  ]);
   const totalSteps = steps.length || 1;
   const step = steps[currentStep] ?? {
     stepNumber: currentStep + 1,
@@ -200,6 +239,23 @@ export const RecipeRunner: React.FC<RecipeRunnerProps> = ({
           {currentStep + 1} / {totalSteps} ({progress})
         </Text>
       </View>
+
+      {/* Method tabs - only show if multiple methods exist */}
+      {hasMultipleMethods && recipe.cookingMethods && (
+        <View style={{ marginBottom: tokens.spacing.md }}>
+          <TabSwitcher
+            tabs={recipe.cookingMethods.map((method) => ({
+              id: method.methodName,
+              label: method.methodName,
+            }))}
+            activeTab={selectedCookingMethod || recipe.cookingMethods[0].methodName}
+            onTabChange={(id) => {
+              setSelectedCookingMethod(id);
+              setCurrentStep(0); // Reset to first step when switching methods
+            }}
+          />
+        </View>
+      )}
 
       <View style={styles.progressBar}>
         <View

@@ -30,6 +30,92 @@ try {
   console.warn("react-native-webview not available:", error);
 }
 
+/**
+ * Estimates serving size based on meal type tags and recipe name
+ * Returns a physical quantity like "1 cup", "1 piece", etc.
+ */
+function estimateServingSize(
+  mealTypeTags?: string[],
+  recipeName?: { en?: string },
+): string {
+  const tags = mealTypeTags || [];
+  const name = recipeName?.en?.toLowerCase() || "";
+
+  // Soups and stews
+  if (
+    tags.some((tag) => tag.toLowerCase().includes("soup")) ||
+    tags.some((tag) => tag.toLowerCase().includes("stew")) ||
+    name.includes("soup") ||
+    name.includes("stew") ||
+    name.includes("broth")
+  ) {
+    return "1 cup";
+  }
+
+  // Salads
+  if (
+    tags.some((tag) => tag.toLowerCase().includes("salad")) ||
+    name.includes("salad")
+  ) {
+    return "1 cup";
+  }
+
+  // Desserts and baked goods
+  if (
+    tags.some((tag) => tag.toLowerCase().includes("dessert")) ||
+    tags.some((tag) => tag.toLowerCase().includes("baking")) ||
+    name.includes("cake") ||
+    name.includes("cookie") ||
+    name.includes("pie") ||
+    name.includes("brownie") ||
+    name.includes("muffin") ||
+    name.includes("cupcake")
+  ) {
+    // Check if it's sliceable (cake, pie) vs individual (cookie, muffin)
+    if (
+      name.includes("cake") ||
+      name.includes("pie") ||
+      name.includes("bread") ||
+      name.includes("loaf")
+    ) {
+      return "1 slice";
+    }
+    return "1 piece";
+  }
+
+  // Main dishes - default to "1 serving"
+  return "1 serving";
+}
+
+/**
+ * Formats serving size as a fraction of container when the serving size is generic.
+ * For example, "1 serving" with 4 servings per container becomes "1/4 of container".
+ * Specific sizes like "2 cups" are kept as-is.
+ */
+function formatServingSizeAsFraction(
+  servingSize: string,
+  servingsPerContainer: number,
+): string {
+  // If only 1 serving, always return original
+  if (servingsPerContainer === 1) {
+    return servingSize;
+  }
+
+  // Check if serving size is generic (e.g., "1 serving", "1 piece", "1 slice", "1 cup")
+  // Pattern matches: "1 " followed by a unit word (serving, piece, slice, cup)
+  const genericPattern = /^1\s+(serving|piece|slice|cup)$/i;
+  const isGeneric = genericPattern.test(servingSize.trim());
+
+  if (!isGeneric) {
+    // Keep specific sizes as-is (e.g., "2 cups", "1.5 cups", "250g", "1/2 cup")
+    return servingSize;
+  }
+
+  // Format as fraction
+  const fraction = `1/${servingsPerContainer}`;
+  return `${fraction} of container`;
+}
+
 const createStyles = (tokens: ThemeTokens) =>
   StyleSheet.create({
     screen: {
@@ -196,6 +282,7 @@ export default function RecipeDetailScreen() {
   const [activeTab, setActiveTab] = useState<"recipe" | "source">("recipe");
   const [webViewLoading, setWebViewLoading] = useState(true);
   const [webViewError, setWebViewError] = useState(false);
+  const [selectedCookingMethod, setSelectedCookingMethod] = useState<string | null>(null);
 
   const recipe = useQuery(api.recipes.getById, recipeId ? { id: recipeId } : "skip");
   const translationGuides = useQuery(api.translationGuides.listAll, {});
@@ -215,6 +302,53 @@ export default function RecipeDetailScreen() {
   }
 
   const inventoryCodes = Array.isArray(userInventory) ? userInventory : [];
+
+  // Determine if recipe has multiple cooking methods
+  const hasMultipleMethods = recipe.cookingMethods && recipe.cookingMethods.length >= 2;
+
+  // Determine which steps to display
+  const stepsToDisplay = useMemo(() => {
+    if (hasMultipleMethods && selectedCookingMethod) {
+      // Find selected method's steps
+      const method = recipe.cookingMethods!.find((m) => m.methodName === selectedCookingMethod);
+      if (method) {
+        // Decode steps for this method (if encodedSteps exists) or use sourceSteps
+        return decodeEncodedSteps(
+          method.encodedSteps,
+          language,
+          "cards",
+          method.steps,
+          translationGuides ?? undefined,
+        );
+      }
+    }
+
+    // Fallback to regular decodedSteps (for single-method or when no method selected)
+    return decodeEncodedSteps(
+      recipe.encodedSteps,
+      language,
+      "cards",
+      recipe.sourceSteps,
+      translationGuides ?? undefined,
+    );
+  }, [
+    hasMultipleMethods,
+    selectedCookingMethod,
+    recipe.cookingMethods,
+    recipe.encodedSteps,
+    recipe.sourceSteps,
+    language,
+    translationGuides,
+  ]);
+
+  // Set default selected method on mount
+  useEffect(() => {
+    if (hasMultipleMethods && !selectedCookingMethod && recipe.cookingMethods) {
+      setSelectedCookingMethod(recipe.cookingMethods[0].methodName);
+    }
+  }, [hasMultipleMethods, selectedCookingMethod, recipe.cookingMethods]);
+
+  // Keep decodedSteps for backward compatibility (used in other places)
   const decodedSteps = useMemo(
     () =>
       decodeEncodedSteps(
@@ -290,11 +424,19 @@ export default function RecipeDetailScreen() {
   const nutritionFacts = useMemo(() => {
     const profile = recipe.nutritionProfile;
 
+    // Determine serving size: use stored value if available, otherwise estimate
+    const rawServingSize =
+      profile?.servingSize ||
+      estimateServingSize(recipe.mealTypeTags, recipe.recipeName);
+
+    // Format serving size as fraction of container if generic
+    const servingSize = formatServingSizeAsFraction(rawServingSize, recipe.servings);
+
     // Default values if nutrition profile is not available
     if (!profile) {
       return {
-        servingPerContainer: "1",
-        servingSize: `${recipe.servings} ${recipe.servings === 1 ? "serving" : "servings"}`,
+        servingPerContainer: recipe.servings.toString(),
+        servingSize,
         calories: 0,
         nutrients: [],
         notes: [
@@ -382,8 +524,8 @@ export default function RecipeDetailScreen() {
     }
 
     return {
-      servingPerContainer: "1",
-      servingSize: `${recipe.servings} ${recipe.servings === 1 ? "serving" : "servings"}`,
+      servingPerContainer: recipe.servings.toString(),
+      servingSize,
       calories: profile.caloriesPerServing,
       nutrients,
       notes: [
@@ -395,7 +537,7 @@ export default function RecipeDetailScreen() {
         protein: 4,
       },
     };
-  }, [recipe.nutritionProfile, recipe.servings]);
+  }, [recipe.nutritionProfile, recipe.servings, recipe.mealTypeTags, recipe.recipeName]);
 
   const dailyValues = useMemo(() => {
     const userGoals = (currentUser as { nutritionGoals?: { targets?: {
@@ -497,7 +639,23 @@ export default function RecipeDetailScreen() {
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{t("recipe.instructions")}</Text>
-            {decodedSteps.map((step) => (
+
+            {/* Method tabs - only show if multiple methods exist */}
+            {hasMultipleMethods && recipe.cookingMethods && (
+              <View style={{ marginBottom: tokens.spacing.md }}>
+                <TabSwitcher
+                  tabs={recipe.cookingMethods.map((method) => ({
+                    id: method.methodName,
+                    label: method.methodName,
+                  }))}
+                  activeTab={selectedCookingMethod || recipe.cookingMethods[0].methodName}
+                  onTabChange={(id) => setSelectedCookingMethod(id)}
+                />
+              </View>
+            )}
+
+            {/* Display steps */}
+            {stepsToDisplay.map((step) => (
               <View key={step.stepNumber} style={styles.step}>
                 <View style={styles.stepNumber}>
                   <Text style={styles.stepNumberText}>{step.stepNumber}</Text>

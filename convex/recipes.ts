@@ -729,6 +729,7 @@ function mergeNutritionData(
   fiberPerServing?: number;
   sugarsPerServing?: number;
   sodiumPerServing?: number;
+  servingSize?: string;
 } | undefined {
   // If we have extracted data, use it (prefer extracted over calculated)
   const calories = extracted?.calories ?? (calculated.calories > 0 ? Math.round(calculated.calories) : undefined);
@@ -761,6 +762,7 @@ function mergeNutritionData(
     fiberPerServing: fiber,
     sugarsPerServing: sugars,
     sodiumPerServing: sodium,
+    servingSize: extracted?.servingSize,
   };
 }
 
@@ -992,6 +994,180 @@ const normalizeInstructionText = (value: unknown): string[] => {
   }
   return [];
 };
+
+/**
+ * Extracts instruction text from HTML, specifically targeting instruction sections
+ * Handles multi-method recipes by preserving method headers and their steps
+ */
+function extractInstructionsFromHtml(html: string): string {
+  // Try to find instruction sections using common patterns
+  const instructionPatterns = [
+    // Look for ordered lists in instruction sections
+    /<ol[^>]*class=["'][^"']*instruction[^"']*["'][^>]*>([\s\S]*?)<\/ol>/i,
+    // Look for divs with instruction-related classes
+    /<div[^>]*class=["'][^"']*(instruction|step|method|directions)[^"']*["'][^>]*>([\s\S]*?)<\/div>/i,
+    // Look for sections with instruction-related classes
+    /<section[^>]*class=["'][^"']*(instruction|step|method|directions)[^"']*["'][^>]*>([\s\S]*?)<\/section>/i,
+    // Look for h2/h3 headers followed by lists (common pattern for multi-method recipes)
+    /<h[23][^>]*>.*?(INSTANT\s+POT|CROCK-POT|SLOW\s+COOKER|STOVETOP|OVEN|MICROWAVE)[^<]*<\/h[23]>([\s\S]*?)(?=<h[23]|$)/i,
+  ];
+
+  let bestMatch = "";
+  let maxLength = 0;
+
+  for (const pattern of instructionPatterns) {
+    const matches = Array.from(html.matchAll(new RegExp(pattern.source, "gi")));
+    for (const match of matches) {
+      const content = match[1] || match[2] || match[0];
+      if (content && content.length > maxLength) {
+        // Extract text from HTML, preserving structure
+        const text = stripHtmlTags(content)
+          .replace(/\s+/g, " ")
+          .trim();
+        if (text.length > maxLength && text.length > 50) {
+          bestMatch = text;
+          maxLength = text.length;
+        }
+      }
+    }
+  }
+
+  // NEW: Look for h3/h4 headers with method names followed by content
+  // This is the peasandcrayons.com pattern
+  const methodSectionPattern =
+    /<h[234][^>]*>.*?(INSTANT\s+POT|CROCK-POT|SLOW\s+COOKER|STOVETOP|STOVE-TOP|OVEN|MICROWAVE)[^<]*<\/h[234]>([\s\S]*?)(?=<h[234]|$)/gi;
+  const methodSections: string[] = [];
+
+  let methodMatch;
+  while ((methodMatch = methodSectionPattern.exec(html)) !== null) {
+    const header = stripHtmlTags(methodMatch[0].split("</h")[0]);
+    const content = methodMatch[2] || methodMatch[1];
+    const text = stripHtmlTags(content).replace(/\s+/g, " ").trim();
+    if (text.length > 50) {
+      methodSections.push(`${header}\n${text}`);
+    }
+  }
+
+  if (methodSections.length > 0) {
+    const combined = methodSections.join("\n\n");
+    if (combined.length > maxLength) {
+      bestMatch = combined;
+      maxLength = combined.length;
+    }
+  }
+
+  // Fallback: look for any ordered list that seems to contain instructions
+  if (!bestMatch || bestMatch.length < 100) {
+    const olMatches = Array.from(html.matchAll(/<ol[^>]*>([\s\S]*?)<\/ol>/gi));
+    for (const match of olMatches) {
+      const text = stripHtmlTags(match[1])
+        .replace(/\s+/g, " ")
+        .trim();
+      // Check if it looks like instructions (contains action words, has multiple items)
+      if (text.length > 100 && (text.match(/\./g) || []).length >= 3) {
+        if (text.length > maxLength) {
+          bestMatch = text;
+          maxLength = text.length;
+        }
+      }
+    }
+  }
+
+  return bestMatch;
+}
+
+/**
+ * Directly parses HTML to extract cooking methods and their steps
+ * Handles common patterns: h2/h3/h4 headers followed by ul/ol lists
+ * Returns array of methods with their steps, or null if not found
+ */
+function parseMethodsFromHtml(html: string): Array<{
+  methodName: string;
+  steps: Array<{ stepNumber: number; text: string }>;
+}> | null {
+  // Pattern 1: h2/h3/h4 headers with method names followed by ul/ol lists
+  // Example: <h3>INSTANT POT INSTRUCTIONS</h3><ul><li>Step 1</li>...
+  const methodHeaderPattern =
+    /<h[234][^>]*>.*?(INSTANT\s+POT|CROCK-POT|SLOW\s+COOKER|STOVETOP|STOVE-TOP|OVEN|MICROWAVE|AIR\s+FRYER|PRESSURE\s+COOKER).*?INSTRUCTIONS?[^<]*<\/h[234]>([\s\S]*?)(?=<h[234]|$)/gi;
+
+  const methods: Array<{ methodName: string; steps: Array<{ stepNumber: number; text: string }> }> = [];
+
+  // Clean method name helper
+  const cleanMethodName = (text: string): string => {
+    const cleaned = text
+      .replace(/INSTRUCTIONS?.*$/i, "")
+      .replace(/\([^)]*\)/g, "")
+      .trim();
+
+    if (/INSTANT\s+POT/i.test(cleaned)) return "Instant Pot";
+    if (/CROCK-POT|SLOW\s+COOKER/i.test(cleaned)) return "Crock-Pot";
+    if (/STOVETOP|STOVE-TOP/i.test(cleaned)) return "Stovetop";
+    if (/OVEN/i.test(cleaned)) return "Oven";
+    if (/MICROWAVE/i.test(cleaned)) return "Microwave";
+    if (/AIR\s+FRYER/i.test(cleaned)) return "Air Fryer";
+    if (/PRESSURE\s+COOKER/i.test(cleaned)) return "Pressure Cooker";
+
+    return cleaned;
+  };
+
+  let match;
+  while ((match = methodHeaderPattern.exec(html)) !== null) {
+    const headerText = stripHtmlTags(match[0].split("</h")[0]);
+    const contentAfterHeader = match[2] || match[1];
+
+    const methodName = cleanMethodName(headerText);
+
+    // Extract steps from content (look for ul/ol lists or paragraph text)
+    const steps: Array<{ stepNumber: number; text: string }> = [];
+
+    // Try to find ul/ol lists first
+    const listMatches = contentAfterHeader.match(/<(ul|ol)[^>]*>([\s\S]*?)<\/\1>/i);
+    if (listMatches) {
+      const listContent = listMatches[2];
+      // Extract list items
+      const liMatches = Array.from(listContent.matchAll(/<li[^>]*>([\s\S]*?)<\/li>/gi));
+      liMatches.forEach((liMatch, index) => {
+        const stepText = stripHtmlTags(liMatch[1]).trim();
+        if (stepText && stepText.length > 10) {
+          steps.push({
+            stepNumber: index + 1,
+            text: stepText,
+          });
+        }
+      });
+    } else {
+      // Fallback: look for paragraphs or divs that might contain steps
+      // Split by periods and newlines to find step-like content
+      const textContent = stripHtmlTags(contentAfterHeader)
+        .replace(/\s+/g, " ")
+        .trim();
+
+      // Split by periods and filter for substantial sentences
+      const sentences = textContent
+        .split(/\.\s+/)
+        .map((s) => s.trim())
+        .filter((s) => s.length > 20 && !s.match(/^(NOTE|TIP|OPTIONAL)/i));
+
+      sentences.forEach((sentence, index) => {
+        steps.push({
+          stepNumber: index + 1,
+          text: sentence + (sentence.endsWith(".") ? "" : "."),
+        });
+      });
+    }
+
+    if (steps.length > 0) {
+      methods.push({ methodName, steps });
+    }
+  }
+
+  // Only return if we found 2+ methods with steps
+  if (methods.length >= 2) {
+    return methods;
+  }
+
+  return null;
+}
 
 const extractRecipeStructuredText = (html: string) => {
   const jsonLdMatches = Array.from(
@@ -2054,6 +2230,97 @@ export const seed = mutation({
   },
 });
 
+/**
+ * Detects cooking methods from step text and groups steps by method
+ * Returns array of CookingMethod objects, or null if no methods detected
+ */
+function detectAndGroupCookingMethods(
+  steps: Array<{ stepNumber: number; text: string }>,
+): Array<{ methodName: string; steps: Array<{ stepNumber: number; text: string }> }> | null {
+  if (!steps || steps.length === 0) return null;
+
+  // Pattern to detect method headers (e.g., "INSTANT POT INSTRUCTIONS", "CROCK-POT SLOW COOKER INSTRUCTIONS")
+  const methodHeaderPattern =
+    /^(INSTANT\s+POT|CROCK-POT|SLOW\s+COOKER|STOVETOP|STOVE-TOP|OVEN|MICROWAVE|AIR\s+FRYER|PRESSURE\s+COOKER).*INSTRUCTIONS?/i;
+
+  const methods: Array<{ methodName: string; steps: Array<{ stepNumber: number; text: string }> }> = [];
+  let currentMethod: { methodName: string; steps: Array<{ stepNumber: number; text: string }> } | null = null;
+
+  // Clean method name helper
+  const cleanMethodName = (text: string): string => {
+    const cleaned = text
+      .replace(/INSTRUCTIONS?.*$/i, "")
+      .replace(/\([^)]*\)/g, "") // Remove parenthetical notes
+      .trim();
+
+    // Normalize common variations
+    if (/INSTANT\s+POT/i.test(cleaned)) return "Instant Pot";
+    if (/CROCK-POT|SLOW\s+COOKER/i.test(cleaned)) return "Crock-Pot";
+    if (/STOVETOP|STOVE-TOP/i.test(cleaned)) return "Stovetop";
+    if (/OVEN/i.test(cleaned)) return "Oven";
+    if (/MICROWAVE/i.test(cleaned)) return "Microwave";
+    if (/AIR\s+FRYER/i.test(cleaned)) return "Air Fryer";
+    if (/PRESSURE\s+COOKER/i.test(cleaned)) return "Pressure Cooker";
+
+    return cleaned;
+  };
+
+  for (const step of steps) {
+    const isHeader = methodHeaderPattern.test(step.text);
+
+    if (isHeader) {
+      // Save previous method if exists
+      if (currentMethod && currentMethod.steps.length > 0) {
+        methods.push(currentMethod);
+      }
+
+      // Start new method
+      const methodName = cleanMethodName(step.text);
+      currentMethod = {
+        methodName,
+        steps: [],
+      };
+    } else if (currentMethod) {
+      // Add step to current method
+      // Check if this step contains multiple instructions (common in HTML extraction)
+      const stepText = step.text.trim();
+      // Capture currentMethod reference to avoid null check issues in callbacks
+      const method = currentMethod;
+
+      // If step is very long, try to split it into multiple steps
+      if (stepText.length > 200 && stepText.includes(".")) {
+        const sentences = stepText.split(/\.\s+/).filter((s) => s.trim().length > 10);
+        sentences.forEach((sentence) => {
+          method.steps.push({
+            stepNumber: method.steps.length + 1,
+            text: sentence.trim() + (sentence.endsWith(".") ? "" : "."),
+          });
+        });
+      } else {
+        method.steps.push({
+          stepNumber: method.steps.length + 1,
+          text: stepText,
+        });
+      }
+    } else {
+      // Step without a method header - might be a single-method recipe
+      // Don't add to methods, let it fall through to sourceSteps
+    }
+  }
+
+  // Add final method
+  if (currentMethod && currentMethod.steps.length > 0) {
+    methods.push(currentMethod);
+  }
+
+  // Only return methods if we found 2+ methods with actual steps
+  if (methods.length >= 2) {
+    return methods;
+  }
+
+  return null;
+}
+
 export const ingestUniversal = action({
   args: {
     sourceType: v.optional(
@@ -2165,6 +2432,18 @@ export const ingestUniversal = action({
           htmlStructuredSummary = structuredText;
         }
 
+        // Extract instruction-specific content for better multi-method recipe handling
+        const instructionText = extractInstructionsFromHtml(html);
+        if (instructionText && instructionText.length > 100) {
+          // Append instruction text to summary if it's substantial
+          if (htmlStructuredSummary) {
+            htmlStructuredSummary = `${htmlStructuredSummary}\n\nINSTRUCTIONS:\n${instructionText}`;
+          } else {
+            htmlStructuredSummary = `INSTRUCTIONS:\n${instructionText}`;
+          }
+          console.log(`[ingestUniversal] Extracted ${instructionText.length} chars of instruction text`);
+        }
+
         if (!htmlStructuredSummary) {
           const ogTitle = extractMetaContent(html, "og:title") || extractTagText(html, "title");
           const ogDescription =
@@ -2256,9 +2535,24 @@ INGREDIENT EXTRACTION RULES:
 STEP EXTRACTION RULES:
 - Extract ALL steps in order - do not combine or skip steps
 - Include sub-steps and detailed instructions
+- For recipes with multiple cooking methods (e.g., "Instant Pot" vs "Crock-Pot", "Stovetop" vs "Oven"):
+  * CRITICAL: When you see a method header like "INSTANT POT INSTRUCTIONS" or "CROCK-POT SLOW COOKER INSTRUCTIONS", 
+    you MUST extract ALL the detailed steps that follow that header, not just the header itself
+  * Method headers are NOT steps - they are section labels. The actual steps are the numbered or bulleted 
+    instructions that appear AFTER each header
+  * Example: If you see "INSTANT POT INSTRUCTIONS" followed by "Peel and dice onion...", "Add 6 cups broth...", 
+    etc., extract each of those as separate steps under the "Instant Pot" method
+  * Detect method headers (e.g., "INSTANT POT INSTRUCTIONS", "CROCK-POT SLOW COOKER INSTRUCTIONS")
+  * Extract ALL detailed steps under each method header
+  * Group steps by method in a cookingMethods array
+  * Each method should have: methodName (clean name like "Instant Pot"), steps (array of detailed steps)
+  * DO NOT extract only section headers - extract the actual steps under each header
+  * For single-method recipes, still populate steps as before (backward compatibility)
 - Preserve timing information (e.g., "4-5 minutes", "1-2 hours")
 - Preserve temperature information (e.g., "235–240°F")
 - Each major instruction should be a separate step
+- Steps should be actionable and detailed (not just headers or placeholders)
+- If a step is very long (more than 2 sentences), consider breaking it into multiple steps
 
 ATTRIBUTION EXTRACTION:
 - Extract author name from the page (look for "by [name]", author bio, or site name)
@@ -2285,12 +2579,19 @@ Return JSON with fields:
   * text REQUIRED - plain-text instruction (single language is acceptable)
   * timeInMinutes OPTIONAL - extract if mentioned
   * temperature OPTIONAL - {value: number, unit: "F" or "C"} if mentioned
+- cookingMethods (ARRAY, OPTIONAL) - for multi-method recipes:
+  * methodName (string) - clean method name (e.g., "Instant Pot", "Crock-Pot", "Stovetop", "Oven")
+  * steps (ARRAY) - detailed steps for this method (same structure as steps above)
+  * encodedSteps (string, OPTIONAL) - URES encoding for this method
 - emojiTags - array of 3-5 relevant emojis
 - prepTimeMinutes - extract from source or estimate
 - cookTimeMinutes - extract from source or estimate (0 if no-bake)
 - totalTimeMinutes - extract from source or calculate
 - servings - extract from source or default to 4
-- encodedSteps - as JSON string following URES encoding
+- encodedSteps - REQUIRED: Must be in URES encoding format (use -> to separate steps, e.g., "1.11.003.form.diced @quantity:2 -> T.03.003 @time:5min"). 
+  * DO NOT return JSON format like {"steps":[...]} 
+  * If URES encoding is not possible, return empty string "" and ensure sourceSteps contains complete detailed steps
+  * Reference plan/encoding-guide.md for URES format details
 - encodingVersion - default "URES-4.6"
 - attribution:
   * source REQUIRED - sourceType value
@@ -2582,7 +2883,7 @@ Captured text: ${sourceSummary}`;
       }
     }
 
-    const normalizedSourceSteps = stepsArray
+    let normalizedSourceSteps = stepsArray
       .map((step: any, index: number) => {
         const text =
           typeof step === "string"
@@ -2613,6 +2914,189 @@ Captured text: ${sourceSummary}`;
         };
       })
       .filter((step: { text: string }) => Boolean(step.text?.trim()));
+
+    // Initialize cookingMethods variable early
+    let normalizedCookingMethods:
+      | Array<{
+          methodName: string;
+          steps: Array<{
+            stepNumber: number;
+            text: string;
+            timeInMinutes?: number;
+            temperature?: { value: number; unit: "F" | "C" };
+          }>;
+          encodedSteps?: string;
+        }>
+      | undefined;
+
+    // Validate that steps are complete (not just headers)
+    const hasOnlyHeaders = normalizedSourceSteps.every((step) => {
+      const text = step.text.toUpperCase();
+      return (
+        text.includes("INSTRUCTIONS") &&
+        (text.includes("INSTANT POT") ||
+          text.includes("CROCK-POT") ||
+          text.includes("SLOW COOKER") ||
+          text.includes("STOVETOP") ||
+          text.includes("OVEN")) &&
+        step.text.length < 100 // Headers are usually short
+      );
+    });
+
+    if (hasOnlyHeaders && html) {
+      console.warn(
+        "[ingestUniversal] Detected only method headers, attempting direct HTML parsing",
+      );
+
+      // Try direct HTML parsing first (more reliable for structured HTML)
+      const parsedMethods = parseMethodsFromHtml(html);
+      if (parsedMethods && parsedMethods.length >= 2) {
+        console.log(
+          `[ingestUniversal] Direct HTML parsing found ${parsedMethods.length} methods with steps`,
+        );
+
+        // Convert parsed methods to normalizedSourceSteps (all steps sequentially)
+        const allSteps: Array<{ stepNumber: number; text: string }> = [];
+        parsedMethods.forEach((method) => {
+          // Add method header as a step (for backward compatibility)
+          allSteps.push({
+            stepNumber: allSteps.length + 1,
+            text: `${method.methodName.toUpperCase()} INSTRUCTIONS`,
+          });
+          // Add method steps
+          method.steps.forEach((step) => {
+            allSteps.push({
+              stepNumber: allSteps.length + 1,
+              text: step.text,
+            });
+          });
+        });
+
+        normalizedSourceSteps = allSteps;
+
+        // Also set normalizedCookingMethods for UI tabs
+        normalizedCookingMethods = parsedMethods.map((method) => ({
+          methodName: method.methodName,
+          steps: method.steps,
+        }));
+      } else {
+        // Fallback to existing instruction text extraction
+        const instructionText = extractInstructionsFromHtml(html);
+        if (instructionText && instructionText.length > 200) {
+          // Parse instruction text into steps
+          // Look for numbered steps, bullet points, or line breaks
+          const stepMatches = instructionText.match(
+            /(?:^\d+\.|\*|\-|^[A-Z][^.!?]*[.!?])(.+?)(?=^\d+\.|\*|\-|^[A-Z]|$)/gm,
+          );
+          if (stepMatches && stepMatches.length > normalizedSourceSteps.length) {
+            const extractedSteps = stepMatches
+              .map((match, index) => ({
+                stepNumber: index + 1,
+                text: match.replace(/^\d+\.|\*|\-/, "").trim(),
+              }))
+              .filter((step) => step.text.length > 20); // Filter out very short steps
+
+            if (extractedSteps.length > normalizedSourceSteps.length) {
+              console.log(
+                `[ingestUniversal] Extracted ${extractedSteps.length} steps from HTML instruction text`,
+              );
+              normalizedSourceSteps = extractedSteps;
+            }
+          }
+        }
+      }
+    }
+
+    // Detect and group cooking methods from extracted steps
+    const detectedMethods = detectAndGroupCookingMethods(normalizedSourceSteps);
+
+    // Also check if LLM provided cookingMethods directly
+    if (enhanced.cookingMethods && Array.isArray(enhanced.cookingMethods) && enhanced.cookingMethods.length >= 2) {
+      // Use LLM-provided cookingMethods if available
+      normalizedCookingMethods = enhanced.cookingMethods.map((method: any) => ({
+        methodName: method.methodName || "Unknown Method",
+        steps: (method.steps || []).map((step: any, index: number) => {
+          const text =
+            typeof step === "string"
+              ? step
+              : step?.text ??
+                (typeof step?.instructions === "string"
+                  ? step.instructions
+                  : step?.instructions?.en) ??
+                "";
+
+          const timeInMinutes =
+            typeof step?.timeInMinutes === "number" ? step.timeInMinutes : undefined;
+
+          const temperature:
+            | { value: number; unit: "F" | "C" }
+            | undefined =
+            step?.temperature &&
+            typeof step.temperature.value === "number" &&
+            (step.temperature.unit === "F" || step.temperature.unit === "C")
+              ? { value: step.temperature.value, unit: step.temperature.unit as "F" | "C" }
+              : undefined;
+
+          return {
+            stepNumber: step?.stepNumber ?? index + 1,
+            text,
+            ...(timeInMinutes !== undefined ? { timeInMinutes } : {}),
+            ...(temperature ? { temperature } : {}),
+          };
+        }),
+        encodedSteps: method.encodedSteps,
+      }));
+      console.log(
+        `[ingestUniversal] Using LLM-provided cookingMethods: ${normalizedCookingMethods?.length || 0} methods`,
+      );
+    } else if (detectedMethods && detectedMethods.length >= 2) {
+      // Multi-method recipe - store methods separately
+      normalizedCookingMethods = detectedMethods.map((method) => ({
+        methodName: method.methodName,
+        steps: method.steps.map((step) => {
+          // Preserve timeInMinutes and temperature if available from original steps
+          const originalStep = normalizedSourceSteps.find((s) => s.text === step.text);
+          return {
+            stepNumber: step.stepNumber,
+            text: step.text,
+            ...(originalStep?.timeInMinutes !== undefined
+              ? { timeInMinutes: originalStep.timeInMinutes }
+              : {}),
+            ...(originalStep?.temperature !== undefined ? { temperature: originalStep.temperature } : {}),
+          };
+        }),
+        // TODO: Generate encodedSteps per method if needed
+      }));
+
+      console.log(
+        `[ingestUniversal] Detected ${normalizedCookingMethods.length} cooking methods: ${normalizedCookingMethods.map((m) => m.methodName).join(", ")}`,
+      );
+    } else {
+      // Single-method recipe - keep sourceSteps as-is
+      console.log("[ingestUniversal] Single-method recipe detected, using sourceSteps");
+    }
+
+    // Ensure cookingMethods is set if we detected methods but it wasn't set yet
+    if (!normalizedCookingMethods && detectedMethods && detectedMethods.length >= 2) {
+      // If we have detected methods but cookingMethods wasn't set, use detected methods
+      normalizedCookingMethods = detectedMethods.map((method) => ({
+        methodName: method.methodName,
+        steps: method.steps.map((step) => {
+          const originalStep = normalizedSourceSteps.find((s) => s.text === step.text);
+          return {
+            stepNumber: step.stepNumber,
+            text: step.text,
+            ...(originalStep?.timeInMinutes !== undefined
+              ? { timeInMinutes: originalStep.timeInMinutes }
+              : {}),
+            ...(originalStep?.temperature !== undefined ? { temperature: originalStep.temperature } : {}),
+          };
+        }),
+      }));
+      console.log(
+        `[ingestUniversal] Set cookingMethods from detectedMethods: ${normalizedCookingMethods.length} methods`,
+      );
+    }
 
     // Normalize encodedSteps: if it's an array, convert to JSON string; if string, use as-is; otherwise undefined
     // IMPORTANT: Ensure encodedSteps doesn't accidentally contain sourceSteps data
@@ -2664,6 +3148,7 @@ Captured text: ${sourceSummary}`;
       description: normalizedDescription,
       ingredients: normalizedIngredients,
       sourceSteps: normalizedSourceSteps,
+      ...(normalizedCookingMethods ? { cookingMethods: normalizedCookingMethods } : {}),
       encodedSteps: normalizedEncodedSteps ?? "",
       encodingVersion,
       emojiTags: enhanced.emojiTags || [],
@@ -3156,6 +3641,7 @@ export const updateMetadata = mutation({
         fiberPerServing: v.optional(v.number()),
         sugarsPerServing: v.optional(v.number()),
         sodiumPerServing: v.optional(v.number()),
+        servingSize: v.optional(v.string()),
       })
     ),
   },
@@ -4015,6 +4501,27 @@ export const insertFromIngestion = mutation({
           })
         )
       ),
+      cookingMethods: v.optional(
+        v.array(
+          v.object({
+            methodName: v.string(),
+            steps: v.array(
+              v.object({
+                stepNumber: v.number(),
+                text: v.string(),
+                timeInMinutes: v.optional(v.number()),
+                temperature: v.optional(
+                  v.object({
+                    unit: v.union(v.literal("F"), v.literal("C")),
+                    value: v.number(),
+                  }),
+                ),
+              })
+            ),
+            encodedSteps: v.optional(v.string()),
+          })
+        )
+      ),
       emojiTags: v.array(v.string()),
       prepTimeMinutes: v.number(),
       cookTimeMinutes: v.number(),
@@ -4107,6 +4614,7 @@ export const insertFromIngestion = mutation({
           fiberPerServing: v.optional(v.number()),
           sugarsPerServing: v.optional(v.number()),
           sodiumPerServing: v.optional(v.number()),
+          servingSize: v.optional(v.string()),
         })
       ),
     }),

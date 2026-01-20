@@ -43,6 +43,12 @@ export interface RecipeSourceStep {
   temperature?: RecipeStepTemperature;
 }
 
+export interface CookingMethod {
+  methodName: string;
+  steps: RecipeSourceStep[];
+  encodedSteps?: string;
+}
+
 export interface RecipeAttribution {
   source: string;
   sourceUrl: string;
@@ -65,6 +71,7 @@ export interface Recipe {
   description: LocalizedRecipeText;
   ingredients: RecipeIngredient[];
   sourceSteps?: RecipeSourceStep[];
+  cookingMethods?: CookingMethod[];
   emojiTags: string[];
   prepTimeMinutes: number;
   cookTimeMinutes: number;
@@ -107,5 +114,6 @@ export interface Recipe {
     fiberPerServing?: number;
     sugarsPerServing?: number;
     sodiumPerServing?: number;
+    servingSize?: string;
   };
 }

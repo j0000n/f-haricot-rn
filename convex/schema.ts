@@ -344,6 +344,27 @@ const schema = defineSchema({
         })
       )
     ),
+    cookingMethods: v.optional(
+      v.array(
+        v.object({
+          methodName: v.string(),
+          steps: v.array(
+            v.object({
+              stepNumber: v.number(),
+              text: v.string(),
+              timeInMinutes: v.optional(v.number()),
+              temperature: v.optional(
+                v.object({
+                  value: v.number(),
+                  unit: v.union(v.literal("F"), v.literal("C")),
+                }),
+              ),
+            })
+          ),
+          encodedSteps: v.optional(v.string()),
+        })
+      )
+    ),
     emojiTags: v.array(v.string()),
     prepTimeMinutes: v.number(),
     cookTimeMinutes: v.number(),
@@ -434,6 +455,7 @@ const schema = defineSchema({
         fiberPerServing: v.optional(v.number()),
         sugarsPerServing: v.optional(v.number()),
         sodiumPerServing: v.optional(v.number()),
+        servingSize: v.optional(v.string()),
       })
     ),
   })
