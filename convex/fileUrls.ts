@@ -49,3 +49,41 @@ export const getRecipeCardImageUrl = query({
     return null;
   },
 });
+
+/**
+ * Get the best available image URL for a recipe detail view with fallback chain.
+ * Follows Convex file serving best practices: https://docs.convex.dev/file-storage/serve-files
+ *
+ * Fallback order:
+ * 1. transparentImageLargeStorageId (preferred for detail views)
+ * 2. originalImageLargeStorageId (fallback)
+ * 3. imageUrls[0] (final fallback, returns as-is)
+ */
+export const getRecipeDetailImageUrl = query({
+  args: {
+    transparentImageLargeStorageId: v.optional(v.id("_storage")),
+    originalImageLargeStorageId: v.optional(v.id("_storage")),
+    imageUrls: v.optional(v.array(v.string())),
+  },
+  returns: v.union(v.string(), v.null()),
+  handler: async (ctx, args) => {
+    // Try transparent large image first (preferred for detail views)
+    if (args.transparentImageLargeStorageId) {
+      const url = await ctx.storage.getUrl(args.transparentImageLargeStorageId);
+      if (url) return url;
+    }
+
+    // Fallback to original large image
+    if (args.originalImageLargeStorageId) {
+      const url = await ctx.storage.getUrl(args.originalImageLargeStorageId);
+      if (url) return url;
+    }
+
+    // Final fallback to imageUrls array
+    if (args.imageUrls && args.imageUrls.length > 0) {
+      return args.imageUrls[0];
+    }
+
+    return null;
+  },
+});

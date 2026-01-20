@@ -1,11 +1,42 @@
 "use node";
 
 import { v } from "convex/values";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import { Id } from "./_generated/dataModel";
 import { action, internalAction } from "./_generated/server";
 
 const Replicate = require("replicate");
+
+/**
+ * Helper function to determine the appropriate vessel for a recipe based on its name and description.
+ * Analyzes keywords to determine if the dish should be served in a bowl or on a plate.
+ */
+function determineVessel(recipeName: string, description: string): string {
+  const text = `${recipeName} ${description}`.toLowerCase();
+  
+  // Keywords that indicate bowl usage
+  const bowlKeywords = ["soup", "stew", "broth", "chili", "curry", "salad", "cereal", "porridge", "risotto", "pasta", "noodles"];
+  
+  // Keywords that indicate plate usage
+  const plateKeywords = ["grilled", "roasted", "baked", "fried", "steak", "chicken breast", "fish fillet"];
+  
+  // Check for bowl keywords first
+  for (const keyword of bowlKeywords) {
+    if (text.includes(keyword)) {
+      return "bowl";
+    }
+  }
+  
+  // Check for plate keywords
+  for (const keyword of plateKeywords) {
+    if (text.includes(keyword)) {
+      return "serving plate";
+    }
+  }
+  
+  // Default to serving plate
+  return "serving plate";
+}
 
 export const uploadFile = action({
   args: {
@@ -227,6 +258,215 @@ export const processImageVariants = internalAction({
     }
 
     return storageIds;
+  },
+});
+
+/**
+ * Internal action to generate an enhanced recipe subject for image generation.
+ * Uses OpenAI to analyze recipe details and identify key substitutions, special
+ * preparation methods, and distinctive visual characteristics.
+ */
+export const generateEnhancedRecipeSubject = internalAction({
+  args: {
+    recipeName: v.string(),
+    description: v.string(),
+    ingredients: v.array(
+      v.object({
+        foodCode: v.string(),
+        originalText: v.optional(v.string()),
+        preparation: v.optional(v.string()),
+      })
+    ),
+    sourceSteps: v.optional(
+      v.array(
+        v.object({
+          text: v.string(),
+        })
+      )
+    ),
+  },
+  returns: v.string(),
+  handler: async (ctx, args) => {
+    const openAiKey = process.env.OPEN_AI_KEY;
+    if (!openAiKey) {
+      console.warn("[generateEnhancedRecipeSubject] OPEN_AI_KEY not configured, falling back to recipe name");
+      return args.recipeName;
+    }
+
+    // Build ingredient list for context
+    const ingredientList = args.ingredients
+      .map((ing) => {
+        const text = ing.originalText || ing.foodCode;
+        return ing.preparation ? `${text} (${ing.preparation})` : text;
+      })
+      .join(", ");
+
+    // Build steps text for context
+    const stepsText = args.sourceSteps
+      ? args.sourceSteps.map((step) => step.text).join(". ")
+      : "";
+
+    const prompt = `Analyze this recipe and generate a concise, descriptive subject for image generation that captures key visual characteristics, substitutions, and special preparation methods.
+
+Recipe Name: ${args.recipeName}
+Description: ${args.description}
+Ingredients: ${ingredientList}
+${stepsText ? `Steps: ${stepsText}` : ""}
+
+Focus on identifying:
+1. Key substitutions (e.g., "zucchini replaces noodles", "cauliflower rice instead of rice")
+2. Special preparation methods (e.g., "spiralized", "mashed", "sliced thin")
+3. Distinctive visual characteristics that differ from traditional versions
+
+Generate a concise subject (under 50 words) that would help an image generator create an accurate visual representation. The subject should be descriptive enough to distinguish this recipe from similar traditional dishes.
+
+Examples:
+- "Zucchini Ground Beef Lasagna with thin zucchini strips layered as noodles, no pasta noodles, ground beef and cheese layers"
+- "Cauliflower Fried Rice with riced cauliflower instead of rice grains, mixed vegetables, scrambled eggs"
+
+Return ONLY the enhanced subject text, no additional explanation.`;
+
+    try {
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${openAiKey}`,
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          temperature: 0.3,
+          messages: [
+            {
+              role: "system",
+              content: "You are a food photography assistant. Generate concise, descriptive subjects for recipe images that accurately capture substitutions and visual characteristics.",
+            },
+            {
+              role: "user",
+              content: prompt,
+            },
+          ],
+        }),
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        console.error(`[generateEnhancedRecipeSubject] OpenAI request failed: ${response.status} ${text}`);
+        return args.recipeName;
+      }
+
+      const payload = await response.json();
+      const content = payload.choices?.[0]?.message?.content;
+
+      if (!content) {
+        console.error("[generateEnhancedRecipeSubject] OpenAI response missing content");
+        return args.recipeName;
+      }
+
+      // Extract the subject (remove any quotes or extra formatting)
+      const enhancedSubject = content.trim().replace(/^["']|["']$/g, "");
+      console.log(`[generateEnhancedRecipeSubject] Generated enhanced subject: "${enhancedSubject}"`);
+      return enhancedSubject;
+    } catch (error) {
+      console.error("[generateEnhancedRecipeSubject] Error generating enhanced subject:", error);
+      return args.recipeName;
+    }
+  },
+});
+
+/**
+ * Internal action to generate recipe images, process them, and save to recipe record.
+ * This function:
+ * 1. Fetches the full recipe document to get ingredients and steps
+ * 2. Generates an enhanced subject using LLM to capture substitutions and key characteristics
+ * 3. Determines the appropriate vessel based on recipe name/description
+ * 4. Generates recipe images using generateRecipeImages with the enhanced subject
+ * 5. Uses the first generated image
+ * 6. Updates the recipe record with the generated storage IDs
+ */
+export const generateAndSaveRecipeImages = internalAction({
+  args: {
+    recipeId: v.id("recipes"),
+    recipeName: v.string(),
+    description: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    console.log(`[generateAndSaveRecipeImages] Starting for recipe ${args.recipeId}: "${args.recipeName}"`);
+    try {
+      // Step 1: Fetch full recipe to get ingredients and steps
+      const recipe = await ctx.runQuery(api.recipes.getById, { id: args.recipeId });
+      if (!recipe) {
+        console.error(`[generateAndSaveRecipeImages] Recipe ${args.recipeId} not found`);
+        return;
+      }
+
+      // Step 2: Generate enhanced subject that captures substitutions and key characteristics
+      console.log(`[generateAndSaveRecipeImages] Generating enhanced subject for recipe ${args.recipeId}`);
+      
+      // Map ingredients to only the fields needed by generateEnhancedRecipeSubject
+      const ingredientsForPrompt = recipe.ingredients.map((ing) => ({
+        foodCode: ing.foodCode,
+        originalText: ing.originalText,
+        preparation: ing.preparation,
+      }));
+      
+      // Map sourceSteps to only the text field if they exist
+      const stepsForPrompt = recipe.sourceSteps?.map((step) => ({
+        text: step.text,
+      }));
+      
+      const enhancedSubject = await ctx.runAction(
+        internal.images.generateEnhancedRecipeSubject,
+        {
+          recipeName: args.recipeName,
+          description: args.description,
+          ingredients: ingredientsForPrompt,
+          sourceSteps: stepsForPrompt,
+        }
+      );
+      console.log(`[generateAndSaveRecipeImages] Enhanced subject: "${enhancedSubject}"`);
+
+      // Step 3: Determine vessel based on recipe characteristics
+      const vessel = determineVessel(args.recipeName, args.description);
+      console.log(`[generateAndSaveRecipeImages] Determined vessel: "${vessel}" for recipe ${args.recipeId}`);
+      
+      // Step 4: Generate recipe images using enhanced subject
+      console.log(`[generateAndSaveRecipeImages] Calling generateRecipeImages for recipe ${args.recipeId}`);
+      const storageIds = await ctx.runAction(internal.images.generateRecipeImages, {
+        subject: enhancedSubject,
+        vessel,
+        aspectRatio: "1:1",
+      });
+      
+      console.log(`[generateAndSaveRecipeImages] Generated ${storageIds.length} images for recipe ${args.recipeId}`);
+      
+      if (storageIds.length === 0) {
+        console.error(`[generateAndSaveRecipeImages] No images generated for recipe ${args.recipeId}`);
+        return;
+      }
+      
+      // Step 5: Use only the first generated image
+      const originalImageStorageId = storageIds[0];
+      console.log(`[generateAndSaveRecipeImages] Using first image with storage ID: ${originalImageStorageId} for recipe ${args.recipeId}`);
+      
+      // Step 6: Save the raw generated image directly (no external processing)
+      // Use the same image for all sizes since we're not processing variants
+      console.log(`[generateAndSaveRecipeImages] Saving raw image to recipe ${args.recipeId}`);
+      
+      await ctx.runMutation(api.recipes.updateRecipeImages, {
+        recipeId: args.recipeId,
+        originalImageLargeStorageId: originalImageStorageId,
+        originalImageSmallStorageId: originalImageStorageId,
+        transparentImageLargeStorageId: originalImageStorageId,
+        transparentImageSmallStorageId: originalImageStorageId,
+      });
+      
+      console.log(`[generateAndSaveRecipeImages] Successfully generated and saved images for recipe ${args.recipeId}`);
+    } catch (error) {
+      // Log error but don't throw - recipe creation should succeed even if image generation fails
+      console.error(`[generateAndSaveRecipeImages] Failed to generate images for recipe ${args.recipeId}:`, error);
+    }
   },
 });
 

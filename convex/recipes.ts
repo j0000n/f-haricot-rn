@@ -1,7 +1,7 @@
 import { action, internalAction, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { Doc, Id } from "./_generated/dataModel";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
 import { recipesSeed } from "../data/recipesSeed";
@@ -2192,6 +2192,15 @@ Captured text: ${sourceSummary}`;
       });
     }
 
+    // Generate recipe images asynchronously using scheduler
+    // Schedule it to run immediately after this action completes (non-blocking)
+    console.log(`[ingestUniversal] Scheduling image generation for recipe ${recipeId}: "${normalizedRecipeName.en}"`);
+    await ctx.scheduler.runAfter(0, internal.images.generateAndSaveRecipeImages, {
+      recipeId,
+      recipeName: normalizedRecipeName.en,
+      description: normalizedDescription.en,
+    });
+
     return { recipeId, encodingVersion, validationSummary };
   },
 });
@@ -3284,6 +3293,53 @@ export const create = mutation({
   returns: v.id("recipes"),
   handler: async (ctx, args) => {
     return await ctx.db.insert("recipes", args);
+  },
+});
+
+/**
+ * Mutation to update recipe image storage IDs after image generation completes.
+ */
+export const updateRecipeImages = mutation({
+  args: {
+    recipeId: v.id("recipes"),
+    originalImageLargeStorageId: v.optional(v.id("_storage")),
+    originalImageSmallStorageId: v.optional(v.id("_storage")),
+    transparentImageLargeStorageId: v.optional(v.id("_storage")),
+    transparentImageSmallStorageId: v.optional(v.id("_storage")),
+  },
+  handler: async (ctx, args) => {
+    console.log(`[updateRecipeImages] Updating recipe ${args.recipeId} with:`, {
+      originalImageLargeStorageId: args.originalImageLargeStorageId,
+      originalImageSmallStorageId: args.originalImageSmallStorageId,
+      transparentImageLargeStorageId: args.transparentImageLargeStorageId,
+      transparentImageSmallStorageId: args.transparentImageSmallStorageId,
+    });
+    
+    const updateData: {
+      originalImageLargeStorageId?: Id<"_storage">;
+      originalImageSmallStorageId?: Id<"_storage">;
+      transparentImageLargeStorageId?: Id<"_storage">;
+      transparentImageSmallStorageId?: Id<"_storage">;
+      updatedAt: number;
+    } = {
+      updatedAt: Date.now(),
+    };
+    
+    if (args.originalImageLargeStorageId) {
+      updateData.originalImageLargeStorageId = args.originalImageLargeStorageId;
+    }
+    if (args.originalImageSmallStorageId) {
+      updateData.originalImageSmallStorageId = args.originalImageSmallStorageId;
+    }
+    if (args.transparentImageLargeStorageId) {
+      updateData.transparentImageLargeStorageId = args.transparentImageLargeStorageId;
+    }
+    if (args.transparentImageSmallStorageId) {
+      updateData.transparentImageSmallStorageId = args.transparentImageSmallStorageId;
+    }
+    
+    await ctx.db.patch(args.recipeId, updateData);
+    console.log(`[updateRecipeImages] Successfully updated recipe ${args.recipeId}`);
   },
 });
 

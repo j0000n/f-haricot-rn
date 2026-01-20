@@ -1,5 +1,6 @@
 import React from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { useQuery } from "convex/react";
 
 import { RecipeListPicker } from "@/components/RecipeListPicker";
 import { useTranslation } from "@/i18n/useTranslation";
@@ -8,6 +9,7 @@ import { EMOJI_TAGS } from "@/types/emojiTags";
 import { formatRecipeTime, getRecipeDifficulty } from "@/utils/recipes";
 import type { ThemeTokens } from "@/styles/themes/types";
 import { useThemedStyles } from "@/styles/tokens";
+import { api } from "@/convex/_generated/api";
 
 interface RecipeHeaderProps {
   recipe: Recipe;
@@ -25,7 +27,7 @@ const createStyles = (tokens: ThemeTokens) =>
     },
     heroImage: {
       width: "100%",
-      height: 240,
+      aspectRatio: 1,
       borderRadius: tokens.radii.md,
     },
     title: {
@@ -112,10 +114,18 @@ export const RecipeHeader: React.FC<RecipeHeaderProps> = ({
   const { t } = useTranslation();
   const difficulty = getRecipeDifficulty(recipe);
 
+  // Get image URL with fallback chain following Convex file serving best practices
+  // Fallback: transparentImageLargeStorageId → originalImageLargeStorageId → imageUrls[0]
+  const imageUrl = useQuery(api.fileUrls.getRecipeDetailImageUrl, {
+    transparentImageLargeStorageId: recipe.transparentImageLargeStorageId,
+    originalImageLargeStorageId: recipe.originalImageLargeStorageId,
+    imageUrls: recipe.imageUrls,
+  });
+
   return (
     <View style={styles.container}>
       <Image
-        source={{ uri: recipe.imageUrls?.[0] ?? "" }}
+        source={{ uri: imageUrl ?? "" }}
         style={styles.heroImage}
         resizeMode="cover"
         accessibilityLabel={recipe.recipeName[language] || recipe.recipeName.en}
