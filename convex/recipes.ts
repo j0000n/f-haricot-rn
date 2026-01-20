@@ -979,6 +979,23 @@ export const extractRecipeMetadata = action({
         quantity: v.number(),
         unit: v.string(),
         preparation: v.optional(v.string()),
+        displayQuantity: v.optional(v.string()),
+        displayUnit: v.optional(v.string()),
+        normalizedQuantity: v.optional(v.number()),
+        normalizedUnit: v.optional(
+          v.union(v.literal("g"), v.literal("ml"), v.literal("count"))
+        ),
+        originalText: v.optional(v.string()),
+        validation: v.optional(
+          v.object({
+            status: v.union(
+              v.literal("matched"),
+              v.literal("ambiguous"),
+              v.literal("missing"),
+            ),
+            suggestions: v.optional(v.array(v.string())),
+          })
+        ),
       })
     ),
     sourceSteps: v.optional(
@@ -989,7 +1006,7 @@ export const extractRecipeMetadata = action({
           timeInMinutes: v.optional(v.number()),
           temperature: v.optional(
             v.object({
-              unit: v.string(),
+              unit: v.union(v.literal("F"), v.literal("C")),
               value: v.number(),
             })
           ),
@@ -1664,7 +1681,26 @@ Captured text: ${sourceSummary}`;
       enhanced.description?.en || "",
     );
 
-    const normalizedSourceSteps = (enhanced.steps || [])
+    // Parse steps if it's a JSON string, otherwise use as-is
+    let stepsArray: any[] = [];
+    if (enhanced.steps) {
+      if (typeof enhanced.steps === "string") {
+        try {
+          stepsArray = JSON.parse(enhanced.steps);
+          console.log(`[ingestUniversal] Parsed steps from JSON string, got ${stepsArray.length} steps`);
+        } catch (e) {
+          console.error("Failed to parse steps JSON string:", e);
+          stepsArray = [];
+        }
+      } else if (Array.isArray(enhanced.steps)) {
+        stepsArray = enhanced.steps;
+      } else {
+        console.warn(`[ingestUniversal] Unexpected steps type: ${typeof enhanced.steps}`);
+        stepsArray = [];
+      }
+    }
+
+    const normalizedSourceSteps = stepsArray
       .map((step: any, index: number) => {
         const text =
           typeof step === "string"
@@ -1697,12 +1733,20 @@ Captured text: ${sourceSummary}`;
       .filter((step: { text: string }) => Boolean(step.text?.trim()));
 
     // Normalize encodedSteps: if it's an array, convert to JSON string; if string, use as-is; otherwise undefined
+    // IMPORTANT: Ensure encodedSteps doesn't accidentally contain sourceSteps data
     let normalizedEncodedSteps: string | undefined;
     if (enhanced.encodedSteps !== undefined && enhanced.encodedSteps !== null) {
       if (Array.isArray(enhanced.encodedSteps)) {
         normalizedEncodedSteps = JSON.stringify(enhanced.encodedSteps);
       } else if (typeof enhanced.encodedSteps === "string") {
-        normalizedEncodedSteps = enhanced.encodedSteps;
+        // Validate that this doesn't look like sourceSteps JSON (which would start with [{"stepNumber":)
+        const trimmed = enhanced.encodedSteps.trim();
+        if (trimmed.startsWith('[{"stepNumber":') || trimmed.startsWith("[{\"stepNumber\":")) {
+          console.warn("[ingestUniversal] encodedSteps appears to contain sourceSteps data, ignoring");
+          normalizedEncodedSteps = undefined;
+        } else {
+          normalizedEncodedSteps = enhanced.encodedSteps;
+        }
       } else {
         // If it's some other type, try to stringify it
         normalizedEncodedSteps = JSON.stringify(enhanced.encodedSteps);
