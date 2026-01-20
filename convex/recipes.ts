@@ -259,6 +259,214 @@ const normalizeToGrams = (
   return baseQuantity;
 };
 
+/**
+ * Extracts nutrition information from Schema.org structured data
+ */
+function extractNutritionFromSchema(data: any): {
+  calories?: number;
+  protein?: number;
+  carbohydrates?: number;
+  fat?: number;
+  fiber?: number;
+  sugars?: number;
+  sodium?: number;
+  servingSize?: string;
+} | null {
+  if (!data || typeof data !== "object") return null;
+
+  // Handle arrays (multiple schemas)
+  if (Array.isArray(data)) {
+    for (const item of data) {
+      const result = extractNutritionFromSchema(item);
+      if (result) return result;
+    }
+    return null;
+  }
+
+  // Check for Recipe schema with nutrition
+  if (data["@type"] === "Recipe" || data["@type"] === "schema:Recipe") {
+    const nutrition = data.nutrition || data.nutritionInformation;
+    if (nutrition) {
+      return {
+        calories: parseNutritionValue(nutrition.calories || nutrition.calorieContent),
+        protein: parseNutritionValue(nutrition.proteinContent),
+        carbohydrates: parseNutritionValue(nutrition.carbohydrateContent),
+        fat: parseNutritionValue(nutrition.fatContent),
+        fiber: parseNutritionValue(nutrition.fiberContent),
+        sugars: parseNutritionValue(nutrition.sugarContent),
+        sodium: parseNutritionValue(nutrition.sodiumContent),
+        servingSize: nutrition.servingSize || nutrition.servingSize?.value,
+      };
+    }
+  }
+
+  // Check for NutritionInformation schema directly
+  if (data["@type"] === "NutritionInformation" || data["@type"] === "schema:NutritionInformation") {
+    return {
+      calories: parseNutritionValue(data.calories || data.calorieContent),
+      protein: parseNutritionValue(data.proteinContent),
+      carbohydrates: parseNutritionValue(data.carbohydrateContent),
+      fat: parseNutritionValue(data.fatContent),
+      fiber: parseNutritionValue(data.fiberContent),
+      sugars: parseNutritionValue(data.sugarContent),
+      sodium: parseNutritionValue(data.sodiumContent),
+      servingSize: data.servingSize || data.servingSize?.value,
+    };
+  }
+
+  // Recursively check nested objects
+  for (const key in data) {
+    if (typeof data[key] === "object" && data[key] !== null) {
+      const result = extractNutritionFromSchema(data[key]);
+      if (result) return result;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Parses nutrition values that may be strings like "415 kcal" or numbers
+ */
+function parseNutritionValue(value: any): number | undefined {
+  if (typeof value === "number") return value;
+  if (typeof value === "string") {
+    // Extract number from strings like "415 kcal", "23g", "1.5mg"
+    const match = value.match(/([\d.]+)/);
+    if (match) {
+      const num = parseFloat(match[1]);
+      // Convert mg to g for sodium
+      if (value.toLowerCase().includes("mg") && !value.toLowerCase().includes("kcal")) {
+        return num / 1000;
+      }
+      return num;
+    }
+  }
+  if (value && typeof value === "object" && typeof value.value === "number") {
+    return value.value;
+  }
+  return undefined;
+}
+
+/**
+ * Extracts nutrition information from HTML table patterns
+ */
+function extractNutritionFromTable(html: string): {
+  calories?: number;
+  protein?: number;
+  carbohydrates?: number;
+  fat?: number;
+  fiber?: number;
+  sugars?: number;
+  sodium?: number;
+  servingSize?: string;
+} | null {
+  // Look for nutrition facts table
+  const tableRegex = /<table[^>]*>[\s\S]*?nutrition[\s\S]*?<\/table>/i;
+  const tableMatch = html.match(tableRegex);
+  if (!tableMatch) return null;
+
+  const tableHtml = tableMatch[0];
+  const result: any = {};
+
+  // Extract calories
+  const caloriesMatch = tableHtml.match(/(?:calories|cal)[\s:]*(\d+)/i);
+  if (caloriesMatch) {
+    result.calories = parseInt(caloriesMatch[1], 10);
+  }
+
+  // Extract macronutrients
+  const proteinMatch = tableHtml.match(/(?:protein|prot)[\s:]*(\d+(?:\.\d+)?)\s*g/i);
+  if (proteinMatch) {
+    result.protein = parseFloat(proteinMatch[1]);
+  }
+
+  const carbsMatch = tableHtml.match(/(?:carbohydrates|carbs|carb)[\s:]*(\d+(?:\.\d+)?)\s*g/i);
+  if (carbsMatch) {
+    result.carbohydrates = parseFloat(carbsMatch[1]);
+  }
+
+  const fatMatch = tableHtml.match(/(?:total\s+)?fat[\s:]*(\d+(?:\.\d+)?)\s*g/i);
+  if (fatMatch) {
+    result.fat = parseFloat(fatMatch[1]);
+  }
+
+  const fiberMatch = tableHtml.match(/(?:fiber|fibre)[\s:]*(\d+(?:\.\d+)?)\s*g/i);
+  if (fiberMatch) {
+    result.fiber = parseFloat(fiberMatch[1]);
+  }
+
+  const sugarsMatch = tableHtml.match(/(?:sugars?|sugar)[\s:]*(\d+(?:\.\d+)?)\s*g/i);
+  if (sugarsMatch) {
+    result.sugars = parseFloat(sugarsMatch[1]);
+  }
+
+  // Extract sodium (may be in mg)
+  const sodiumMatch = tableHtml.match(/(?:sodium)[\s:]*(\d+(?:\.\d+)?)\s*(mg|g)/i);
+  if (sodiumMatch) {
+    const value = parseFloat(sodiumMatch[1]);
+    result.sodium = sodiumMatch[2].toLowerCase() === "mg" ? value / 1000 : value;
+  }
+
+  // Extract serving size
+  const servingSizeMatch = tableHtml.match(/(?:serving\s+size)[\s:]*([^<\n]+)/i);
+  if (servingSizeMatch) {
+    result.servingSize = servingSizeMatch[1].trim();
+  }
+
+  // Return result if we found at least calories or macronutrients
+  if (result.calories || result.protein || result.carbohydrates || result.fat) {
+    return result;
+  }
+
+  return null;
+}
+
+/**
+ * Extracts nutrition information from HTML using Schema.org and table patterns
+ */
+function extractNutritionFromHtml(html: string): {
+  calories?: number;
+  protein?: number;
+  carbohydrates?: number;
+  fat?: number;
+  fiber?: number;
+  sugars?: number;
+  sodium?: number;
+  servingSize?: string;
+} | null {
+  if (!html) return null;
+
+  // Try Schema.org first
+  const schemaMatches = html.match(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi);
+  if (schemaMatches) {
+    for (const script of schemaMatches) {
+      try {
+        const jsonMatch = script.match(/>([\s\S]*?)</);
+        if (jsonMatch) {
+          const data = JSON.parse(jsonMatch[1]);
+          const nutrition = extractNutritionFromSchema(data);
+          if (nutrition) {
+            console.log("[extractNutritionFromHtml] Found nutrition in Schema.org data");
+            return nutrition;
+          }
+        }
+      } catch (error) {
+        // Continue to next script tag
+      }
+    }
+  }
+
+  // Try HTML table patterns
+  const nutritionTable = extractNutritionFromTable(html);
+  if (nutritionTable) {
+    console.log("[extractNutritionFromHtml] Found nutrition in HTML table");
+    return nutritionTable;
+  }
+
+  return null;
+}
+
 const computeNutritionProfile = (
   ingredients: Array<{
     foodCode: string;
@@ -357,6 +565,204 @@ const normalizeSocialHandles = (social?: any) => {
 
   return Object.keys(normalized).length > 0 ? normalized : undefined;
 };
+
+/**
+ * Extracts nutrition information using LLM as fallback
+ */
+async function extractNutritionWithLLM(
+  sourceText: string,
+  recipeData: {
+    servings: number;
+    recipeName?: { en?: string };
+  },
+  openAiKey: string,
+): Promise<{
+  calories?: number;
+  protein?: number;
+  carbohydrates?: number;
+  fat?: number;
+  fiber?: number;
+  sugars?: number;
+  sodium?: number;
+  servingSize?: string;
+} | null> {
+  const prompt = `Extract nutrition information from this recipe. Look for:
+- Calories per serving
+- Protein, carbohydrates, fat (in grams)
+- Fiber, sugars, sodium if mentioned
+- Serving size information
+
+Recipe Name: ${recipeData.recipeName?.en || "Unknown"}
+Servings: ${recipeData.servings}
+Recipe Text: ${sourceText.substring(0, 3000)}${sourceText.length > 3000 ? "..." : ""}
+
+Return ONLY valid JSON (no markdown, no explanation):
+{
+  "calories": number or null,
+  "protein": number or null,
+  "carbohydrates": number or null,
+  "fat": number or null,
+  "fiber": number or null,
+  "sugars": number or null,
+  "sodium": number or null,
+  "servingSize": string or null
+}
+
+If nutrition information is not found, return all null values.`;
+
+  try {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${openAiKey}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        temperature: 0.2,
+        messages: [
+          {
+            role: "system",
+            content: "You are a nutrition data extractor. Return only valid JSON, no markdown formatting.",
+          },
+          {
+            role: "user",
+            content: prompt,
+          },
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      console.warn(`[extractNutritionWithLLM] OpenAI request failed: ${response.status}`);
+      return null;
+    }
+
+    const payload = await response.json();
+    const content = payload?.choices?.[0]?.message?.content;
+    if (!content) {
+      console.warn("[extractNutritionWithLLM] OpenAI response missing content");
+      return null;
+    }
+
+    // Parse JSON response (remove markdown code blocks if present)
+    let jsonText = content.trim();
+    if (jsonText.startsWith("```")) {
+      jsonText = jsonText.replace(/^```json\n?/, "").replace(/```$/, "").trim();
+    }
+
+    const nutrition = JSON.parse(jsonText);
+    
+    // Validate and convert to proper format
+    const result: any = {};
+    if (nutrition.calories && typeof nutrition.calories === "number") {
+      result.calories = Math.round(nutrition.calories);
+    }
+    if (nutrition.protein && typeof nutrition.protein === "number") {
+      result.protein = Math.round(nutrition.protein * 10) / 10;
+    }
+    if (nutrition.carbohydrates && typeof nutrition.carbohydrates === "number") {
+      result.carbohydrates = Math.round(nutrition.carbohydrates * 10) / 10;
+    }
+    if (nutrition.fat && typeof nutrition.fat === "number") {
+      result.fat = Math.round(nutrition.fat * 10) / 10;
+    }
+    if (nutrition.fiber && typeof nutrition.fiber === "number") {
+      result.fiber = Math.round(nutrition.fiber * 10) / 10;
+    }
+    if (nutrition.sugars && typeof nutrition.sugars === "number") {
+      result.sugars = Math.round(nutrition.sugars * 10) / 10;
+    }
+    if (nutrition.sodium && typeof nutrition.sodium === "number") {
+      // Convert mg to g if needed (assume values > 1000 are in mg)
+      result.sodium = nutrition.sodium > 1000 ? nutrition.sodium / 1000 : nutrition.sodium;
+      result.sodium = Math.round(result.sodium * 10) / 10;
+    }
+    if (nutrition.servingSize && typeof nutrition.servingSize === "string") {
+      result.servingSize = nutrition.servingSize;
+    }
+
+    // Return result if we found at least calories or macronutrients
+    if (result.calories || result.protein || result.carbohydrates || result.fat) {
+      console.log("[extractNutritionWithLLM] Extracted nutrition via LLM:", result);
+      return result;
+    }
+
+    return null;
+  } catch (error) {
+    console.warn("[extractNutritionWithLLM] Error extracting nutrition:", error);
+    return null;
+  }
+}
+
+/**
+ * Merges extracted nutrition data with calculated nutrition data
+ * Prefers extracted data but fills gaps with calculated values
+ */
+function mergeNutritionData(
+  extracted: {
+    calories?: number;
+    protein?: number;
+    carbohydrates?: number;
+    fat?: number;
+    fiber?: number;
+    sugars?: number;
+    sodium?: number;
+    servingSize?: string;
+  } | null,
+  calculated: {
+    calories: number;
+    macronutrients: {
+      protein: number;
+      carbohydrates: number;
+      fat: number;
+      fiber?: number;
+      sugars?: number;
+    };
+  },
+  servings: number,
+): {
+  caloriesPerServing: number;
+  proteinPerServing: number;
+  carbsPerServing: number;
+  fatPerServing: number;
+  fiberPerServing?: number;
+  sugarsPerServing?: number;
+  sodiumPerServing?: number;
+} | undefined {
+  // If we have extracted data, use it (prefer extracted over calculated)
+  const calories = extracted?.calories ?? (calculated.calories > 0 ? Math.round(calculated.calories) : undefined);
+  const protein = extracted?.protein ?? (calculated.macronutrients.protein > 0 ? Math.round(calculated.macronutrients.protein * 10) / 10 : undefined);
+  const carbs = extracted?.carbohydrates ?? (calculated.macronutrients.carbohydrates > 0 ? Math.round(calculated.macronutrients.carbohydrates * 10) / 10 : undefined);
+  const fat = extracted?.fat ?? (calculated.macronutrients.fat > 0 ? Math.round(calculated.macronutrients.fat * 10) / 10 : undefined);
+  const fiber = extracted?.fiber ?? (calculated.macronutrients.fiber && calculated.macronutrients.fiber > 0 ? Math.round(calculated.macronutrients.fiber * 10) / 10 : undefined);
+  const sugars = extracted?.sugars ?? (calculated.macronutrients.sugars && calculated.macronutrients.sugars > 0 ? Math.round(calculated.macronutrients.sugars * 10) / 10 : undefined);
+  const sodium = extracted?.sodium;
+
+  // Only return nutrition profile if we have at least calories or macronutrients
+  if (!calories && !protein && !carbs && !fat) {
+    return undefined;
+  }
+
+  // Validate nutrition makes sense (calories ≈ 4*carbs + 4*protein + 9*fat, allow 20% variance)
+  if (calories && protein && carbs && fat) {
+    const calculatedCalories = 4 * carbs + 4 * protein + 9 * fat;
+    const variance = Math.abs(calories - calculatedCalories) / calculatedCalories;
+    if (variance > 0.2) {
+      console.warn(`[mergeNutritionData] Nutrition validation failed: calories ${calories} doesn't match macronutrients (calculated: ${calculatedCalories.toFixed(0)})`);
+    }
+  }
+
+  return {
+    caloriesPerServing: calories ?? 0,
+    proteinPerServing: protein ?? 0,
+    carbsPerServing: carbs ?? 0,
+    fatPerServing: fat ?? 0,
+    fiberPerServing: fiber,
+    sugarsPerServing: sugars,
+    sodiumPerServing: sodium,
+  };
+}
 
 const URL_SOURCE_TYPES = new Set<SourceType>([
   "website",
@@ -1730,10 +2136,27 @@ export const ingestUniversal = action({
     let htmlFallbackSummary: string | undefined;
     let htmlIngredientCount = 0;
     let htmlInstructionCount = 0;
+    let extractedNutrition: {
+      calories?: number;
+      protein?: number;
+      carbohydrates?: number;
+      fat?: number;
+      fiber?: number;
+      sugars?: number;
+      sodium?: number;
+      servingSize?: string;
+    } | null = null;
+    let html: string | undefined;
 
     if (args.sourceUrl && URL_SOURCE_TYPES.has(detectedSourceType)) {
-      const html = await fetchSourceHtml(args.sourceUrl);
+      html = await fetchSourceHtml(args.sourceUrl);
       if (html) {
+        // Try extracting nutrition from HTML first
+        extractedNutrition = extractNutritionFromHtml(html);
+        if (extractedNutrition) {
+          console.log(`[ingestUniversal] Extracted nutrition from HTML for ${args.sourceUrl}`);
+        }
+
         const { ingredients, instructions } = extractRecipeStructuredText(html);
         htmlIngredientCount = ingredients.length;
         htmlInstructionCount = instructions.length;
@@ -1785,6 +2208,8 @@ export const ingestUniversal = action({
     }
 
     const sourceSummary = enhancedSourceSummary || "Provide a universal recipe representation for ingestion.";
+
+    // Note: LLM extraction will happen after recipe data is extracted (servings needed)
 
     const sourceHostForLog = normalizeHost(args.sourceUrl);
     console.info(
@@ -2299,29 +2724,33 @@ Captured text: ${sourceSummary}`;
       };
     }
 
-    // Calculate nutrition profile if possible
-    const perServing = computeNutritionProfile(
+    // If HTML extraction didn't find nutrition, try LLM extraction now that we have recipe data
+    if (!extractedNutrition && sourceSummary && sourceSummary !== "Provide a universal recipe representation for ingestion.") {
+      console.log(`[ingestUniversal] Attempting LLM nutrition extraction for ${args.sourceUrl}`);
+      extractedNutrition = await extractNutritionWithLLM(
+        sourceSummary,
+        { servings: recipeData.servings, recipeName: normalizedRecipeName },
+        openAiKey,
+      );
+      if (extractedNutrition) {
+        console.log(`[ingestUniversal] Extracted nutrition via LLM for ${args.sourceUrl}`);
+      }
+    }
+
+    // Calculate nutrition profile from ingredients if possible
+    const calculatedNutrition = computeNutritionProfile(
       normalizedIngredients,
       recipeData.servings,
       foodLibrary,
     );
 
-    const nutritionProfile =
-      perServing.calories > 0
-        ? {
-            caloriesPerServing: Math.round(perServing.calories),
-            proteinPerServing: Math.round(perServing.macronutrients.protein),
-            carbsPerServing: Math.round(perServing.macronutrients.carbohydrates),
-            fatPerServing: Math.round(perServing.macronutrients.fat),
-            fiberPerServing: perServing.macronutrients.fiber
-              ? Math.round(perServing.macronutrients.fiber)
-              : undefined,
-            sugarsPerServing: perServing.macronutrients.sugars
-              ? Math.round(perServing.macronutrients.sugars)
-              : undefined,
-            sodiumPerServing: undefined, // Not calculated from food library currently
-          }
-        : undefined;
+    // Merge extracted nutrition (from HTML/LLM) with calculated nutrition
+    // Prefer extracted data but fill gaps with calculated values
+    const nutritionProfile = mergeNutritionData(
+      extractedNutrition,
+      calculatedNutrition,
+      recipeData.servings,
+    );
 
     // Add metadata to recipe data
     const recipeDataWithMetadata = {
@@ -2339,12 +2768,26 @@ Captured text: ${sourceSummary}`;
       recipeData: recipeDataWithMetadata,
     });
 
-    await ctx.runMutation(api.nutritionProfiles.upsertForRecipe, {
-      recipeId,
-      servings: recipeData.servings,
-      perServing,
-      encodingVersion,
-    });
+    // Only upsert nutrition profile if we have valid data
+    if (nutritionProfile) {
+      await ctx.runMutation(api.nutritionProfiles.upsertForRecipe, {
+        recipeId,
+        servings: recipeData.servings,
+        perServing: {
+          calories: nutritionProfile.caloriesPerServing,
+          macronutrients: {
+            protein: nutritionProfile.proteinPerServing,
+            carbohydrates: nutritionProfile.carbsPerServing,
+            fat: nutritionProfile.fatPerServing,
+            fiber: nutritionProfile.fiberPerServing,
+            sugars: nutritionProfile.sugarsPerServing,
+          },
+        },
+        encodingVersion,
+      });
+    } else {
+      console.warn(`[ingestUniversal] No nutrition profile created for recipe ${recipeId} - no extracted or calculated nutrition data available`);
+    }
 
     // Store translation guide overrides when the model provides better phrasing
     for (const guide of translationGuides) {

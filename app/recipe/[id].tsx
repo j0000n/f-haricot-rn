@@ -1,8 +1,9 @@
-import React, { useMemo, useState } from "react";
-import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
+import React, { useMemo, useState, useEffect } from "react";
+import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View, Platform, ActivityIndicator } from "react-native";
 
 import { Stack, useLocalSearchParams } from "expo-router";
 import { useQuery } from "convex/react";
+import * as WebBrowser from "expo-web-browser";
 
 import { api } from "@/convex/_generated/api";
 import { IngredientsList } from "@/components/IngredientsList";
@@ -10,11 +11,24 @@ import { LoadingScreen } from "@/components/LoadingScreen";
 import { NutritionLabel } from "@/components/NutritionLabel";
 import { RecipeHeader } from "@/components/RecipeHeader";
 import { RecipeRunner } from "@/components/RecipeRunner";
+import { TabSwitcher } from "@/components/TabSwitcher";
 import { useTranslation } from "@/i18n/useTranslation";
 import type { Recipe } from "@/types/recipe";
 import type { ThemeTokens } from "@/styles/themes/types";
-import { useThemedStyles } from "@/styles/tokens";
+import { useThemedStyles, useTokens } from "@/styles/tokens";
 import { decodeEncodedSteps } from "@/utils/decodeEncodedSteps";
+
+// Conditionally import WebView - it requires native code
+let WebView: typeof import("react-native-webview").WebView | null = null;
+try {
+  if (Platform.OS !== "web") {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const WebViewModule = require("react-native-webview");
+    WebView = WebViewModule.WebView;
+  }
+} catch (error) {
+  console.warn("react-native-webview not available:", error);
+}
 
 const createStyles = (tokens: ThemeTokens) =>
   StyleSheet.create({
@@ -112,6 +126,50 @@ const createStyles = (tokens: ThemeTokens) =>
       color: tokens.colors.textSecondary,
       textAlign: "center",
     },
+    webView: {
+      flex: 1,
+      backgroundColor: tokens.colors.background,
+    },
+    webViewContainer: {
+      flex: 1,
+      minHeight: 600,
+    },
+    webViewLoadingContainer: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: tokens.colors.background,
+    },
+    webViewErrorContainer: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: tokens.colors.background,
+      padding: tokens.spacing.lg,
+      minHeight: 600,
+    },
+    webViewErrorText: {
+      fontFamily: tokens.fontFamilies.regular,
+      fontSize: tokens.typography.body,
+      color: tokens.colors.textSecondary,
+      textAlign: "center",
+      marginBottom: tokens.spacing.md,
+    },
+    openInBrowserButton: {
+      backgroundColor: tokens.colors.accent,
+      paddingHorizontal: tokens.spacing.lg,
+      paddingVertical: tokens.spacing.sm,
+      borderRadius: tokens.radii.md,
+    },
+    openInBrowserButtonText: {
+      fontFamily: tokens.fontFamilies.semiBold,
+      fontSize: tokens.typography.body,
+      color: tokens.colors.accentOnPrimary,
+    },
   });
 
 type Styles = ReturnType<typeof createStyles>;
@@ -133,7 +191,11 @@ export default function RecipeDetailScreen() {
   const { t, i18n } = useTranslation();
   const language = (i18n.language || "en") as keyof Recipe["recipeName"];
   const styles = useThemedStyles<Styles>(createStyles);
+  const tokens = useTokens();
   const [isRunnerMode, setIsRunnerMode] = useState(false);
+  const [activeTab, setActiveTab] = useState<"recipe" | "source">("recipe");
+  const [webViewLoading, setWebViewLoading] = useState(true);
+  const [webViewError, setWebViewError] = useState(false);
 
   const recipe = useQuery(api.recipes.getById, recipeId ? { id: recipeId } : "skip");
   const translationGuides = useQuery(api.translationGuides.listAll, {});
@@ -374,83 +436,179 @@ export default function RecipeDetailScreen() {
     };
   }, [currentUser]);
 
+  const handleOpenInBrowser = async () => {
+    if (recipe.sourceUrl) {
+      await WebBrowser.openBrowserAsync(recipe.sourceUrl);
+    }
+  };
+
+  // Reset WebView loading state when switching tabs
+  useEffect(() => {
+    if (activeTab === "source") {
+      setWebViewLoading(true);
+      setWebViewError(false);
+    }
+  }, [activeTab]);
+
   return (
     <SafeAreaView style={styles.screen}>
       <Stack.Screen options={headerOptions} />
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <RecipeHeader
-          recipe={recipe}
-          language={language}
-          onStartCooking={() => setIsRunnerMode(true)}
-          userInventory={inventoryCodes}
-        />
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t("recipe.description")}</Text>
-          <Text style={styles.description}>
-            {recipe.description[language] || recipe.description.en}
-          </Text>
+      {/* Tab Switcher - only show if recipe has sourceUrl */}
+      {recipe.sourceUrl && (
+        <View style={{ padding: tokens.padding.screen, paddingBottom: 0 }}>
+          <TabSwitcher
+            tabs={[
+              { id: "recipe", label: t("recipe.tabRecipe", { defaultValue: "Recipe" }) },
+              { id: "source", label: t("recipe.tabSource", { defaultValue: "Source" }) },
+            ]}
+            activeTab={activeTab}
+            onTabChange={(id) => setActiveTab(id as "recipe" | "source")}
+          />
         </View>
+      )}
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>
-            {t("recipe.ingredients")} ({recipe.ingredients.length})
-          </Text>
-          <IngredientsList
-            ingredients={recipe.ingredients}
-            userInventory={inventoryCodes}
+      {activeTab === "recipe" ? (
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <RecipeHeader
+            recipe={recipe}
             language={language}
+            onStartCooking={() => setIsRunnerMode(true)}
+            userInventory={inventoryCodes}
           />
-        </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t("recipe.instructions")}</Text>
-          {decodedSteps.map((step) => (
-            <View key={step.stepNumber} style={styles.step}>
-              <View style={styles.stepNumber}>
-                <Text style={styles.stepNumberText}>{step.stepNumber}</Text>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{t("recipe.description")}</Text>
+            <Text style={styles.description}>
+              {recipe.description[language] || recipe.description.en}
+            </Text>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>
+              {t("recipe.ingredients")} ({recipe.ingredients.length})
+            </Text>
+            <IngredientsList
+              ingredients={recipe.ingredients}
+              userInventory={inventoryCodes}
+              language={language}
+            />
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{t("recipe.instructions")}</Text>
+            {decodedSteps.map((step) => (
+              <View key={step.stepNumber} style={styles.step}>
+                <View style={styles.stepNumber}>
+                  <Text style={styles.stepNumberText}>{step.stepNumber}</Text>
+                </View>
+                <Text style={styles.stepText}>{step.detail || step.title}</Text>
               </View>
-              <Text style={styles.stepText}>{step.detail || step.title}</Text>
-            </View>
-          ))}
-        </View>
+            ))}
+          </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t("recipe.nutrition", { defaultValue: "Nutrition" })}</Text>
-          <NutritionLabel
-            facts={nutritionFacts}
-            goalContext="user"
-            dailyValues={dailyValues}
-            showGoalContextLabel
-          />
-        </View>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{t("recipe.nutrition", { defaultValue: "Nutrition" })}</Text>
+            <NutritionLabel
+              facts={nutritionFacts}
+              goalContext="user"
+              dailyValues={dailyValues}
+              showGoalContextLabel
+            />
+          </View>
 
-        <View style={styles.attribution}>
-          <Text style={styles.attributionText}>
-            {t("recipe.adaptedFrom")}:
-            {" "}
-            {attributionDetails.sourceHost || attributionDetails.fallbackSource}
-          </Text>
-          {attributionDetails.authorLine ? (
-            <Text style={styles.attributionText}>{attributionDetails.authorLine}</Text>
-          ) : null}
-          {attributionDetails.websiteLine ? (
-            <Text style={styles.attributionText}>{attributionDetails.websiteLine}</Text>
-          ) : null}
-          {attributionDetails.socialLine ? (
-            <Text style={styles.attributionText}>{attributionDetails.socialLine}</Text>
-          ) : null}
-        </View>
+          <View style={styles.attribution}>
+            <Text style={styles.attributionText}>
+              {t("recipe.adaptedFrom")}:
+              {" "}
+              {attributionDetails.sourceHost || attributionDetails.fallbackSource}
+            </Text>
+            {attributionDetails.authorLine ? (
+              <Text style={styles.attributionText}>{attributionDetails.authorLine}</Text>
+            ) : null}
+            {attributionDetails.websiteLine ? (
+              <Text style={styles.attributionText}>{attributionDetails.websiteLine}</Text>
+            ) : null}
+            {attributionDetails.socialLine ? (
+              <Text style={styles.attributionText}>{attributionDetails.socialLine}</Text>
+            ) : null}
+          </View>
 
-        <Pressable
-          style={styles.startButton}
-          onPress={() => setIsRunnerMode(true)}
-          accessibilityRole="button"
-        >
-          <Text style={styles.startButtonText}>👨‍🍳 {t("recipe.startCooking")}</Text>
-        </Pressable>
+          <Pressable
+            style={styles.startButton}
+            onPress={() => setIsRunnerMode(true)}
+            accessibilityRole="button"
+          >
+            <Text style={styles.startButtonText}>👨‍🍳 {t("recipe.startCooking")}</Text>
+          </Pressable>
       </ScrollView>
+      ) : recipe.sourceUrl ? (
+        <View style={styles.webViewContainer}>
+          {WebView ? (
+            <>
+              <WebView
+                source={{ uri: recipe.sourceUrl }}
+                style={styles.webView}
+                startInLoadingState
+                javaScriptEnabled
+                domStorageEnabled
+                allowsInlineMediaPlayback
+                mediaPlaybackRequiresUserAction={false}
+                allowsFullscreenVideo
+                mixedContentMode="always"
+                onLoadEnd={() => setWebViewLoading(false)}
+                onError={(syntheticEvent) => {
+                  const { nativeEvent } = syntheticEvent;
+                  console.warn("WebView error: ", nativeEvent);
+                  setWebViewError(true);
+                  setWebViewLoading(false);
+                }}
+                onHttpError={(syntheticEvent) => {
+                  const { nativeEvent } = syntheticEvent;
+                  console.warn("WebView HTTP error: ", nativeEvent);
+                  // Don't treat HTTP errors as fatal - some sites return 403/404 but still render
+                }}
+              />
+              {webViewLoading && (
+                <View style={styles.webViewLoadingContainer}>
+                  <ActivityIndicator size="large" color={tokens.colors.accent} />
+                </View>
+              )}
+            </>
+          ) : (
+            <View style={styles.webViewErrorContainer}>
+              <Text style={styles.webViewErrorText}>
+                {t("recipe.webViewUnavailable", { defaultValue: "WebView is not available on this platform." })}
+              </Text>
+              <Pressable
+                style={styles.openInBrowserButton}
+                onPress={handleOpenInBrowser}
+                accessibilityRole="button"
+              >
+                <Text style={styles.openInBrowserButtonText}>
+                  {t("recipe.openInBrowser", { defaultValue: "Open in Browser" })}
+                </Text>
+              </Pressable>
+            </View>
+          )}
+          {webViewError && (
+            <View style={styles.webViewErrorContainer}>
+              <Text style={styles.webViewErrorText}>
+                {t("recipe.webViewError", { defaultValue: "Failed to load the source page." })}
+              </Text>
+              <Pressable
+                style={styles.openInBrowserButton}
+                onPress={handleOpenInBrowser}
+                accessibilityRole="button"
+              >
+                <Text style={styles.openInBrowserButtonText}>
+                  {t("recipe.openInBrowser", { defaultValue: "Open in Browser" })}
+                </Text>
+              </Pressable>
+            </View>
+          )}
+        </View>
+      ) : null}
     </SafeAreaView>
   );
 }
