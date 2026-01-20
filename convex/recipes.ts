@@ -370,6 +370,122 @@ const URL_SOURCE_TYPES = new Set<SourceType>([
   "reddit",
 ]);
 
+/**
+ * Detects media type from URL patterns
+ */
+function detectMediaTypeFromUrl(url: string): SourceType {
+  try {
+    const urlObj = new URL(url);
+    const hostname = urlObj.hostname.toLowerCase();
+    
+    // TikTok detection
+    if (hostname.includes('tiktok.com')) {
+      return 'tiktok';
+    }
+    
+    // YouTube detection
+    if (hostname.includes('youtube.com') || hostname.includes('youtu.be')) {
+      return 'youtube';
+    }
+    
+    // Instagram detection
+    if (hostname.includes('instagram.com')) {
+      return 'instagram';
+    }
+    
+    // Pinterest detection
+    if (hostname.includes('pinterest.com') || hostname.includes('pin.it')) {
+      return 'pinterest';
+    }
+    
+    // Facebook detection
+    if (hostname.includes('facebook.com') || hostname.includes('fb.com')) {
+      return 'facebook';
+    }
+    
+    // Twitter/X detection
+    if (hostname.includes('twitter.com') || hostname.includes('x.com')) {
+      return 'twitter';
+    }
+    
+    // Reddit detection
+    if (hostname.includes('reddit.com')) {
+      return 'reddit';
+    }
+    
+    // Blog detection (common blog platforms)
+    if (hostname.includes('blogspot.com') || 
+        hostname.includes('wordpress.com') ||
+        hostname.includes('medium.com') ||
+        hostname.includes('substack.com')) {
+      return 'blog';
+    }
+    
+    // Default to website for other URLs
+    return 'website';
+  } catch {
+    return 'other';
+  }
+}
+
+/**
+ * Extracts text content from HTML by removing tags and decoding entities
+ */
+function extractTextFromHtml(html: string): string {
+  // Remove script and style tags
+  let text = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
+  text = text.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
+  
+  // Extract text content from common tags
+  text = text.replace(/<[^>]+>/g, ' ');
+  
+  // Decode HTML entities
+  text = decodeHtmlEntities(text);
+  
+  // Clean up whitespace
+  text = text.replace(/\s+/g, ' ').trim();
+  
+  return text;
+}
+
+/**
+ * Fetches oEmbed data for video platforms (TikTok, YouTube, Instagram)
+ */
+async function fetchOEmbedData(url: string, platform: 'tiktok' | 'youtube' | 'instagram'): Promise<any> {
+  try {
+    let oembedUrl: string;
+    
+    if (platform === 'tiktok') {
+      // TikTok oEmbed endpoint
+      oembedUrl = `https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`;
+    } else if (platform === 'youtube') {
+      // YouTube oEmbed endpoint
+      oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`;
+    } else if (platform === 'instagram') {
+      // Instagram oEmbed endpoint
+      oembedUrl = `https://api.instagram.com/oembed?url=${encodeURIComponent(url)}`;
+    } else {
+      return null;
+    }
+    
+    const response = await fetch(oembedUrl, {
+      headers: {
+        'User-Agent': 'HaricotRecipeIngest/1.0',
+      },
+    });
+    
+    if (!response.ok) {
+      console.warn(`[fetchOEmbedData] Failed to fetch oEmbed for ${platform}: ${response.status}`);
+      return null;
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.warn(`[fetchOEmbedData] Error fetching oEmbed for ${platform}:`, error);
+    return null;
+  }
+}
+
 const decodeHtmlEntities = (value: string) =>
   value
     .replace(/&nbsp;/g, " ")
@@ -1534,28 +1650,30 @@ export const seed = mutation({
 
 export const ingestUniversal = action({
   args: {
-    sourceType: v.union(
-      v.literal("website"),
-      v.literal("audio"),
-      v.literal("text"),
-      v.literal("photograph"),
-      v.literal("instagram"),
-      v.literal("tiktok"),
-      v.literal("pinterest"),
-      v.literal("youtube"),
-      v.literal("cookbook"),
-      v.literal("magazine"),
-      v.literal("newspaper"),
-      v.literal("recipe_card"),
-      v.literal("handwritten"),
-      v.literal("voice_note"),
-      v.literal("video"),
-      v.literal("facebook"),
-      v.literal("twitter"),
-      v.literal("reddit"),
-      v.literal("blog"),
-      v.literal("podcast"),
-      v.literal("other"),
+    sourceType: v.optional(
+      v.union(
+        v.literal("website"),
+        v.literal("audio"),
+        v.literal("text"),
+        v.literal("photograph"),
+        v.literal("instagram"),
+        v.literal("tiktok"),
+        v.literal("pinterest"),
+        v.literal("youtube"),
+        v.literal("cookbook"),
+        v.literal("magazine"),
+        v.literal("newspaper"),
+        v.literal("recipe_card"),
+        v.literal("handwritten"),
+        v.literal("voice_note"),
+        v.literal("video"),
+        v.literal("facebook"),
+        v.literal("twitter"),
+        v.literal("reddit"),
+        v.literal("blog"),
+        v.literal("podcast"),
+        v.literal("other"),
+      )
     ),
     sourceUrl: v.string(),
     rawText: v.optional(v.string()),
@@ -1589,15 +1707,31 @@ export const ingestUniversal = action({
       throw new Error("OPEN_AI_KEY is not configured on the server");
     }
 
+    // Auto-detect source type if not provided
+    let detectedSourceType: SourceType = args.sourceType || "other";
+    if (!args.sourceType || args.sourceType === "other") {
+      detectedSourceType = detectMediaTypeFromUrl(args.sourceUrl);
+      console.log(`[ingestUniversal] Auto-detected source type: ${detectedSourceType} from URL: ${args.sourceUrl}`);
+    }
+
     const foodLibrary = await ctx.runQuery(api.foodLibrary.listAll, {});
     const translationGuides = await ctx.runQuery(api.translationGuides.listAll, {});
+
+    // For video platforms, try oEmbed extraction
+    let oembedData: any = args.oembedPayload;
+    if (!oembedData && ['tiktok', 'youtube', 'instagram'].includes(detectedSourceType)) {
+      oembedData = await fetchOEmbedData(args.sourceUrl, detectedSourceType as 'tiktok' | 'youtube' | 'instagram');
+      if (oembedData) {
+        console.log(`[ingestUniversal] Fetched oEmbed data for ${detectedSourceType}`);
+      }
+    }
 
     let htmlStructuredSummary: string | undefined;
     let htmlFallbackSummary: string | undefined;
     let htmlIngredientCount = 0;
     let htmlInstructionCount = 0;
 
-    if (args.sourceUrl && URL_SOURCE_TYPES.has(args.sourceType as SourceType)) {
+    if (args.sourceUrl && URL_SOURCE_TYPES.has(detectedSourceType)) {
       const html = await fetchSourceHtml(args.sourceUrl);
       if (html) {
         const { ingredients, instructions } = extractRecipeStructuredText(html);
@@ -1623,14 +1757,34 @@ export const ingestUniversal = action({
       }
     }
 
-    const sourceSummary =
-      htmlStructuredSummary ||
+    // Enhance sourceSummary with oEmbed data if available
+    let enhancedSourceSummary = htmlStructuredSummary ||
       htmlFallbackSummary ||
       args.rawText ||
       args.extractedText ||
       args.socialMetadata?.description ||
       args.socialMetadata?.title ||
-      "Provide a universal recipe representation for ingestion.";
+      "";
+
+    if (oembedData) {
+      const oembedTitle = oembedData.title || '';
+      const oembedDescription = oembedData.description || oembedData.author_name || '';
+      const oembedHtml = oembedData.html || ''; // May contain video embed with captions
+      
+      // Combine oEmbed metadata with existing source summary
+      enhancedSourceSummary = [
+        oembedTitle,
+        oembedDescription,
+        enhancedSourceSummary,
+        // Extract text from HTML if present (for video captions)
+        oembedHtml ? extractTextFromHtml(oembedHtml) : '',
+      ]
+        .filter((text) => text && text.trim())
+        .join('\n\n')
+        .trim();
+    }
+
+    const sourceSummary = enhancedSourceSummary || "Provide a universal recipe representation for ingestion.";
 
     const sourceHostForLog = normalizeHost(args.sourceUrl);
     console.info(
@@ -1638,9 +1792,20 @@ export const ingestUniversal = action({
         `ingredients: ${htmlIngredientCount}, instructions: ${htmlInstructionCount}`,
     );
 
+    // Add social media context for better recipe name extraction
+    const socialMediaContext = ['tiktok', 'youtube', 'instagram', 'facebook', 'twitter'].includes(detectedSourceType)
+      ? `\n\nIMPORTANT: This recipe is from ${detectedSourceType}. Social media recipes often have:
+- Recipe name in the video title, caption, or first line of description
+- Ingredients and steps may be in video captions, comments, or description text
+- Look for hashtags or emojis that indicate the recipe name
+- Extract the actual recipe name from the content, not generic placeholders
+- If the recipe name is unclear, infer it from the main ingredients and dish type`
+      : '';
+
     const prompt = `You are the Universal Recipe Encoding System (URES) ingestion agent. Produce strict JSON for Convex mutation.
 
 CRITICAL REQUIREMENTS:
+${socialMediaContext}
 1. Extract ALL ingredients from the source - do not skip any, even if they seem optional or have notes
 2. Extract ALL steps from the source - include every instruction, even if they seem minor
 3. Extract complete attribution information in structured fields (authorName, authorWebsite, authorSocial, sourceHost) without merging them into the author string
@@ -1713,7 +1878,7 @@ Return JSON with fields:
   * dateRetrieved REQUIRED - current date
 - imageUrls - array of image URLs if found
 
-Source context: ${args.sourceType} ${args.sourceUrl ?? "(no url)"}
+Source context: ${detectedSourceType} ${args.sourceUrl ?? "(no url)"}
 Captured text: ${sourceSummary}`;
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -2089,10 +2254,10 @@ Captured text: ${sourceSummary}`;
       authorSocialPinterest: authorSocial?.pinterest?.toLowerCase(),
       authorSocialYoutube: authorSocial?.youtube?.toLowerCase(),
       authorSocialFacebook: authorSocial?.facebook?.toLowerCase(),
-      source: args.sourceType as SourceType,
+      source: detectedSourceType,
       sourceUrl,
       attribution: {
-        source: rawAttribution.source || args.sourceType,
+        source: rawAttribution.source || detectedSourceType,
         sourceUrl,
         author: rawAttribution.author || enhanced.author || undefined,
         authorName: normalizedAuthorName || undefined,
