@@ -2588,7 +2588,18 @@ Return JSON with fields:
 - cookTimeMinutes - extract from source or estimate (0 if no-bake)
 - totalTimeMinutes - extract from source or calculate
 - servings - extract from source or default to 4
-- encodedSteps - REQUIRED: Must be in URES encoding format (use -> to separate steps, e.g., "1.11.003.form.diced @quantity:2 -> T.03.003 @time:5min"). 
+- encodedSteps - REQUIRED: Must be in URES encoding format (use -> to separate steps).
+  * CRITICAL: Encode COMPLETE INSTRUCTIONS, not individual ingredient operations
+  * Use technique codes (T.XX.XXX) for cooking actions: T.03.006 (bake), T.03.007 (roast), T.03.003 (sautÃ©), T.03.001 (boil)
+  * Use action codes (A.XX.XXX) for manipulation: A.01.001 (add), A.01.003 (transfer/place), A.02.001 (stir), A.02.002 (whisk)
+  * Example CORRECT: "Preheat oven to 425F" → T.03.006 @temp:425F
+  * Example CORRECT: "Place 2 pounds Brussels sprouts on baking sheet" → A.01.003 provisional.brussels_sprouts.form.halved @quantity:2 @unit:pounds @to:KT.04.009
+  * Example CORRECT: "Dice 2 onions and sautÃ© for 5 minutes" → 1.11.003.form.diced @quantity:2 -> T.03.003 @time:5min
+  * Example WRONG: "1.11.003.form.preheat @temperature:425F" (don't use ingredient codes with action qualifiers - use technique codes instead)
+  * Example WRONG: "quantity: 2 · unit: pounds" (don't encode quantities as separate steps - include them within action/technique codes)
+  * Each step should represent a complete instruction from the source recipe, not break down into individual ingredient operations
+  * Include ingredient codes WITHIN action/technique codes, not as separate steps
+  * Parameters like @quantity and @unit should be attached to ingredient codes within actions, not standalone
   * DO NOT return JSON format like {"steps":[...]} 
   * If URES encoding is not possible, return empty string "" and ensure sourceSteps contains complete detailed steps
   * Reference plan/encoding-guide.md for URES format details
