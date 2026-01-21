@@ -8,6 +8,7 @@ import { useThemedStyles, useTokens } from "@/styles/tokens";
 import type { Recipe } from "@/types/recipe";
 import { calculateIngredientMatch } from "@/utils/inventory";
 import { formatRecipeTime } from "@/utils/recipes";
+import { getRecipeLanguage } from "@/utils/translation";
 import { useQuery } from "convex/react";
 
 interface RecipeCardCompactProps {
@@ -111,7 +112,8 @@ export const RecipeCardCompact: React.FC<RecipeCardCompactProps> = ({
     const styles = useThemedStyles<Styles>(createStyles);
     const tokens = useTokens();
     const { t, i18n } = useTranslation();
-    const currentLanguage = (i18n.language || "en") as keyof Recipe["recipeName"];
+    // Map i18n language code (e.g., "fr-FR") to recipe language code (e.g., "fr")
+    const currentLanguage = getRecipeLanguage(i18n.language || "en") as keyof Recipe["recipeName"];
 
     const { matchPercentage } = calculateIngredientMatch(
         recipe.ingredients,

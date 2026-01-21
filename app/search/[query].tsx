@@ -10,6 +10,7 @@ import createSearchStyles, { type SearchStyles } from "@/styles/searchStyles";
 import { useThemedStyles, useTokens } from "@/styles/tokens";
 import { useTranslation } from "@/i18n/useTranslation";
 import type { Recipe } from "@/types/recipe";
+import { getRecipeLanguage } from "@/utils/translation";
 
 const SEARCH_RESULTS_LIMIT = 50;
 
@@ -38,7 +39,8 @@ export default function SearchResultsScreen() {
   const styles = useThemedStyles<SearchStyles>(createSearchStyles);
   const tokens = useTokens();
   const { t, i18n } = useTranslation();
-  const language = (i18n.language || "en") as keyof Recipe["recipeName"];
+  // Map i18n language code (e.g., "fr-FR") to recipe language code (e.g., "fr")
+  const language = getRecipeLanguage(i18n.language || "en") as keyof Recipe["recipeName"];
 
   const currentUser = useQuery(api.users.getCurrentUser);
   const [showFilters, setShowFilters] = useState(false);

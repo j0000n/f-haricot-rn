@@ -12,6 +12,7 @@ import { useRecipeLists } from "@/hooks/useRecipeLists";
 import { useTranslation } from "@/i18n/useTranslation";
 import { EMOJI_TAGS } from "@/types/emojiTags";
 import type { Recipe } from "@/types/recipe";
+import { getRecipeLanguage } from "@/utils/translation";
 import createListDetailStyles from "@/styles/listDetailStyles";
 import { useThemedStyles } from "@/styles/tokens";
 import { getMissingIngredients, formatIngredientQuantity } from "@/utils/inventory";
@@ -90,7 +91,8 @@ export default function ListDetailScreen() {
     codes: libraryCodes,
   });
 
-  const language = (i18n.language || "en") as keyof Recipe["recipeName"];
+  // Map i18n language code (e.g., "fr-FR") to recipe language code (e.g., "fr")
+  const language = getRecipeLanguage(i18n.language || "en") as keyof Recipe["recipeName"];
   const libraryMap = useMemo(() => {
     if (!Array.isArray(foodLibrary)) {
       return new Map<string, Pick<Doc<"foodLibrary">, "translations" | "name">>();

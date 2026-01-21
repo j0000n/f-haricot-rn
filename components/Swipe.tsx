@@ -12,6 +12,8 @@ import {
 } from "react-native";
 
 import type { Recipe } from "@/types/recipe";
+import { useTranslation } from "@/i18n/useTranslation";
+import { getRecipeLanguage } from "@/utils/translation";
 
 const SWIPE_THRESHOLD = 120;
 const SWIPE_OUT_DURATION = 200;
@@ -109,6 +111,9 @@ export const Swipe = ({
   showInventoryMatch = true,
   showCookNowButton = true,
 }: SwipeProps) => {
+  const { i18n } = useTranslation();
+  // Map i18n language code (e.g., "fr-FR") to recipe language code (e.g., "fr")
+  const recipeLanguage = getRecipeLanguage(i18n.language || "en") as keyof Recipe["recipeName"];
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showTutorialOverlay, setShowTutorialOverlay] = useState(showTutorial);
   const pan = useRef(new Animated.ValueXY()).current;
@@ -191,9 +196,9 @@ export const Swipe = ({
   });
 
   const renderCardContent = (recipe: Recipe) => {
-    const recipeName = recipe.recipeName.en ?? Object.values(recipe.recipeName)[0] ?? "Recipe";
+    const recipeName = recipe.recipeName[recipeLanguage] ?? recipe.recipeName.en ?? Object.values(recipe.recipeName)[0] ?? "Recipe";
     const recipeDescription =
-      recipe.description.en ?? Object.values(recipe.description)[0] ?? "";
+      recipe.description[recipeLanguage] ?? recipe.description.en ?? Object.values(recipe.description)[0] ?? "";
     const inventoryMatch = buildInventoryMatch(recipe, inventoryCodes);
     const tags = [
       ...(recipe.dietaryTags ?? []),

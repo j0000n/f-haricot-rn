@@ -9,6 +9,7 @@ import { useThemedStyles, useTokens } from "@/styles/tokens";
 import type { Recipe } from "@/types/recipe";
 import { calculateIngredientMatch } from "@/utils/inventory";
 import { formatRecipeTime } from "@/utils/recipes";
+import { getRecipeLanguage } from "@/utils/translation";
 import { useQuery } from "convex/react";
 
 interface RecipeCardProps {
@@ -138,7 +139,8 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
   const styles = useThemedStyles<Styles>(createStyles);
   const tokens = useTokens();
   const { t, i18n } = useTranslation();
-  const currentLanguage = (i18n.language || "en") as keyof Recipe["recipeName"];
+  // Map i18n language code (e.g., "fr-FR") to recipe language code (e.g., "fr")
+  const currentLanguage = getRecipeLanguage(i18n.language || "en") as keyof Recipe["recipeName"];
 
   const { matchPercentage, missingIngredients } = calculateIngredientMatch(
     recipe.ingredients,
@@ -226,7 +228,7 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
 
       <View style={styles.content}>
         <Text style={styles.title} numberOfLines={variant === "compact" ? 1 : 2}>
-          {recipe.recipeName[currentLanguage] || recipe.recipeName.en}
+          {recipe.recipeName[currentLanguage] || recipe.recipeName.en} 
         </Text>
 
         <View style={styles.emojiRow}>
@@ -252,7 +254,7 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
 
         {variant === "detailed" && (
           <Text style={styles.description} numberOfLines={2}>
-            {recipe.description[currentLanguage] || recipe.description.en}
+           {recipe._id} - {recipe.description[currentLanguage] || recipe.description.en}
           </Text>
         )}
 

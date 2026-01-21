@@ -13,6 +13,7 @@ import { useWidgetSync } from "@/hooks/useWidgetSync";
 import { useTranslation } from "@/i18n/useTranslation";
 import createHomeStyles from "@/styles/homeStyles";
 import { useThemedStyles, useTokens } from "@/styles/tokens";
+import { getRecipeLanguage } from "@/utils/translation";
 import type { InventoryDisplayItem } from "@/types/food";
 import type { NutrientDish } from "@/types/nutrition";
 import type { Recipe } from "@/types/recipe";
@@ -375,7 +376,8 @@ export default function HomeScreen() {
     [searchPreview],
   );
   const isSearching = searchPreview === undefined && trimmedSearchTerm.length > 0;
-  const language = (i18n.language || "en") as keyof Recipe["recipeName"];
+  // Map i18n language code (e.g., "fr-FR") to recipe language code (e.g., "fr")
+  const language = getRecipeLanguage(i18n.language || "en") as keyof Recipe["recipeName"];
   const createdRecipe = useQuery(
     api.recipes.getById,
     createdRecipeId ? { id: createdRecipeId } : "skip",
