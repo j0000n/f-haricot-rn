@@ -501,6 +501,73 @@ const normalizeMultilingual = (
   return result as Record<typeof REQUIRED_LANGUAGES[number], string>;
 };
 
+type RecipeCardSummary = Pick<
+  Doc<"recipes">,
+  | "_id"
+  | "recipeName"
+  | "description"
+  | "ingredients"
+  | "emojiTags"
+  | "prepTimeMinutes"
+  | "cookTimeMinutes"
+  | "totalTimeMinutes"
+  | "servings"
+  | "imageUrls"
+  | "originalImageSmallStorageId"
+  | "transparentImageSmallStorageId"
+  | "createdAt"
+  | "difficultyLevel"
+>;
+
+type RecipeSearchSummary = Pick<
+  Doc<"recipes">,
+  "_id" | "recipeName" | "description" | "totalTimeMinutes" | "servings" | "difficultyLevel"
+>;
+
+const toRecipeCardSummary = (recipe: Doc<"recipes">): RecipeCardSummary => ({
+  _id: recipe._id,
+  recipeName: recipe.recipeName,
+  description: recipe.description,
+  ingredients: recipe.ingredients,
+  emojiTags: recipe.emojiTags,
+  prepTimeMinutes: recipe.prepTimeMinutes,
+  cookTimeMinutes: recipe.cookTimeMinutes,
+  totalTimeMinutes: recipe.totalTimeMinutes,
+  servings: recipe.servings,
+  imageUrls: recipe.imageUrls,
+  originalImageSmallStorageId: recipe.originalImageSmallStorageId,
+  transparentImageSmallStorageId: recipe.transparentImageSmallStorageId,
+  createdAt: recipe.createdAt,
+  difficultyLevel: recipe.difficultyLevel,
+});
+
+const toRecipeSearchSummary = (recipe: Doc<"recipes">): RecipeSearchSummary => ({
+  _id: recipe._id,
+  recipeName: recipe.recipeName,
+  description: recipe.description,
+  totalTimeMinutes: recipe.totalTimeMinutes,
+  servings: recipe.servings,
+  difficultyLevel: recipe.difficultyLevel,
+});
+
+const buildRecipeSearchText = (
+  recipeName: Doc<"recipes">["recipeName"],
+  description: Doc<"recipes">["description"],
+  extraTokens: Array<string | undefined> = [],
+): string => {
+  const parts = [
+    ...Object.values(recipeName),
+    ...Object.values(description),
+    ...extraTokens.filter(Boolean),
+  ];
+
+  return parts
+    .join(" ")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+};
+
 const normalizeToGrams = (
   ingredient: {
     normalizedQuantity?: number;
@@ -1628,11 +1695,10 @@ export const listFeatured = query({
     const recipes = await ctx.db
       .query("recipes")
       .withIndex("by_created_at")
-      .collect();
+      .order("desc")
+      .take(limit);
 
-    // Sort by createdAt descending and limit
-    const sortedRecipes = recipes.sort((a, b) => b.createdAt - a.createdAt);
-    return sortedRecipes.slice(0, limit);
+    return recipes.map(toRecipeCardSummary);
   },
 });
 
@@ -1650,20 +1716,14 @@ export const search = query({
 
     const limit = args.limit ?? 25;
 
-    const recipes = await ctx.db.query("recipes").collect();
-
-    const matches = recipes
-      .filter((recipe) =>
-        Object.values(recipe.recipeName).some((name) =>
-          name.toLowerCase().includes(normalizedQuery),
-        ) ||
-        Object.values(recipe.description).some((description) =>
-          description.toLowerCase().includes(normalizedQuery),
-        ),
+    const matches = await ctx.db
+      .query("recipes")
+      .withSearchIndex("search_recipes", (q) =>
+        q.search("searchText", normalizedQuery)
       )
-      .sort((a, b) => a.recipeName.en.localeCompare(b.recipeName.en));
+      .take(limit);
 
-    return matches.slice(0, limit);
+    return matches.map(toRecipeSearchSummary);
   },
 });
 
@@ -1831,9 +1891,91 @@ export const listByPreferences = query({
   },
   handler: async (ctx, args) => {
     const limit = args.limit ?? 25;
+    const candidateLimit = Math.max(limit * 5, 50);
 
-    // Get all recipes
-    let recipes = await ctx.db.query("recipes").collect();
+    const cuisineTags = args.favoriteCuisines ?? [];
+    const dietaryTags = args.dietaryRestrictions ?? [];
+    const cookingStyleTags = args.cookingStylePreferences ?? [];
+
+    const hasTagFilters =
+      cuisineTags.length > 0 || dietaryTags.length > 0 || cookingStyleTags.length > 0;
+
+    const tagQueries: Array<Promise<Doc<"recipes">[]>> = [];
+
+    if (cuisineTags.length > 0) {
+      tagQueries.push(
+        Promise.all(
+          cuisineTags.map((tag) =>
+            ctx.db
+              .query("recipes")
+              .withIndex("by_cuisine_tag_created_at", (q) => q.eq("cuisineTags", tag as any))
+              .order("desc")
+              .take(candidateLimit)
+          )
+        ).then((results) => results.flat())
+      );
+    }
+
+    if (dietaryTags.length > 0) {
+      tagQueries.push(
+        Promise.all(
+          dietaryTags.map((tag) =>
+            ctx.db
+              .query("recipes")
+              .withIndex("by_dietary_tag_created_at", (q) => q.eq("dietaryTags", tag as any))
+              .order("desc")
+              .take(candidateLimit)
+          )
+        ).then((results) => results.flat())
+      );
+    }
+
+    if (cookingStyleTags.length > 0) {
+      tagQueries.push(
+        Promise.all(
+          cookingStyleTags.map((tag) =>
+            ctx.db
+              .query("recipes")
+              .withIndex("by_cooking_style_tag_created_at", (q) =>
+                q.eq("cookingStyleTags", tag as any)
+              )
+              .order("desc")
+              .take(candidateLimit)
+          )
+        ).then((results) => results.flat())
+      );
+    }
+
+    let recipes: Doc<"recipes">[] = [];
+
+    if (hasTagFilters) {
+      const tagResults = await Promise.all(tagQueries);
+      const uniqueRecipes = new Map<string, Doc<"recipes">>();
+
+      for (const group of tagResults) {
+        for (const recipe of group) {
+          uniqueRecipes.set(recipe._id, recipe);
+        }
+      }
+
+      recipes = Array.from(uniqueRecipes.values());
+    } else if (args.maxCookTime !== undefined) {
+      recipes = await ctx.db
+        .query("recipes")
+        .withIndex("by_cook_time", (q) => q.lte("cookTimeMinutes", args.maxCookTime!))
+        .take(candidateLimit);
+    } else if (args.maxPrepTime !== undefined) {
+      recipes = await ctx.db
+        .query("recipes")
+        .withIndex("by_prep_time", (q) => q.lte("prepTimeMinutes", args.maxPrepTime!))
+        .take(candidateLimit);
+    } else {
+      recipes = await ctx.db
+        .query("recipes")
+        .withIndex("by_created_at")
+        .order("desc")
+        .take(candidateLimit);
+    }
 
     // Apply filters
     if (args.allergies && args.allergies.length > 0) {
@@ -1881,7 +2023,7 @@ export const listByPreferences = query({
     // Sort by createdAt descending
     recipes.sort((a, b) => b.createdAt - a.createdAt);
 
-    return recipes.slice(0, limit);
+    return recipes.slice(0, limit).map(toRecipeCardSummary);
   },
 });
 
@@ -2370,6 +2512,15 @@ export const seed = mutation({
             seedSourceHost,
         },
         imageUrls: recipe.imageUrls,
+        searchText: buildRecipeSearchText(
+          recipe.recipeName,
+          recipe.description,
+          [
+            ...(recipe.emojiTags ?? []),
+            ...((recipe as Recipe).cuisineTags ?? []),
+            ...((recipe as Recipe).dietaryTags ?? []),
+          ],
+        ),
         createdAt: recipe.createdAt ?? now,
         updatedAt: now,
         isPublic: recipe.isPublic,
@@ -3312,9 +3463,10 @@ CRITICAL: Return ONLY valid JSON. No markdown, no explanations.`;
               if (translations.ingredients && Array.isArray(translations.ingredients)) {
                 // Update food library entries with translations
                 for (const item of translations.ingredients) {
-                  const foodLibraryEntry = await ctx.runQuery(api.foodLibrary.getByCode, {
-                    code: item.code,
+                  const foodLibraryEntries = await ctx.runQuery(api.foodLibrary.getByCodes, {
+                    codes: [item.code],
                   });
+                  const foodLibraryEntry = foodLibraryEntries[0];
                   
                   if (foodLibraryEntry && foodLibraryEntry.isProvisional && item.translations) {
                     // Update translations in food library
@@ -4810,7 +4962,12 @@ export const create = mutation({
   },
   returns: v.id("recipes"),
   handler: async (ctx, args) => {
-    return await ctx.db.insert("recipes", args);
+    const searchText = buildRecipeSearchText(args.recipeName, args.description, args.emojiTags);
+
+    return await ctx.db.insert("recipes", {
+      ...args,
+      searchText,
+    });
   },
 });
 
@@ -5169,7 +5326,20 @@ export const insertFromIngestion = mutation({
   },
   returns: v.id("recipes"),
   handler: async (ctx, args) => {
-    return await ctx.db.insert("recipes", args.recipeData);
+    const searchText = buildRecipeSearchText(
+      args.recipeData.recipeName,
+      args.recipeData.description,
+      [
+        ...(args.recipeData.emojiTags ?? []),
+        ...(args.recipeData.cuisineTags ?? []),
+        ...(args.recipeData.dietaryTags ?? []),
+      ],
+    );
+
+    return await ctx.db.insert("recipes", {
+      ...args.recipeData,
+      searchText,
+    });
   },
 });
 

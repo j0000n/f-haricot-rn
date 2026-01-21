@@ -104,7 +104,6 @@ export const getByCodes = query({
     );
 
     return entries.filter(Boolean) as Doc<"foodLibrary">[];
-
   },
 });
 
