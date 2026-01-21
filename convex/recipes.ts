@@ -4199,15 +4199,10 @@ export const precomputePersonalizedRecipes = internalAction({
         userIds = allUsers;
       }
 
+      const railTypes = PRECOMPUTE_RAIL_TYPES;
+
       const totalUsers = Math.min(userIds.length, MAX_USERS_PER_RUN);
       userIds = userIds.slice(0, totalUsers);
-
-      const recipes = await ctx.runQuery(
-        api.recipes.listAllRecipesForPrecompute,
-        {}
-      );
-      const foodLibrary = await ctx.runQuery(api.foodLibrary.listAll, {});
-      const foodLibraryIndex = buildFoodLibraryIndex(foodLibrary);
 
       let computed = 0;
       let errors = 0;
@@ -4218,53 +4213,13 @@ export const precomputePersonalizedRecipes = internalAction({
           return { computed: false };
         }
 
-        let householdContext: {
-          inventory: UserInventoryEntry[];
-          householdMembers: HouseholdMember[];
-        } | null = null;
-
-        if (user.householdId) {
-          householdContext = await ctx.runQuery(
-            api.recipes.getHouseholdContextForPrecompute,
-            { householdId: user.householdId }
-          );
-        }
-
-        const { userInventory, inventoryExpirationData } = buildInventoryData(
-          householdContext?.inventory,
-          foodLibraryIndex,
-          now
-        );
-
-        const dietaryRestrictions = (user.dietaryRestrictions ?? []) as string[];
-        const allergies = (user.allergies ?? []) as string[];
-        const favoriteCuisines = (user.favoriteCuisines ?? []) as string[];
-        const cookingStylePreferences = (user.cookingStylePreferences ??
-          []) as string[];
-        const nutritionGoals = user.nutritionGoals ?? undefined;
-
-        const railCandidates = buildRailCandidates({
-          recipes,
-          userInventory,
-          dietaryRestrictions,
-          allergies,
-          favoriteCuisines,
-          cookingStylePreferences,
-          householdMembers: householdContext?.householdMembers ?? null,
-        });
-
-        for (const railType of PRECOMPUTE_RAIL_TYPES) {
-          const scoredRecipes = scoreAndSortRecipes({
-            recipes: railCandidates[railType],
-            dietaryRestrictions,
-            allergies,
-            favoriteCuisines,
-            cookingStylePreferences,
-            nutritionGoals,
-            userInventory,
-            inventoryExpirationData,
+        // Compute personalized lists for each rail type
+        for (const railType of railTypes) {
+          const recipes = (await ctx.runQuery(internal.recipes.computePersonalizedForUser, {
+            userId,
+            railType,
             limit: PER_RAIL_LIMIT,
-          });
+          })) as Doc<"recipes">[];
 
           const existing = await ctx.runQuery(api.recipes.getPersonalizedCache, {
             userId,
@@ -4274,7 +4229,7 @@ export const precomputePersonalizedRecipes = internalAction({
           const cacheData = {
             userId,
             railType,
-            recipeIds: scoredRecipes.map((recipe) => recipe._id),
+            recipeIds: recipes.map((recipe) => recipe._id),
             computedAt: now,
             expiresAt,
           };

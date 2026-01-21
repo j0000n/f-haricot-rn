@@ -194,6 +194,7 @@ export const RecipeRunner: React.FC<RecipeRunnerProps> = ({
           "runner",
           method.steps,
           translationGuides,
+          undefined, // sourceStepsLocalized not available for cooking methods yet
         );
       }
     }
@@ -205,6 +206,7 @@ export const RecipeRunner: React.FC<RecipeRunnerProps> = ({
       "runner",
       recipe.sourceSteps,
       translationGuides,
+      recipe.sourceStepsLocalized,
     );
   }, [
     hasMultipleMethods,
