@@ -81,15 +81,30 @@ export const listAll = query({
   },
 });
 
-export const getByCode = query({
+export const getByCodes = query({
   args: {
-    code: v.string(),
+    codes: v.array(v.string()),
   },
   handler: async (ctx, args) => {
-    return await ctx.db
-      .query("foodLibrary")
-      .withIndex("by_code", (q) => q.eq("code", args.code))
-      .unique();
+    const uniqueCodes = Array.from(
+      new Set(args.codes.map((code) => code.trim()).filter(Boolean)),
+    );
+
+    if (uniqueCodes.length === 0) {
+      return [] as Doc<"foodLibrary">[];
+    }
+
+    const entries = await Promise.all(
+      uniqueCodes.map((code) =>
+        ctx.db
+          .query("foodLibrary")
+          .withIndex("by_code", (q) => q.eq("code", code))
+          .unique(),
+      ),
+    );
+
+    return entries.filter(Boolean) as Doc<"foodLibrary">[];
+
   },
 });
 
