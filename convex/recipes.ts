@@ -1475,11 +1475,24 @@ export const listPersonalized = query({
       .first();
 
     if (cached && cached.expiresAt > now) {
-      // Return cached results
-      const recipes = await Promise.all(
-        cached.recipeIds.map((id) => ctx.db.get(id))
-      );
-      return recipes.filter(Boolean) as Doc<"recipes">[];
+      // Check if there are any recipes newer than the cache timestamp
+      // If so, ignore cache and compute fresh results to include new recipes
+      const newestRecipe = await ctx.db
+        .query("recipes")
+        .withIndex("by_created_at", (q) => q.gt("createdAt", cached.computedAt))
+        .order("desc")
+        .first();
+      
+      const cacheIsStale = newestRecipe !== null;
+      
+      if (!cacheIsStale) {
+        // Return cached results only if no newer recipes exist
+        const recipes = await Promise.all(
+          cached.recipeIds.map((id) => ctx.db.get(id))
+        );
+        return recipes.filter(Boolean) as Doc<"recipes">[];
+      }
+      // If cache is stale (newer recipes exist), fall through to compute fresh results
     }
 
     // Cache expired or missing, compute fresh results
@@ -4504,10 +4517,24 @@ export const listPersonalizedForUser = query({
       .first();
 
     if (cached && cached.expiresAt > now) {
-      const recipes = await Promise.all(
-        cached.recipeIds.map((id) => ctx.db.get(id))
-      );
-      return recipes.filter(Boolean) as Doc<"recipes">[];
+      // Check if there are any recipes newer than the cache timestamp
+      // If so, ignore cache and compute fresh results to include new recipes
+      const newestRecipe = await ctx.db
+        .query("recipes")
+        .withIndex("by_created_at", (q) => q.gt("createdAt", cached.computedAt))
+        .order("desc")
+        .first();
+      
+      const cacheIsStale = newestRecipe !== null;
+      
+      if (!cacheIsStale) {
+        // Return cached results only if no newer recipes exist
+        const recipes = await Promise.all(
+          cached.recipeIds.map((id) => ctx.db.get(id))
+        );
+        return recipes.filter(Boolean) as Doc<"recipes">[];
+      }
+      // If cache is stale (newer recipes exist), fall through to compute fresh results
     }
 
     // Compute fresh (same logic as listPersonalized but for specific user)
