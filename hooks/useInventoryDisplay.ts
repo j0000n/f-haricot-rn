@@ -19,6 +19,19 @@ type DbTranslation = {
   plural: string;
 };
 
+type FoodLibraryLookupItem = Pick<
+  Doc<"foodLibrary">,
+  | "code"
+  | "translations"
+  | "category"
+  | "categoryTranslations"
+  | "storageLocation"
+  | "defaultImageUrl"
+  | "emoji"
+  | "shelfLifeDays"
+  | "varieties"
+>;
+
 // Helper to extract string from database translation object
 const getTranslationString = (
   translations:
@@ -63,7 +76,7 @@ const normalizeLanguage = (language: string | undefined): SupportedLanguage => {
 
 const buildInventoryItem = (
   entry: UserInventoryEntry,
-  libraryItem: Doc<"foodLibrary">,
+  libraryItem: FoodLibraryLookupItem,
   language: SupportedLanguage,
 ): InventoryDisplayItem => {
   const variety = entry.varietyCode
@@ -97,7 +110,6 @@ const buildInventoryItem = (
 export const useInventoryDisplay = () => {
   const user = useQuery(api.users.getCurrentUser);
   const household = useQuery(api.households.getHousehold);
-  const foodLibrary = useQuery(api.foodLibrary.listAll);
 
   const inventoryEntries = useMemo<UserInventoryEntry[]>(() => {
     if (!household || household === null) {
@@ -111,6 +123,18 @@ export const useInventoryDisplay = () => {
     return (household.household.inventory ?? []) as UserInventoryEntry[];
   }, [household]);
 
+  const inventoryCodes = useMemo(() => {
+    const codes = new Set<string>();
+    for (const entry of inventoryEntries) {
+      codes.add(entry.itemCode);
+    }
+    return Array.from(codes);
+  }, [inventoryEntries]);
+
+  const foodLibrary = useQuery(api.foodLibrary.getByCodes, {
+    codes: inventoryCodes,
+  });
+
   const inventoryItems = useMemo<InventoryDisplayItem[]>(() => {
     if (!user || !foodLibrary) {
       return [];
@@ -120,7 +144,7 @@ export const useInventoryDisplay = () => {
       (user as { preferredLanguage?: string } | null)?.preferredLanguage,
     );
 
-    const libraryByCode = new Map<string, Doc<"foodLibrary">>(
+    const libraryByCode = new Map<string, FoodLibraryLookupItem>(
       foodLibrary.map((item) => [item.code, item]),
     );
 

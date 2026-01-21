@@ -9,7 +9,6 @@ import { RecipeCard } from "@/components/cards/RecipeCard";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { api } from "@/convex/_generated/api";
 import { useRecipeLists } from "@/hooks/useRecipeLists";
-import { useInventoryDisplay } from "@/hooks/useInventoryDisplay";
 import { useTranslation } from "@/i18n/useTranslation";
 import { EMOJI_TAGS } from "@/types/emojiTags";
 import type { Recipe } from "@/types/recipe";
@@ -42,7 +41,6 @@ export default function ListDetailScreen() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editName, setEditName] = useState("");
   const [editEmoji, setEditEmoji] = useState("");
-  const { foodLibrary } = useInventoryDisplay();
   const inventoryCodesQuery = useQuery(api.users.getCurrentInventory, {});
   const orderedRecipeIds = useMemo(() => (list ? buildRecipeIds(list) : []), [list]);
   const recipesResult = useQuery(
@@ -78,10 +76,24 @@ export default function ListDetailScreen() {
       .filter((recipe): recipe is Recipe => recipe != null);
   }, [orderedRecipeIds, recipeMap]);
 
+  const libraryCodes = useMemo(() => {
+    const codes = new Set<string>();
+    for (const recipe of recipes) {
+      for (const ingredient of recipe.ingredients) {
+        codes.add(ingredient.foodCode);
+      }
+    }
+    return Array.from(codes);
+  }, [recipes]);
+
+  const foodLibrary = useQuery(api.foodLibrary.getByCodes, {
+    codes: libraryCodes,
+  });
+
   const language = (i18n.language || "en") as keyof Recipe["recipeName"];
   const libraryMap = useMemo(() => {
     if (!Array.isArray(foodLibrary)) {
-      return new Map<string, Doc<"foodLibrary">>();
+      return new Map<string, Pick<Doc<"foodLibrary">, "translations" | "name">>();
     }
 
     return new Map(foodLibrary.map((item) => [item.code, item]));
