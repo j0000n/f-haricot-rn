@@ -86,9 +86,12 @@ export const getByCodes = query({
     codes: v.array(v.string()),
   },
   handler: async (ctx, args) => {
-    const uniqueCodes = Array.from(new Set(args.codes));
+    const uniqueCodes = Array.from(
+      new Set(args.codes.map((code) => code.trim()).filter(Boolean)),
+    );
+
     if (uniqueCodes.length === 0) {
-      return [];
+      return [] as Doc<"foodLibrary">[];
     }
 
     const entries = await Promise.all(
@@ -100,22 +103,7 @@ export const getByCodes = query({
       ),
     );
 
-    return entries
-      .filter((entry): entry is Doc<"foodLibrary"> => entry !== null)
-      .map((entry) => ({
-        code: entry.code,
-        name: entry.name,
-        translations: entry.translations,
-        category: entry.category,
-        categoryTranslations: entry.categoryTranslations,
-        storageLocation: entry.storageLocation,
-        defaultImageUrl: entry.defaultImageUrl,
-        emoji: entry.emoji,
-        shelfLifeDays: entry.shelfLifeDays,
-        varieties: entry.varieties,
-        nutritionPer100g: entry.nutritionPer100g,
-        densityHints: entry.densityHints,
-      }));
+    return entries.filter(Boolean) as Doc<"foodLibrary">[];
   },
 });
 
@@ -468,6 +456,34 @@ export const listNutritionSummaries = query({
           densityHints: row.densityHints,
         })),
       );
+  },
+});
+
+export const updateTranslations = mutation({
+  args: {
+    foodLibraryId: v.id("foodLibrary"),
+    translations: v.object({
+      en: v.object({ singular: v.string(), plural: v.string() }),
+      es: v.object({ singular: v.string(), plural: v.string() }),
+      zh: v.object({ singular: v.string(), plural: v.string() }),
+      fr: v.object({ singular: v.string(), plural: v.string() }),
+      ar: v.object({ singular: v.string(), plural: v.string() }),
+      ja: v.object({ singular: v.string(), plural: v.string() }),
+      vi: v.object({ singular: v.string(), plural: v.string() }),
+      tl: v.object({ singular: v.string(), plural: v.string() }),
+    }),
+  },
+  handler: async (ctx, args) => {
+    const entry = await ctx.db.get(args.foodLibraryId);
+    if (!entry) {
+      throw new Error("Food library entry not found");
+    }
+
+    await ctx.db.patch(args.foodLibraryId, {
+      translations: args.translations,
+    });
+
+    return args.foodLibraryId;
   },
 });
 

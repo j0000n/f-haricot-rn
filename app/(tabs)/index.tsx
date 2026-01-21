@@ -162,46 +162,26 @@ export default function HomeScreen() {
   const tokens = useTokens();
   const { user, inventoryItems, inventoryEntries, isLoading: isInventoryLoading } =
     useInventoryDisplay();
-  // Personalized recipe queries
-  const personalizedRecipes = useQuery(api.recipes.listPersonalized, {
+  const personalizedRails = useQuery(api.recipes.listPersonalizedRails, {
     limit: 10,
-    railType: "forYou",
+    railTypes: [
+      "forYou",
+      "readyToCook",
+      "quickEasy",
+      "cuisines",
+      "householdCompatible",
+    ],
   });
-  const quickMeals = useQuery(
-    api.recipes.listByPreferences,
-    user?.cookingStylePreferences && user.cookingStylePreferences.length > 0
-      ? {
-          cookingStylePreferences: user.cookingStylePreferences as string[],
-          maxPrepTime: 15,
-          maxCookTime: 30,
-          limit: 10,
-        }
-      : "skip"
-  );
-  const cuisineRecipes = useQuery(
-    api.recipes.listByPreferences,
-    user?.favoriteCuisines && user.favoriteCuisines.length > 0
-      ? {
-          favoriteCuisines: user.favoriteCuisines as string[],
-          limit: 10,
-        }
-      : "skip"
-  );
-  const readyToCook = useQuery(api.recipes.listPersonalized, {
-    limit: 10,
-    railType: "readyToCook",
-  });
-  const householdCompatible = useQuery(api.recipes.listPersonalized, {
-    limit: 10,
-    railType: "householdCompatible",
-  });
+  const personalizedRecipes = personalizedRails?.forYou ?? [];
+  const quickMeals = personalizedRails?.quickEasy ?? [];
+  const cuisineRecipes = personalizedRails?.cuisines ?? [];
+  const readyToCook = personalizedRails?.readyToCook ?? [];
+  const householdCompatible = personalizedRails?.householdCompatible ?? [];
 
   // Fallback to featured recipes if no personalized recipes available
   const featuredRecipes = useQuery(api.recipes.listFeatured, { limit: 10 });
   const recipes =
-    personalizedRecipes && personalizedRecipes.length > 0
-      ? personalizedRecipes
-      : featuredRecipes ?? [];
+    personalizedRecipes.length > 0 ? personalizedRecipes : featuredRecipes ?? [];
   const [searchTerm, setSearchTerm] = useState("");
   const trimmedSearchTerm = searchTerm.trim();
   const { previews: linkPreviews, isLoading: isLoadingLinkPreviews } = useLinkPreviews(
@@ -410,6 +390,7 @@ export default function HomeScreen() {
             "cards",
             createdRecipe.sourceSteps,
             translationGuides ?? undefined,
+            createdRecipe.sourceStepsLocalized,
           )
         : [],
     [createdRecipe, language, translationGuides],

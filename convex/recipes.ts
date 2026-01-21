@@ -1,4 +1,12 @@
-import { action, internalAction, mutation, query } from "./_generated/server";
+import {
+  action,
+  internalAction,
+  internalQuery,
+  mutation,
+  query,
+  type ActionCtx,
+  type QueryCtx,
+} from "./_generated/server";
 import { v } from "convex/values";
 import { Doc, Id } from "./_generated/dataModel";
 import { api, internal } from "./_generated/api";
@@ -42,6 +50,29 @@ type FoodLibraryIndexEntry = {
   varietyCodes: Set<string>;
 };
 
+const RAIL_TYPES = [
+  "forYou",
+  "readyToCook",
+  "quickEasy",
+  "cuisines",
+  "dietaryFriendly",
+  "householdCompatible",
+] as const;
+type RailType = typeof RAIL_TYPES[number];
+type QueryCtxWithRunQuery = QueryCtx & Pick<ActionCtx, "runQuery">;
+
+const railTypeValidator = v.union(
+  v.literal("forYou"),
+  v.literal("readyToCook"),
+  v.literal("quickEasy"),
+  v.literal("cuisines"),
+  v.literal("dietaryFriendly"),
+  v.literal("householdCompatible"),
+);
+
+const DEFAULT_PERSONALIZED_LIMIT = 10;
+const FALLBACK_RECIPE_SCAN_LIMIT = 200;
+
 const buildFoodLibraryIndex = (
   foodLibrary: Array<{
     code: string;
@@ -57,6 +88,244 @@ const buildFoodLibraryIndex = (
     });
   }
   return index;
+};
+
+const loadHouseholdMembers = async (ctx: QueryCtx, user: Doc<"users">) => {
+  if (!user.householdId) {
+    return [] as HouseholdMember[];
+  }
+
+  const household = await ctx.db.get(user.householdId);
+  if (!household) {
+    return [] as HouseholdMember[];
+  }
+
+  const memberDocs = await Promise.all(household.members.map((id) => ctx.db.get(id)));
+  return memberDocs
+    .filter((member): member is Doc<"users"> => member !== null)
+    .map((member) => ({
+      memberId: member._id as unknown as string,
+      memberName: member.name ?? "Unknown",
+      allergies: (member.allergies ?? []) as string[],
+      dietaryRestrictions: (member.dietaryRestrictions ?? []) as string[],
+    }));
+};
+
+const loadInventoryData = async (
+  ctx: QueryCtxWithRunQuery,
+  user: Doc<"users">,
+  now: number,
+) => {
+  let userInventory: string[] = [];
+  const inventoryExpirationData = new Map<string, number>();
+
+  if (!user.householdId) {
+    return { userInventory, inventoryExpirationData };
+  }
+
+  const household = await ctx.db.get(user.householdId);
+  if (!household?.inventory) {
+    return { userInventory, inventoryExpirationData };
+  }
+
+  const inventory = household.inventory as UserInventoryEntry[];
+  const itemCodes = Array.from(new Set(inventory.map((item) => item.itemCode)));
+  const foodLibrary =
+    itemCodes.length > 0
+      ? await ctx.runQuery(api.foodLibrary.getByCodes, { codes: itemCodes })
+      : [];
+  const foodLibraryIndex = buildFoodLibraryIndex(foodLibrary);
+
+  const codes = new Set<string>();
+  for (const item of inventory) {
+    codes.add(item.itemCode);
+    const libraryEntry = foodLibraryIndex.get(item.itemCode);
+    if (item.varietyCode && libraryEntry?.varietyCodes.has(item.varietyCode)) {
+      codes.add(item.varietyCode);
+    }
+    const shelfLifeDays = libraryEntry?.shelfLifeDays ?? 7;
+    const daysSincePurchase = Math.floor(
+      (now - item.purchaseDate) / (1000 * 60 * 60 * 24),
+    );
+    const daysUntilExpiration = shelfLifeDays - daysSincePurchase;
+    inventoryExpirationData.set(item.itemCode, daysUntilExpiration);
+  }
+
+  userInventory = Array.from(codes);
+  return { userInventory, inventoryExpirationData };
+};
+
+const buildPersonalizationInputs = async (
+  ctx: QueryCtxWithRunQuery,
+  user: Doc<"users">,
+  now: number,
+) => {
+  const dietaryRestrictions = (user.dietaryRestrictions ?? []) as string[];
+  const allergies = (user.allergies ?? []) as string[];
+  const favoriteCuisines = (user.favoriteCuisines ?? []) as string[];
+  const cookingStylePreferences = (user.cookingStylePreferences ?? []) as string[];
+  const nutritionGoals = user.nutritionGoals;
+  const { userInventory, inventoryExpirationData } = await loadInventoryData(ctx, user, now);
+  const householdMembers = await loadHouseholdMembers(ctx, user);
+
+  return {
+    dietaryRestrictions,
+    allergies,
+    favoriteCuisines,
+    cookingStylePreferences,
+    nutritionGoals,
+    userInventory,
+    inventoryExpirationData,
+    householdMembers,
+  };
+};
+
+const applyPersonalizationFilters = (
+  recipes: Doc<"recipes">[],
+  railType: RailType,
+  inputs: Awaited<ReturnType<typeof buildPersonalizationInputs>>,
+): Doc<"recipes">[] => {
+  const {
+    dietaryRestrictions,
+    allergies,
+    favoriteCuisines,
+    cookingStylePreferences,
+    householdMembers,
+  } = inputs;
+
+  let filteredRecipes = recipes.filter((recipe) => {
+    if (allergies.length > 0 && !matchesAllergies(recipe, allergies)) {
+      return false;
+    }
+
+    const criticalRestrictions = dietaryRestrictions.filter((r) =>
+      CRITICAL_DIETARY_RESTRICTIONS.some((cdr) => r.toLowerCase().includes(cdr.toLowerCase())),
+    );
+    if (
+      criticalRestrictions.length > 0 &&
+      !matchesDietaryRestrictions(recipe, criticalRestrictions)
+    ) {
+      return false;
+    }
+
+    return true;
+  });
+
+  if (railType === "readyToCook") {
+    filteredRecipes = filteredRecipes.filter((recipe) => {
+      const recipeIngredientCodes = recipe.ingredients.map((ing) => ing.foodCode);
+      return recipeIngredientCodes.every((code) => inputs.userInventory.includes(code));
+    });
+  } else if (railType === "quickEasy") {
+    filteredRecipes = filteredRecipes.filter((recipe) => {
+      const isQuick =
+        recipe.totalTimeMinutes <= 30 ||
+        recipe.cookingStyleTags?.some((tag) => tag.toLowerCase().includes("quick"));
+      return isQuick && matchesCookingStyles(recipe, cookingStylePreferences);
+    });
+  } else if (railType === "cuisines") {
+    filteredRecipes = filteredRecipes.filter((recipe) =>
+      matchesCuisines(recipe, favoriteCuisines),
+    );
+  } else if (railType === "dietaryFriendly") {
+    filteredRecipes = filteredRecipes.filter((recipe) =>
+      matchesDietaryRestrictions(recipe, dietaryRestrictions),
+    );
+  } else if (railType === "householdCompatible" && householdMembers.length > 0) {
+    filteredRecipes = filteredRecipes.filter((recipe) => {
+      const compatibility = getRecipeCompatibility(recipe, householdMembers);
+      return compatibility.incompatibleMembers.length === 0;
+    });
+  }
+
+  return filteredRecipes;
+};
+
+const scoreAndSortRecipes = (
+  recipes: Doc<"recipes">[],
+  inputs: Awaited<ReturnType<typeof buildPersonalizationInputs>>,
+  limit: number,
+) => {
+  const filterOptions: RecipeFilterOptions = {
+    dietaryRestrictions: inputs.dietaryRestrictions,
+    allergies: inputs.allergies,
+    favoriteCuisines: inputs.favoriteCuisines,
+    cookingStylePreferences: inputs.cookingStylePreferences,
+    nutritionGoals: inputs.nutritionGoals ?? undefined,
+  };
+
+  const scoredRecipes = recipes.map((recipe) => {
+    const score = calculateRecipeScore(
+      recipe,
+      filterOptions,
+      inputs.userInventory,
+      inputs.inventoryExpirationData,
+    );
+    return { recipe, score };
+  });
+
+  scoredRecipes.sort((a, b) => {
+    if (b.score !== a.score) {
+      return b.score - a.score;
+    }
+    return b.recipe.createdAt - a.recipe.createdAt;
+  });
+
+  return scoredRecipes.slice(0, limit).map((entry) => entry.recipe);
+};
+
+const computePersonalizedRecipes = (
+  recipes: Doc<"recipes">[],
+  railType: RailType,
+  inputs: Awaited<ReturnType<typeof buildPersonalizationInputs>>,
+  limit: number,
+) => {
+  const filteredRecipes = applyPersonalizationFilters(recipes, railType, inputs);
+  return scoreAndSortRecipes(filteredRecipes, inputs, limit);
+};
+
+const loadRecipesByIds = async (ctx: QueryCtx, recipeIds: Id<"recipes">[]) => {
+  if (recipeIds.length === 0) {
+    return [] as Doc<"recipes">[];
+  }
+
+  const recipes = await Promise.all(recipeIds.map((id) => ctx.db.get(id)));
+  return recipes.filter(Boolean) as Doc<"recipes">[];
+};
+
+const getFallbackRecipeSet = async (ctx: QueryCtx, limit: number) => {
+  const scanLimit = Math.max(limit * 20, FALLBACK_RECIPE_SCAN_LIMIT);
+  return await ctx.db
+    .query("recipes")
+    .withIndex("by_created_at")
+    .order("desc")
+    .take(scanLimit);
+};
+
+const getPersonalizedFromCacheOrFallback = async (
+  ctx: QueryCtxWithRunQuery,
+  userId: Id<"users">,
+  railType: RailType,
+  limit: number,
+) => {
+  const now = Date.now();
+  const cached = await ctx.db
+    .query("userPersonalizedRecipes")
+    .withIndex("by_user_and_type", (q) => q.eq("userId", userId).eq("railType", railType))
+    .first();
+
+  if (cached && cached.expiresAt > now) {
+    return await loadRecipesByIds(ctx, cached.recipeIds);
+  }
+
+  const user = await ctx.db.get(userId);
+  if (!user) {
+    return [] as Doc<"recipes">[];
+  }
+
+  const fallbackRecipes = await getFallbackRecipeSet(ctx, limit);
+  const inputs = await buildPersonalizationInputs(ctx, user, now);
+  return computePersonalizedRecipes(fallbackRecipes, railType, inputs, limit);
 };
 
 function matchesDietaryRestrictions(recipe: Doc<"recipes">, restrictions: string[]): boolean {
@@ -234,6 +503,73 @@ const normalizeMultilingual = (
   }
 
   return result as Record<typeof REQUIRED_LANGUAGES[number], string>;
+};
+
+type RecipeCardSummary = Pick<
+  Doc<"recipes">,
+  | "_id"
+  | "recipeName"
+  | "description"
+  | "ingredients"
+  | "emojiTags"
+  | "prepTimeMinutes"
+  | "cookTimeMinutes"
+  | "totalTimeMinutes"
+  | "servings"
+  | "imageUrls"
+  | "originalImageSmallStorageId"
+  | "transparentImageSmallStorageId"
+  | "createdAt"
+  | "difficultyLevel"
+>;
+
+type RecipeSearchSummary = Pick<
+  Doc<"recipes">,
+  "_id" | "recipeName" | "description" | "totalTimeMinutes" | "servings" | "difficultyLevel"
+>;
+
+const toRecipeCardSummary = (recipe: Doc<"recipes">): RecipeCardSummary => ({
+  _id: recipe._id,
+  recipeName: recipe.recipeName,
+  description: recipe.description,
+  ingredients: recipe.ingredients,
+  emojiTags: recipe.emojiTags,
+  prepTimeMinutes: recipe.prepTimeMinutes,
+  cookTimeMinutes: recipe.cookTimeMinutes,
+  totalTimeMinutes: recipe.totalTimeMinutes,
+  servings: recipe.servings,
+  imageUrls: recipe.imageUrls,
+  originalImageSmallStorageId: recipe.originalImageSmallStorageId,
+  transparentImageSmallStorageId: recipe.transparentImageSmallStorageId,
+  createdAt: recipe.createdAt,
+  difficultyLevel: recipe.difficultyLevel,
+});
+
+const toRecipeSearchSummary = (recipe: Doc<"recipes">): RecipeSearchSummary => ({
+  _id: recipe._id,
+  recipeName: recipe.recipeName,
+  description: recipe.description,
+  totalTimeMinutes: recipe.totalTimeMinutes,
+  servings: recipe.servings,
+  difficultyLevel: recipe.difficultyLevel,
+});
+
+const buildRecipeSearchText = (
+  recipeName: Doc<"recipes">["recipeName"],
+  description: Doc<"recipes">["description"],
+  extraTokens: Array<string | undefined> = [],
+): string => {
+  const parts = [
+    ...Object.values(recipeName),
+    ...Object.values(description),
+    ...extraTokens.filter(Boolean),
+  ];
+
+  return parts
+    .join(" ")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
 };
 
 const normalizeToGrams = (
@@ -1363,11 +1699,10 @@ export const listFeatured = query({
     const recipes = await ctx.db
       .query("recipes")
       .withIndex("by_created_at")
-      .collect();
+      .order("desc")
+      .take(limit);
 
-    // Sort by createdAt descending and limit
-    const sortedRecipes = recipes.sort((a, b) => b.createdAt - a.createdAt);
-    return sortedRecipes.slice(0, limit);
+    return recipes.map(toRecipeCardSummary);
   },
 });
 
@@ -1385,20 +1720,14 @@ export const search = query({
 
     const limit = args.limit ?? 25;
 
-    const recipes = await ctx.db.query("recipes").collect();
-
-    const matches = recipes
-      .filter((recipe) =>
-        Object.values(recipe.recipeName).some((name) =>
-          name.toLowerCase().includes(normalizedQuery),
-        ) ||
-        Object.values(recipe.description).some((description) =>
-          description.toLowerCase().includes(normalizedQuery),
-        ),
+    const matches = await ctx.db
+      .query("recipes")
+      .withSearchIndex("search_recipes", (q) =>
+        q.search("searchText", normalizedQuery)
       )
-      .sort((a, b) => a.recipeName.en.localeCompare(b.recipeName.en));
+      .take(limit);
 
-    return matches.slice(0, limit);
+    return matches.map(toRecipeSearchSummary);
   },
 });
 
@@ -1449,16 +1778,7 @@ export const listByAuthorName = query({
 export const listPersonalized = query({
   args: {
     limit: v.optional(v.number()),
-    railType: v.optional(
-      v.union(
-        v.literal("forYou"),
-        v.literal("readyToCook"),
-        v.literal("quickEasy"),
-        v.literal("cuisines"),
-        v.literal("dietaryFriendly"),
-        v.literal("householdCompatible")
-      )
-    ),
+    railType: v.optional(railTypeValidator),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -1466,207 +1786,100 @@ export const listPersonalized = query({
       return [] as const;
     }
 
-    const limit = args.limit ?? 10;
+    const limit = args.limit ?? DEFAULT_PERSONALIZED_LIMIT;
     const railType = args.railType ?? "forYou";
+
+    return await getPersonalizedFromCacheOrFallback(
+      ctx as QueryCtxWithRunQuery,
+      userId,
+      railType,
+      limit,
+    );
+  },
+});
+
+export const listPersonalizedRails = query({
+  args: {
+    limit: v.optional(v.number()),
+    railTypes: v.optional(v.array(railTypeValidator)),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) {
+      return {} as Record<RailType, Doc<"recipes">[]>;
+    }
+
+    const limit = args.limit ?? DEFAULT_PERSONALIZED_LIMIT;
+    const railTypes = args.railTypes ?? RAIL_TYPES;
     const now = Date.now();
 
-    // Check cache first
-    const cached = await ctx.db
-      .query("userPersonalizedRecipes")
-      .withIndex("by_user_and_type", (q) =>
-        q.eq("userId", userId).eq("railType", railType)
-      )
-      .first();
+    const cachedEntries = await Promise.all(
+      railTypes.map((railType) =>
+        ctx.db
+          .query("userPersonalizedRecipes")
+          .withIndex("by_user_and_type", (q) => q.eq("userId", userId).eq("railType", railType))
+          .first(),
+      ),
+    );
 
-    if (cached && cached.expiresAt > now) {
-      // Return cached results
-      const recipes = await Promise.all(
-        cached.recipeIds.map((id) => ctx.db.get(id))
-      );
-      return recipes.filter(Boolean) as Doc<"recipes">[];
-    }
+    const cachedByRail = new Map<RailType, Doc<"userPersonalizedRecipes">>();
+    const missingRails: RailType[] = [];
 
-    // Cache expired or missing, compute fresh results
-    const user = await ctx.db.get(userId);
-    if (!user) {
-      return [] as const;
-    }
-
-    // Get user preferences
-    const dietaryRestrictions = (user.dietaryRestrictions ?? []) as string[];
-    const allergies = (user.allergies ?? []) as string[];
-    const favoriteCuisines = (user.favoriteCuisines ?? []) as string[];
-    const cookingStylePreferences = (user.cookingStylePreferences ??
-      []) as string[];
-    const nutritionGoals = user.nutritionGoals;
-
-    // Get user inventory
-    let userInventory: string[] = [];
-    let inventoryExpirationData = new Map<string, number>();
-    let foodLibraryIndex = new Map<string, FoodLibraryIndexEntry>();
-    if (user.householdId) {
-      const household = await ctx.db.get(user.householdId);
-      if (household?.inventory) {
-        const inventory = household.inventory as UserInventoryEntry[];
-        const itemCodes = new Set<string>(inventory.map((item) => item.itemCode));
-        const foodLibrary =
-          itemCodes.size > 0
-            ? await ctx.runQuery(api.foodLibrary.getByCodes, {
-                codes: Array.from(itemCodes),
-              })
-            : [];
-        foodLibraryIndex = buildFoodLibraryIndex(foodLibrary);
-
-        const codes = new Set<string>();
-        for (const item of inventory) {
-          codes.add(item.itemCode);
-          const libraryEntry = foodLibraryIndex.get(item.itemCode);
-          if (item.varietyCode && libraryEntry?.varietyCodes.has(item.varietyCode)) {
-            codes.add(item.varietyCode);
-          }
-          // Calculate days until expiration
-          const shelfLifeDays = libraryEntry?.shelfLifeDays ?? 7;
-          const daysSincePurchase = Math.floor(
-            (now - item.purchaseDate) / (1000 * 60 * 60 * 24)
-          );
-          const daysUntilExpiration = shelfLifeDays - daysSincePurchase;
-          inventoryExpirationData.set(item.itemCode, daysUntilExpiration);
-        }
-        userInventory = Array.from(codes);
+    cachedEntries.forEach((entry, index) => {
+      const railType = railTypes[index];
+      if (entry && entry.expiresAt > now) {
+        cachedByRail.set(railType, entry);
+      } else {
+        missingRails.push(railType);
       }
-    }
-
-    // Get all recipes
-    const allRecipes = await ctx.db.query("recipes").collect();
-
-    // Filter recipes based on rail type
-    let filteredRecipes = allRecipes;
-
-    // Apply hard filters first (allergies and critical dietary restrictions)
-    filteredRecipes = filteredRecipes.filter((recipe) => {
-      // Check allergies - hard filter
-      if (allergies.length > 0 && !matchesAllergies(recipe, allergies)) {
-        return false;
-      }
-
-      // Check critical dietary restrictions - hard filter
-      const criticalRestrictions = dietaryRestrictions.filter((r) =>
-        ["Halal", "Kosher"].some((cdr) =>
-          r.toLowerCase().includes(cdr.toLowerCase())
-        )
-      );
-      if (
-        criticalRestrictions.length > 0 &&
-        !matchesDietaryRestrictions(recipe, criticalRestrictions)
-      ) {
-        return false;
-      }
-
-      return true;
     });
 
-    // Apply rail-specific filters
-    if (railType === "readyToCook") {
-      // Only recipes where user has all ingredients
-      filteredRecipes = filteredRecipes.filter((recipe) => {
-        const recipeIngredientCodes = recipe.ingredients.map(
-          (ing) => ing.foodCode
+    const cachedRecipeIds = Array.from(cachedByRail.values()).flatMap((entry) => entry.recipeIds);
+    const uniqueRecipeIds = Array.from(new Set(cachedRecipeIds));
+    const cachedRecipes = await Promise.all(
+      uniqueRecipeIds.map((id) => ctx.db.get(id as Id<"recipes">)),
+    );
+    const recipeById = new Map<Id<"recipes">, Doc<"recipes">>();
+    cachedRecipes.forEach((recipe) => {
+      if (recipe) {
+        recipeById.set(recipe._id, recipe);
+      }
+    });
+
+    const results: Record<RailType, Doc<"recipes">[]> = {} as Record<
+      RailType,
+      Doc<"recipes">[]
+    >;
+
+    cachedByRail.forEach((entry, railType) => {
+      results[railType] = entry.recipeIds
+        .map((id) => recipeById.get(id))
+        .filter(Boolean) as Doc<"recipes">[];
+    });
+
+    if (missingRails.length > 0) {
+      const user = await ctx.db.get(userId);
+      if (!user) {
+        return results;
+      }
+
+      const fallbackRecipes = await getFallbackRecipeSet(ctx, limit);
+      const inputs = await buildPersonalizationInputs(
+        ctx as QueryCtxWithRunQuery,
+        user,
+        now,
+      );
+      for (const railType of missingRails) {
+        results[railType] = computePersonalizedRecipes(
+          fallbackRecipes,
+          railType,
+          inputs,
+          limit,
         );
-        return recipeIngredientCodes.every((code) =>
-          userInventory.includes(code)
-        );
-      });
-    } else if (railType === "quickEasy") {
-      // Quick meals: prep + cook time <= 30 minutes, or cooking style preference
-      filteredRecipes = filteredRecipes.filter((recipe) => {
-        const isQuick =
-          recipe.totalTimeMinutes <= 30 ||
-          recipe.cookingStyleTags?.some((tag) =>
-            tag.toLowerCase().includes("quick")
-          );
-        return isQuick && matchesCookingStyles(recipe, cookingStylePreferences);
-      });
-    } else if (railType === "cuisines") {
-      // Filter by favorite cuisines
-      filteredRecipes = filteredRecipes.filter((recipe) =>
-        matchesCuisines(recipe, favoriteCuisines)
-      );
-    } else if (railType === "dietaryFriendly") {
-      // Filter by dietary restrictions
-      filteredRecipes = filteredRecipes.filter((recipe) =>
-        matchesDietaryRestrictions(recipe, dietaryRestrictions)
-      );
-    } else if (railType === "householdCompatible") {
-      // Get household members
-      if (user.householdId) {
-        const household = await ctx.db.get(user.householdId);
-        if (household) {
-          const memberDocs = await Promise.all(
-            household.members.map((id) => ctx.db.get(id))
-          );
-          const householdMembers = memberDocs
-            .filter(Boolean)
-            .map((member) => ({
-              memberId: member!._id,
-              memberName: member!.name ?? "Unknown",
-              allergies: (member!.allergies ?? []) as string[],
-              dietaryRestrictions: (member!.dietaryRestrictions ??
-                []) as string[],
-            }))
-            .map((m) => ({
-              ...m,
-              memberId: m.memberId as unknown as string, // Convert Id to string for compatibility function
-            }));
-
-          // Filter recipes compatible with all household members
-          filteredRecipes = filteredRecipes.filter((recipe) => {
-            const compatibility = getRecipeCompatibility(
-              recipe,
-              householdMembers
-            );
-            return compatibility.incompatibleMembers.length === 0;
-          });
-        }
       }
     }
 
-    // Score and sort recipes
-    const scoredRecipes = filteredRecipes.map((recipe) => {
-      const filterOptions: RecipeFilterOptions = {
-        dietaryRestrictions,
-        allergies,
-        favoriteCuisines,
-        cookingStylePreferences,
-        nutritionGoals: nutritionGoals ?? undefined,
-      };
-
-      const score = calculateRecipeScore(
-        recipe,
-        filterOptions,
-        userInventory,
-        inventoryExpirationData
-      );
-
-      return { recipe, score };
-    });
-
-    // Sort by score (descending) and then by createdAt (descending)
-    scoredRecipes.sort((a, b) => {
-      if (b.score !== a.score) {
-        return b.score - a.score;
-      }
-      return b.recipe.createdAt - a.recipe.createdAt;
-    });
-
-    // Take top N recipes
-    const topRecipes = scoredRecipes
-      .slice(0, limit)
-      .map((entry) => entry.recipe);
-
-    // Note: Caching is handled by scheduled action `precomputePersonalizedRecipes`
-    // This query computes on-demand if cache is expired
-
-    return topRecipes;
+    return results;
   },
 });
 
@@ -1682,9 +1895,91 @@ export const listByPreferences = query({
   },
   handler: async (ctx, args) => {
     const limit = args.limit ?? 25;
+    const candidateLimit = Math.max(limit * 5, 50);
 
-    // Get all recipes
-    let recipes = await ctx.db.query("recipes").collect();
+    const cuisineTags = args.favoriteCuisines ?? [];
+    const dietaryTags = args.dietaryRestrictions ?? [];
+    const cookingStyleTags = args.cookingStylePreferences ?? [];
+
+    const hasTagFilters =
+      cuisineTags.length > 0 || dietaryTags.length > 0 || cookingStyleTags.length > 0;
+
+    const tagQueries: Array<Promise<Doc<"recipes">[]>> = [];
+
+    if (cuisineTags.length > 0) {
+      tagQueries.push(
+        Promise.all(
+          cuisineTags.map((tag) =>
+            ctx.db
+              .query("recipes")
+              .withIndex("by_cuisine_tag_created_at", (q) => q.eq("cuisineTags", tag as any))
+              .order("desc")
+              .take(candidateLimit)
+          )
+        ).then((results) => results.flat())
+      );
+    }
+
+    if (dietaryTags.length > 0) {
+      tagQueries.push(
+        Promise.all(
+          dietaryTags.map((tag) =>
+            ctx.db
+              .query("recipes")
+              .withIndex("by_dietary_tag_created_at", (q) => q.eq("dietaryTags", tag as any))
+              .order("desc")
+              .take(candidateLimit)
+          )
+        ).then((results) => results.flat())
+      );
+    }
+
+    if (cookingStyleTags.length > 0) {
+      tagQueries.push(
+        Promise.all(
+          cookingStyleTags.map((tag) =>
+            ctx.db
+              .query("recipes")
+              .withIndex("by_cooking_style_tag_created_at", (q) =>
+                q.eq("cookingStyleTags", tag as any)
+              )
+              .order("desc")
+              .take(candidateLimit)
+          )
+        ).then((results) => results.flat())
+      );
+    }
+
+    let recipes: Doc<"recipes">[] = [];
+
+    if (hasTagFilters) {
+      const tagResults = await Promise.all(tagQueries);
+      const uniqueRecipes = new Map<string, Doc<"recipes">>();
+
+      for (const group of tagResults) {
+        for (const recipe of group) {
+          uniqueRecipes.set(recipe._id, recipe);
+        }
+      }
+
+      recipes = Array.from(uniqueRecipes.values());
+    } else if (args.maxCookTime !== undefined) {
+      recipes = await ctx.db
+        .query("recipes")
+        .withIndex("by_cook_time", (q) => q.lte("cookTimeMinutes", args.maxCookTime!))
+        .take(candidateLimit);
+    } else if (args.maxPrepTime !== undefined) {
+      recipes = await ctx.db
+        .query("recipes")
+        .withIndex("by_prep_time", (q) => q.lte("prepTimeMinutes", args.maxPrepTime!))
+        .take(candidateLimit);
+    } else {
+      recipes = await ctx.db
+        .query("recipes")
+        .withIndex("by_created_at")
+        .order("desc")
+        .take(candidateLimit);
+    }
 
     // Apply filters
     if (args.allergies && args.allergies.length > 0) {
@@ -1732,7 +2027,7 @@ export const listByPreferences = query({
     // Sort by createdAt descending
     recipes.sort((a, b) => b.createdAt - a.createdAt);
 
-    return recipes.slice(0, limit);
+    return recipes.slice(0, limit).map(toRecipeCardSummary);
   },
 });
 
@@ -2229,6 +2524,15 @@ export const seed = mutation({
             seedSourceHost,
         },
         imageUrls: recipe.imageUrls,
+        searchText: buildRecipeSearchText(
+          recipe.recipeName,
+          recipe.description,
+          [
+            ...(recipe.emojiTags ?? []),
+            ...((recipe as Recipe).cuisineTags ?? []),
+            ...((recipe as Recipe).dietaryTags ?? []),
+          ],
+        ),
         createdAt: recipe.createdAt ?? now,
         updatedAt: now,
         isPublic: recipe.isPublic,
@@ -2782,13 +3086,50 @@ Captured text: ${sourceSummary}`;
 
     const validationSummary = { ambiguous: 0, missing: 0 };
     const foodItemsAdded: Id<"foodLibrary">[] = [];
-    const ingredientCodes = Array.from(
-      new Set(
-        (enhanced.ingredients || [])
-          .map((ingredient: any) => ingredient.foodCode)
-          .filter((code: unknown): code is string => typeof code === "string"),
-      ),
-    );
+    
+    // Helper function to detect optional/serving ingredients
+    const isOptionalServingIngredient = (ingredient: any): boolean => {
+      const origText = ((ingredient.originalText || "") + " " + (ingredient.displayText || "")).toLowerCase();
+      const patterns = [
+        /\(pictured\)/i,
+        /\(optional\)/i,
+        /for serving/i,
+        /for garnish/i,
+        /optional serving/i,
+        /serving suggestion/i,
+      ];
+      
+      if (patterns.some(p => p.test(origText))) {
+        return true;
+      }
+      
+      // Check if it's a count-based ingredient that mentions serving/garnish
+      if (ingredient.unit === "count" && ingredient.quantity === 1) {
+        if (origText.includes("optional") || origText.includes("garnish") || origText.includes("serving")) {
+          return true;
+        }
+      }
+      
+      return false;
+    };
+    
+    // Filter out optional/serving ingredients before normalization
+    const filteredIngredients = (enhanced.ingredients || []).filter((ingredient: any) => {
+      const isOptional = isOptionalServingIngredient(ingredient);
+      if (isOptional) {
+        console.log(`[ingestUniversal] Filtering out optional/serving ingredient: ${ingredient.originalText || ingredient.displayText || ingredient.foodCode}`);
+      }
+      return !isOptional;
+    });
+    
+    const ingredientCodesSet = new Set<string>();
+    for (const ingredient of filteredIngredients) {
+      const code = ingredient.foodCode;
+      if (typeof code === "string") {
+        ingredientCodesSet.add(code);
+      }
+    }
+    const ingredientCodes = Array.from(ingredientCodesSet);
     const ingredientLibrary =
       ingredientCodes.length > 0
         ? await ctx.runQuery(api.foodLibrary.getByCodes, {
@@ -2798,8 +3139,9 @@ Captured text: ${sourceSummary}`;
     const ingredientLibraryByCode = new Map(
       ingredientLibrary.map((item) => [item.code, item]),
     );
+    
     const normalizedIngredients = await Promise.all(
-      (enhanced.ingredients || []).map(async (ingredient: any) => {
+      filteredIngredients.map(async (ingredient: any) => {
         // Ensure foodCode exists - generate a provisional one if missing
         let foodCode = ingredient.foodCode;
         if (!foodCode || typeof foodCode !== "string") {
@@ -2930,8 +3272,17 @@ Captured text: ${sourceSummary}`;
           origText = origText.replace(/\b(\w+)\s+\1\b/gi, "$1");
           
           // Remove parenthetical notes that contain instructions or notes (e.g., "(or other non-dairy milk) *see note")
+          // Specifically target "(pictured)", "(optional)", and similar patterns
+          origText = origText.replace(/\s*\(pictured\)/gi, "");
+          origText = origText.replace(/\s*\(optional\)/gi, "");
           origText = origText.replace(/\s*\([^)]*\)/g, "");
           origText = origText.replace(/\s*\*[^*]*\*/g, "");
+          
+          // Remove "for serving", "for garnish", "optional serving" patterns
+          origText = origText.replace(/\s*for serving/gi, "");
+          origText = origText.replace(/\s*for garnish/gi, "");
+          origText = origText.replace(/\s*optional serving/gi, "");
+          origText = origText.replace(/\s*serving suggestion/gi, "");
           
           // Remove extra whitespace
           origText = origText.replace(/\s+/g, " ").trim();
@@ -3069,6 +3420,124 @@ Captured text: ${sourceSummary}`;
         return normalizedIngredient;
       }),
     );
+
+    // Translate provisional ingredient names
+    const provisionalIngredients = normalizedIngredients.filter(
+      (ing) => ing.foodCode.startsWith("provisional.")
+    );
+    
+    if (provisionalIngredients.length > 0) {
+      try {
+        const ingredientNames = provisionalIngredients.map((ing) => {
+          const name = ing.originalText || ing.foodCode.replace("provisional.", "").replace(/_/g, " ");
+          return { code: ing.foodCode, name };
+        });
+        
+        const translationPrompt = `Translate these ingredient names into 8 languages (en, es, zh, fr, ar, ja, vi, tl).
+Return ONLY valid JSON with this structure:
+{
+  "ingredients": [
+    {
+      "code": "provisional.ingredient_code",
+      "translations": {
+        "en": "English name",
+        "es": "Spanish name",
+        "zh": "Chinese name",
+        "fr": "French name",
+        "ar": "Arabic name",
+        "ja": "Japanese name",
+        "vi": "Vietnamese name",
+        "tl": "Tagalog name"
+      }
+    }
+  ]
+}
+
+Ingredient names to translate:
+${JSON.stringify(ingredientNames.map(i => ({ code: i.code, name: i.name })))}
+
+CRITICAL: Return ONLY valid JSON. No markdown, no explanations.`;
+
+        const translationResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${openAiKey}`,
+          },
+          body: JSON.stringify({
+            model: "gpt-4o-mini",
+            temperature: 0.2,
+            messages: [
+              {
+                role: "system",
+                content: "You are a recipe ingredient translator. Return ONLY valid JSON. No markdown code blocks, no explanations.",
+              },
+              { role: "user", content: translationPrompt },
+            ],
+          }),
+        });
+
+        if (translationResponse.ok) {
+          const translationPayload = await translationResponse.json();
+          const translationMessage = translationPayload?.choices?.[0]?.message?.content;
+          if (translationMessage) {
+            let translationJson = translationMessage.trim();
+            if (translationJson.startsWith("```")) {
+              translationJson = translationJson.replace(/^```json\n?/, "").replace(/```$/, "").trim();
+            }
+            
+            try {
+              const translations = JSON.parse(translationJson);
+              if (translations.ingredients && Array.isArray(translations.ingredients)) {
+                // Update food library entries with translations
+                for (const item of translations.ingredients) {
+                  const foodLibraryEntries = await ctx.runQuery(api.foodLibrary.getByCodes, {
+                    codes: [item.code],
+                  });
+                  const foodLibraryEntry = foodLibraryEntries[0];
+                  
+                  if (foodLibraryEntry && foodLibraryEntry.isProvisional && item.translations) {
+                    // Update translations in food library
+                    const englishName = item.translations.en || ingredientNames.find(i => i.code === item.code)?.name || "";
+                    const updatedTranslations: {
+                      en: { singular: string; plural: string };
+                      es: { singular: string; plural: string };
+                      zh: { singular: string; plural: string };
+                      fr: { singular: string; plural: string };
+                      ar: { singular: string; plural: string };
+                      ja: { singular: string; plural: string };
+                      vi: { singular: string; plural: string };
+                      tl: { singular: string; plural: string };
+                    } = {
+                      en: { singular: item.translations.en || englishName, plural: `${item.translations.en || englishName}s` },
+                      es: { singular: item.translations.es || englishName, plural: `${item.translations.es || englishName}s` },
+                      zh: { singular: item.translations.zh || englishName, plural: `${item.translations.zh || englishName}s` },
+                      fr: { singular: item.translations.fr || englishName, plural: `${item.translations.fr || englishName}s` },
+                      ar: { singular: item.translations.ar || englishName, plural: `${item.translations.ar || englishName}s` },
+                      ja: { singular: item.translations.ja || englishName, plural: `${item.translations.ja || englishName}s` },
+                      vi: { singular: item.translations.vi || englishName, plural: `${item.translations.vi || englishName}s` },
+                      tl: { singular: item.translations.tl || englishName, plural: `${item.translations.tl || englishName}s` },
+                    };
+                    
+                    await ctx.runMutation(api.foodLibrary.updateTranslations, {
+                      foodLibraryId: foodLibraryEntry._id,
+                      translations: updatedTranslations,
+                    });
+                  }
+                }
+              }
+            } catch (parseError) {
+              console.warn("[ingestUniversal] Failed to parse ingredient translations:", parseError);
+            }
+          }
+        } else {
+          console.warn("[ingestUniversal] Failed to translate provisional ingredients:", translationResponse.status);
+        }
+      } catch (error) {
+        console.warn("[ingestUniversal] Error translating provisional ingredients:", error);
+        // Continue without translations - ingredients will use English names
+      }
+    }
 
     const now = Date.now();
     const encodingVersion = enhanced.encodingVersion || "URES-4.6";
@@ -3362,11 +3831,100 @@ Captured text: ${sourceSummary}`;
     const authorNameLookup = normalizedAuthorName?.toLowerCase();
     const authorWebsite = rawAttribution.authorWebsite?.trim();
 
+    // Translate source steps into all languages
+    let sourceStepsLocalized: Record<string, typeof normalizedSourceSteps> | undefined;
+    if (normalizedSourceSteps && normalizedSourceSteps.length > 0) {
+      try {
+        const stepTranslationPrompt = `Translate these recipe steps into 8 languages (en, es, zh, fr, ar, ja, vi, tl).
+Return ONLY valid JSON with this structure:
+{
+  "steps": {
+    "en": [{"stepNumber": 1, "text": "English step text", "timeInMinutes": 5}],
+    "es": [{"stepNumber": 1, "text": "Spanish step text", "timeInMinutes": 5}],
+    "zh": [{"stepNumber": 1, "text": "Chinese step text", "timeInMinutes": 5}],
+    "fr": [{"stepNumber": 1, "text": "French step text", "timeInMinutes": 5}],
+    "ar": [{"stepNumber": 1, "text": "Arabic step text", "timeInMinutes": 5}],
+    "ja": [{"stepNumber": 1, "text": "Japanese step text", "timeInMinutes": 5}],
+    "vi": [{"stepNumber": 1, "text": "Vietnamese step text", "timeInMinutes": 5}],
+    "tl": [{"stepNumber": 1, "text": "Tagalog step text", "timeInMinutes": 5}]
+  }
+}
+
+Steps to translate:
+${JSON.stringify(normalizedSourceSteps)}
+
+CRITICAL: 
+- Preserve stepNumber, timeInMinutes, and temperature fields exactly
+- Only translate the "text" field
+- Return ONLY valid JSON. No markdown, no explanations.`;
+
+        const stepTranslationResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${openAiKey}`,
+          },
+          body: JSON.stringify({
+            model: "gpt-4o-mini",
+            temperature: 0.2,
+            messages: [
+              {
+                role: "system",
+                content: "You are a recipe step translator. Return ONLY valid JSON. No markdown code blocks, no explanations.",
+              },
+              { role: "user", content: stepTranslationPrompt },
+            ],
+          }),
+        });
+
+        if (stepTranslationResponse.ok) {
+          const stepTranslationPayload = await stepTranslationResponse.json();
+          const stepTranslationMessage = stepTranslationPayload?.choices?.[0]?.message?.content;
+          if (stepTranslationMessage) {
+            let stepTranslationJson = stepTranslationMessage.trim();
+            if (stepTranslationJson.startsWith("```")) {
+              stepTranslationJson = stepTranslationJson.replace(/^```json\n?/, "").replace(/```$/, "").trim();
+            }
+            
+            try {
+              const stepTranslations = JSON.parse(stepTranslationJson);
+              if (stepTranslations.steps && typeof stepTranslations.steps === "object") {
+                sourceStepsLocalized = {};
+                const languages = ["en", "es", "zh", "fr", "ar", "ja", "vi", "tl"] as const;
+                for (const lang of languages) {
+                  if (stepTranslations.steps[lang] && Array.isArray(stepTranslations.steps[lang])) {
+                    // Ensure all steps have the same structure as original
+                    sourceStepsLocalized[lang] = stepTranslations.steps[lang].map((translatedStep: any, index: number) => {
+                      const originalStep = normalizedSourceSteps[index];
+                      return {
+                        stepNumber: originalStep?.stepNumber ?? translatedStep.stepNumber ?? index + 1,
+                        text: translatedStep.text || originalStep?.text || "",
+                        ...(originalStep?.timeInMinutes !== undefined ? { timeInMinutes: originalStep.timeInMinutes } : {}),
+                        ...(originalStep?.temperature ? { temperature: originalStep.temperature } : {}),
+                      };
+                    });
+                  }
+                }
+              }
+            } catch (parseError) {
+              console.warn("[ingestUniversal] Failed to parse step translations:", parseError);
+            }
+          }
+        } else {
+          console.warn("[ingestUniversal] Failed to translate source steps:", stepTranslationResponse.status);
+        }
+      } catch (error) {
+        console.warn("[ingestUniversal] Error translating source steps:", error);
+        // Continue without translations - steps will use English fallback
+      }
+    }
+
     const recipeData = {
       recipeName: normalizedRecipeName,
       description: normalizedDescription,
       ingredients: normalizedIngredients,
       sourceSteps: normalizedSourceSteps,
+      ...(sourceStepsLocalized ? { sourceStepsLocalized } : {}),
       ...(normalizedCookingMethods ? { cookingMethods: normalizedCookingMethods } : {}),
       encodedSteps: normalizedEncodedSteps ?? "",
       encodingVersion,
@@ -3941,14 +4499,7 @@ export const precomputePersonalizedRecipes = internalAction({
     let computed = 0;
     let errors = 0;
 
-    const railTypes = [
-      "forYou",
-      "readyToCook",
-      "quickEasy",
-      "cuisines",
-      "dietaryFriendly",
-      "householdCompatible",
-    ] as const;
+    const railTypes = RAIL_TYPES;
 
     for (const userId of userIds) {
       try {
@@ -3958,7 +4509,7 @@ export const precomputePersonalizedRecipes = internalAction({
 
         // Compute personalized lists for each rail type
         for (const railType of railTypes) {
-          const recipes = (await ctx.runQuery(api.recipes.listPersonalizedForUser, {
+          const recipes = (await ctx.runQuery(internal.recipes.computePersonalizedForUser, {
             userId,
             railType,
             limit: 20,
@@ -4019,14 +4570,7 @@ export const precomputePersonalizedRecipes = internalAction({
 export const getPersonalizedCache = query({
   args: {
     userId: v.id("users"),
-    railType: v.union(
-      v.literal("forYou"),
-      v.literal("readyToCook"),
-      v.literal("quickEasy"),
-      v.literal("cuisines"),
-      v.literal("dietaryFriendly"),
-      v.literal("householdCompatible")
-    ),
+    railType: railTypeValidator,
   },
   handler: async (ctx, args) => {
     return await ctx.db
@@ -4044,14 +4588,7 @@ export const getPersonalizedCache = query({
 export const createPersonalizedCache = mutation({
   args: {
     userId: v.id("users"),
-    railType: v.union(
-      v.literal("forYou"),
-      v.literal("readyToCook"),
-      v.literal("quickEasy"),
-      v.literal("cuisines"),
-      v.literal("dietaryFriendly"),
-      v.literal("householdCompatible")
-    ),
+    railType: railTypeValidator,
     recipeIds: v.array(v.id("recipes")),
     computedAt: v.number(),
     expiresAt: v.number(),
@@ -4068,14 +4605,7 @@ export const updatePersonalizedCache = mutation({
   args: {
     cacheId: v.id("userPersonalizedRecipes"),
     userId: v.id("users"),
-    railType: v.union(
-      v.literal("forYou"),
-      v.literal("readyToCook"),
-      v.literal("quickEasy"),
-      v.literal("cuisines"),
-      v.literal("dietaryFriendly"),
-      v.literal("householdCompatible")
-    ),
+    railType: railTypeValidator,
     recipeIds: v.array(v.id("recipes")),
     computedAt: v.number(),
     expiresAt: v.number(),
@@ -4147,194 +4677,41 @@ export const getAllUserIds = query({
 export const listPersonalizedForUser = query({
   args: {
     userId: v.id("users"),
-    railType: v.union(
-      v.literal("forYou"),
-      v.literal("readyToCook"),
-      v.literal("quickEasy"),
-      v.literal("cuisines"),
-      v.literal("dietaryFriendly"),
-      v.literal("householdCompatible")
-    ),
+    railType: railTypeValidator,
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const limit = args.limit ?? 10;
-    const now = Date.now();
+    const limit = args.limit ?? DEFAULT_PERSONALIZED_LIMIT;
+    return await getPersonalizedFromCacheOrFallback(
+      ctx as QueryCtxWithRunQuery,
+      args.userId,
+      args.railType,
+      limit,
+    );
+  },
+});
 
-    // Check cache first
-    const cached = await ctx.db
-      .query("userPersonalizedRecipes")
-      .withIndex("by_user_and_type", (q) =>
-        q.eq("userId", args.userId).eq("railType", args.railType)
-      )
-      .first();
-
-    if (cached && cached.expiresAt > now) {
-      const recipes = await Promise.all(
-        cached.recipeIds.map((id) => ctx.db.get(id))
-      );
-      return recipes.filter(Boolean) as Doc<"recipes">[];
-    }
-
-    // Compute fresh (same logic as listPersonalized but for specific user)
+export const computePersonalizedForUser = internalQuery({
+  args: {
+    userId: v.id("users"),
+    railType: railTypeValidator,
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
     const user = await ctx.db.get(args.userId);
     if (!user) {
-      return [];
+      return [] as Doc<"recipes">[];
     }
 
-    // Get user preferences and inventory (same as listPersonalized)
-    const dietaryRestrictions = (user.dietaryRestrictions ?? []) as string[];
-    const allergies = (user.allergies ?? []) as string[];
-    const favoriteCuisines = (user.favoriteCuisines ?? []) as string[];
-    const cookingStylePreferences = (user.cookingStylePreferences ??
-      []) as string[];
-    const nutritionGoals = user.nutritionGoals;
-
-    let userInventory: string[] = [];
-    let inventoryExpirationData = new Map<string, number>();
-    let foodLibraryIndex = new Map<string, FoodLibraryIndexEntry>();
-    if (user.householdId) {
-      const household = await ctx.db.get(user.householdId);
-      if (household?.inventory) {
-        const inventory = household.inventory as UserInventoryEntry[];
-        const itemCodes = new Set<string>(inventory.map((item) => item.itemCode));
-        const foodLibrary =
-          itemCodes.size > 0
-            ? await ctx.runQuery(api.foodLibrary.getByCodes, {
-                codes: Array.from(itemCodes),
-              })
-            : [];
-        foodLibraryIndex = buildFoodLibraryIndex(foodLibrary);
-
-        const codes = new Set<string>();
-        for (const item of inventory) {
-          codes.add(item.itemCode);
-          const libraryEntry = foodLibraryIndex.get(item.itemCode);
-          if (item.varietyCode && libraryEntry?.varietyCodes.has(item.varietyCode)) {
-            codes.add(item.varietyCode);
-          }
-          const shelfLifeDays = libraryEntry?.shelfLifeDays ?? 7;
-          const daysSincePurchase = Math.floor(
-            (now - item.purchaseDate) / (1000 * 60 * 60 * 24)
-          );
-          const daysUntilExpiration = shelfLifeDays - daysSincePurchase;
-          inventoryExpirationData.set(item.itemCode, daysUntilExpiration);
-        }
-        userInventory = Array.from(codes);
-      }
-    }
-
-    // Get all recipes
-    let filteredRecipes = await ctx.db.query("recipes").collect();
-
-    // Apply hard filters
-    filteredRecipes = filteredRecipes.filter((recipe) => {
-      if (allergies.length > 0 && !matchesAllergies(recipe, allergies)) {
-        return false;
-      }
-      const criticalRestrictions = dietaryRestrictions.filter((r) =>
-        ["Halal", "Kosher"].some((cdr) =>
-          r.toLowerCase().includes(cdr.toLowerCase())
-        )
-      );
-      if (
-        criticalRestrictions.length > 0 &&
-        !matchesDietaryRestrictions(recipe, criticalRestrictions)
-      ) {
-        return false;
-      }
-      return true;
-    });
-
-    // Apply rail-specific filters (same as listPersonalized)
-    if (args.railType === "readyToCook") {
-      filteredRecipes = filteredRecipes.filter((recipe) => {
-        const recipeIngredientCodes = recipe.ingredients.map(
-          (ing) => ing.foodCode
-        );
-        return recipeIngredientCodes.every((code) =>
-          userInventory.includes(code)
-        );
-      });
-    } else if (args.railType === "quickEasy") {
-      filteredRecipes = filteredRecipes.filter((recipe) => {
-        const isQuick =
-          recipe.totalTimeMinutes <= 30 ||
-          recipe.cookingStyleTags?.some((tag) =>
-            tag.toLowerCase().includes("quick")
-          );
-        return isQuick && matchesCookingStyles(recipe, cookingStylePreferences);
-      });
-    } else if (args.railType === "cuisines") {
-      filteredRecipes = filteredRecipes.filter((recipe) =>
-        matchesCuisines(recipe, favoriteCuisines)
-      );
-    } else if (args.railType === "dietaryFriendly") {
-      filteredRecipes = filteredRecipes.filter((recipe) =>
-        matchesDietaryRestrictions(recipe, dietaryRestrictions)
-      );
-    } else if (args.railType === "householdCompatible") {
-      if (user.householdId) {
-        const household = await ctx.db.get(user.householdId);
-        if (household) {
-          const memberDocs = await Promise.all(
-            household.members.map((id: Id<"users">) => ctx.db.get(id))
-          );
-          const householdMembers = memberDocs
-            .filter((member): member is Doc<"users"> => member !== null)
-            .map((member) => ({
-              memberId: member._id,
-              memberName: member.name ?? "Unknown",
-              allergies: (member.allergies ?? []) as string[],
-              dietaryRestrictions: (member.dietaryRestrictions ??
-                []) as string[],
-            }))
-            .map((m) => ({
-              ...m,
-              memberId: m.memberId as unknown as string,
-            }));
-
-          filteredRecipes = filteredRecipes.filter((recipe) => {
-            const compatibility = getRecipeCompatibility(
-              recipe,
-              householdMembers
-            );
-            return compatibility.incompatibleMembers.length === 0;
-          });
-        }
-      }
-    }
-
-    // Score and sort
-    const scoredRecipes = filteredRecipes.map((recipe) => {
-      const filterOptions: RecipeFilterOptions = {
-        dietaryRestrictions,
-        allergies,
-        favoriteCuisines,
-        cookingStylePreferences,
-        nutritionGoals: nutritionGoals ?? undefined,
-      };
-
-      const score = calculateRecipeScore(
-        recipe,
-        filterOptions,
-        userInventory,
-        inventoryExpirationData
-      );
-
-      return { recipe, score };
-    });
-
-    scoredRecipes.sort((a, b) => {
-      if (b.score !== a.score) {
-        return b.score - a.score;
-      }
-      return b.recipe.createdAt - a.recipe.createdAt;
-    });
-
-    return scoredRecipes
-      .slice(0, limit)
-      .map((entry) => entry.recipe);
+    const limit = args.limit ?? DEFAULT_PERSONALIZED_LIMIT;
+    const now = Date.now();
+    const allRecipes = await ctx.db.query("recipes").collect();
+    const inputs = await buildPersonalizationInputs(
+      ctx as QueryCtxWithRunQuery,
+      user,
+      now,
+    );
+    return computePersonalizedRecipes(allRecipes, args.railType, inputs, limit);
   },
 });
 
@@ -4630,7 +5007,12 @@ export const create = mutation({
   },
   returns: v.id("recipes"),
   handler: async (ctx, args) => {
-    return await ctx.db.insert("recipes", args);
+    const searchText = buildRecipeSearchText(args.recipeName, args.description, args.emojiTags);
+
+    return await ctx.db.insert("recipes", {
+      ...args,
+      searchText,
+    });
   },
 });
 
@@ -4744,6 +5126,130 @@ export const insertFromIngestion = mutation({
             ),
           })
         )
+      ),
+      sourceStepsLocalized: v.optional(
+        v.object({
+          en: v.optional(
+            v.array(
+              v.object({
+                stepNumber: v.number(),
+                text: v.string(),
+                timeInMinutes: v.optional(v.number()),
+                temperature: v.optional(
+                  v.object({
+                    value: v.number(),
+                    unit: v.union(v.literal("F"), v.literal("C")),
+                  }),
+                ),
+              })
+            )
+          ),
+          es: v.optional(
+            v.array(
+              v.object({
+                stepNumber: v.number(),
+                text: v.string(),
+                timeInMinutes: v.optional(v.number()),
+                temperature: v.optional(
+                  v.object({
+                    value: v.number(),
+                    unit: v.union(v.literal("F"), v.literal("C")),
+                  }),
+                ),
+              })
+            )
+          ),
+          zh: v.optional(
+            v.array(
+              v.object({
+                stepNumber: v.number(),
+                text: v.string(),
+                timeInMinutes: v.optional(v.number()),
+                temperature: v.optional(
+                  v.object({
+                    value: v.number(),
+                    unit: v.union(v.literal("F"), v.literal("C")),
+                  }),
+                ),
+              })
+            )
+          ),
+          fr: v.optional(
+            v.array(
+              v.object({
+                stepNumber: v.number(),
+                text: v.string(),
+                timeInMinutes: v.optional(v.number()),
+                temperature: v.optional(
+                  v.object({
+                    value: v.number(),
+                    unit: v.union(v.literal("F"), v.literal("C")),
+                  }),
+                ),
+              })
+            )
+          ),
+          ar: v.optional(
+            v.array(
+              v.object({
+                stepNumber: v.number(),
+                text: v.string(),
+                timeInMinutes: v.optional(v.number()),
+                temperature: v.optional(
+                  v.object({
+                    value: v.number(),
+                    unit: v.union(v.literal("F"), v.literal("C")),
+                  }),
+                ),
+              })
+            )
+          ),
+          ja: v.optional(
+            v.array(
+              v.object({
+                stepNumber: v.number(),
+                text: v.string(),
+                timeInMinutes: v.optional(v.number()),
+                temperature: v.optional(
+                  v.object({
+                    value: v.number(),
+                    unit: v.union(v.literal("F"), v.literal("C")),
+                  }),
+                ),
+              })
+            )
+          ),
+          vi: v.optional(
+            v.array(
+              v.object({
+                stepNumber: v.number(),
+                text: v.string(),
+                timeInMinutes: v.optional(v.number()),
+                temperature: v.optional(
+                  v.object({
+                    value: v.number(),
+                    unit: v.union(v.literal("F"), v.literal("C")),
+                  }),
+                ),
+              })
+            )
+          ),
+          tl: v.optional(
+            v.array(
+              v.object({
+                stepNumber: v.number(),
+                text: v.string(),
+                timeInMinutes: v.optional(v.number()),
+                temperature: v.optional(
+                  v.object({
+                    value: v.number(),
+                    unit: v.union(v.literal("F"), v.literal("C")),
+                  }),
+                ),
+              })
+            )
+          ),
+        })
       ),
       cookingMethods: v.optional(
         v.array(
@@ -4865,7 +5371,20 @@ export const insertFromIngestion = mutation({
   },
   returns: v.id("recipes"),
   handler: async (ctx, args) => {
-    return await ctx.db.insert("recipes", args.recipeData);
+    const searchText = buildRecipeSearchText(
+      args.recipeData.recipeName,
+      args.recipeData.description,
+      [
+        ...(args.recipeData.emojiTags ?? []),
+        ...(args.recipeData.cuisineTags ?? []),
+        ...(args.recipeData.dietaryTags ?? []),
+      ],
+    );
+
+    return await ctx.db.insert("recipes", {
+      ...args.recipeData,
+      searchText,
+    });
   },
 });
 

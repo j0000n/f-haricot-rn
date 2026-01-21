@@ -2,7 +2,7 @@ import {
   translationGuideSeed,
   type TranslationGuideRow,
 } from "../data/translationGuideSeed";
-import type { LocalizedRecipeText, RecipeSourceStep } from "../types/recipe";
+import type { LocalizedRecipeText, RecipeSourceStep, Recipe } from "../types/recipe";
 
 export type DecodingMode = "runner" | "cards" | "voice" | "shopping";
 
@@ -144,11 +144,26 @@ export const decodeEncodedSteps = (
   mode: DecodingMode = "cards",
   fallbackSteps?: RecipeSourceStep[],
   translationGuides?: TranslationGuideRow[],
+  sourceStepsLocalized?: {
+    en?: RecipeSourceStep[];
+    es?: RecipeSourceStep[];
+    zh?: RecipeSourceStep[];
+    fr?: RecipeSourceStep[];
+    ar?: RecipeSourceStep[];
+    ja?: RecipeSourceStep[];
+    vi?: RecipeSourceStep[];
+    tl?: RecipeSourceStep[];
+  },
 ): DecodedStepCard[] => {
   if (!encodedSteps || !encodedSteps.trim()) {
     warnMissingEncodedSteps();
+    
+    // Try to use translated steps first
+    const translatedSteps = sourceStepsLocalized?.[language as keyof typeof sourceStepsLocalized];
+    const stepsToUse = translatedSteps || fallbackSteps;
+    
     return (
-      fallbackSteps?.map((step, index) => ({
+      stepsToUse?.map((step, index) => ({
         stepNumber: step.stepNumber ?? index + 1,
         title: step.text,
         detail: [
