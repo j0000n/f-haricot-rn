@@ -344,6 +344,58 @@ const schema = defineSchema({
         })
       )
     ),
+    sourceStepsLocalized: v.optional(
+      v.object({
+        en: v.array(
+          v.object({
+            stepNumber: v.number(),
+            text: v.string(),
+          })
+        ),
+        es: v.array(
+          v.object({
+            stepNumber: v.number(),
+            text: v.string(),
+          })
+        ),
+        zh: v.array(
+          v.object({
+            stepNumber: v.number(),
+            text: v.string(),
+          })
+        ),
+        fr: v.array(
+          v.object({
+            stepNumber: v.number(),
+            text: v.string(),
+          })
+        ),
+        ar: v.array(
+          v.object({
+            stepNumber: v.number(),
+            text: v.string(),
+          })
+        ),
+        ja: v.array(
+          v.object({
+            stepNumber: v.number(),
+            text: v.string(),
+          })
+        ),
+        vi: v.array(
+          v.object({
+            stepNumber: v.number(),
+            text: v.string(),
+          })
+        ),
+        tl: v.array(
+          v.object({
+            stepNumber: v.number(),
+            text: v.string(),
+          })
+        ),
+      })
+    ),
     cookingMethods: v.optional(
       v.array(
         v.object({

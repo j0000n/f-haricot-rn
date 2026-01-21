@@ -1748,7 +1748,7 @@ export const listByPreferences = query({
           cuisineTags.map((tag) =>
             ctx.db
               .query("recipes")
-              .withIndex("by_cuisine_tag_created_at", (q) => q.eq("cuisineTags", tag))
+              .withIndex("by_cuisine_tag_created_at", (q) => q.eq("cuisineTags", tag as any))
               .order("desc")
               .take(candidateLimit)
           )
@@ -1762,7 +1762,7 @@ export const listByPreferences = query({
           dietaryTags.map((tag) =>
             ctx.db
               .query("recipes")
-              .withIndex("by_dietary_tag_created_at", (q) => q.eq("dietaryTags", tag))
+              .withIndex("by_dietary_tag_created_at", (q) => q.eq("dietaryTags", tag as any))
               .order("desc")
               .take(candidateLimit)
           )
@@ -1777,7 +1777,7 @@ export const listByPreferences = query({
             ctx.db
               .query("recipes")
               .withIndex("by_cooking_style_tag_created_at", (q) =>
-                q.eq("cookingStyleTags", tag)
+                q.eq("cookingStyleTags", tag as any)
               )
               .order("desc")
               .take(candidateLimit)
@@ -3187,6 +3187,125 @@ Captured text: ${sourceSummary}`;
         return normalizedIngredient;
       }),
     );
+
+
+    // Translate provisional ingredient names
+    const provisionalIngredients = normalizedIngredients.filter(
+      (ing) => ing.foodCode.startsWith("provisional.")
+    );
+    
+    if (provisionalIngredients.length > 0) {
+      try {
+        const ingredientNames = provisionalIngredients.map((ing) => {
+          const name = ing.originalText || ing.foodCode.replace("provisional.", "").replace(/_/g, " ");
+          return { code: ing.foodCode, name };
+        });
+        
+        const translationPrompt = `Translate these ingredient names into 8 languages (en, es, zh, fr, ar, ja, vi, tl).
+Return ONLY valid JSON with this structure:
+{
+  "ingredients": [
+    {
+      "code": "provisional.ingredient_code",
+      "translations": {
+        "en": "English name",
+        "es": "Spanish name",
+        "zh": "Chinese name",
+        "fr": "French name",
+        "ar": "Arabic name",
+        "ja": "Japanese name",
+        "vi": "Vietnamese name",
+        "tl": "Tagalog name"
+      }
+    }
+  ]
+}
+
+Ingredient names to translate:
+${JSON.stringify(ingredientNames.map(i => ({ code: i.code, name: i.name })))}
+
+CRITICAL: Return ONLY valid JSON. No markdown, no explanations.`;
+
+        const translationResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${openAiKey}`,
+          },
+          body: JSON.stringify({
+            model: "gpt-4o-mini",
+            temperature: 0.2,
+            messages: [
+              {
+                role: "system",
+                content: "You are a recipe ingredient translator. Return ONLY valid JSON. No markdown code blocks, no explanations.",
+              },
+              { role: "user", content: translationPrompt },
+            ],
+          }),
+        });
+
+        if (translationResponse.ok) {
+          const translationPayload = await translationResponse.json();
+          const translationMessage = translationPayload?.choices?.[0]?.message?.content;
+          if (translationMessage) {
+            let translationJson = translationMessage.trim();
+            if (translationJson.startsWith("```")) {
+              translationJson = translationJson.replace(/^```json\n?/, "").replace(/```$/, "").trim();
+            }
+            
+            try {
+              const translations = JSON.parse(translationJson);
+              if (translations.ingredients && Array.isArray(translations.ingredients)) {
+                // Update food library entries with translations
+                for (const item of translations.ingredients) {
+                  const foodLibraryEntries = await ctx.runQuery(api.foodLibrary.getByCodes, {
+                    codes: [item.code],
+                  });
+                  const foodLibraryEntry = foodLibraryEntries[0];
+                  
+                  if (foodLibraryEntry && foodLibraryEntry.isProvisional && item.translations) {
+                    // Update translations in food library
+                    const englishName = item.translations.en || ingredientNames.find(i => i.code === item.code)?.name || "";
+                    const updatedTranslations: {
+                      en: { singular: string; plural: string };
+                      es: { singular: string; plural: string };
+                      zh: { singular: string; plural: string };
+                      fr: { singular: string; plural: string };
+                      ar: { singular: string; plural: string };
+                      ja: { singular: string; plural: string };
+                      vi: { singular: string; plural: string };
+                      tl: { singular: string; plural: string };
+                    } = {
+                      en: { singular: item.translations.en || englishName, plural: `${item.translations.en || englishName}s` },
+                      es: { singular: item.translations.es || englishName, plural: `${item.translations.es || englishName}s` },
+                      zh: { singular: item.translations.zh || englishName, plural: `${item.translations.zh || englishName}s` },
+                      fr: { singular: item.translations.fr || englishName, plural: `${item.translations.fr || englishName}s` },
+                      ar: { singular: item.translations.ar || englishName, plural: `${item.translations.ar || englishName}s` },
+                      ja: { singular: item.translations.ja || englishName, plural: `${item.translations.ja || englishName}s` },
+                      vi: { singular: item.translations.vi || englishName, plural: `${item.translations.vi || englishName}s` },
+                      tl: { singular: item.translations.tl || englishName, plural: `${item.translations.tl || englishName}s` },
+                    };
+                    
+                    await ctx.runMutation(api.foodLibrary.updateTranslations, {
+                      foodLibraryId: foodLibraryEntry._id,
+                      translations: updatedTranslations,
+                    });
+                  }
+                }
+              }
+            } catch (parseError) {
+              console.warn("[ingestUniversal] Failed to parse ingredient translations:", parseError);
+            }
+          }
+        } else {
+          console.warn("[ingestUniversal] Failed to translate provisional ingredients:", translationResponse.status);
+        }
+      } catch (error) {
+        console.warn("[ingestUniversal] Error translating provisional ingredients:", error);
+        // Continue without translations - ingredients will use English names
+      }
+    }
 
     const now = Date.now();
     const encodingVersion = enhanced.encodingVersion || "URES-4.6";
