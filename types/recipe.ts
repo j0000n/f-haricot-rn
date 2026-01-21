@@ -71,6 +71,16 @@ export interface Recipe {
   description: LocalizedRecipeText;
   ingredients: RecipeIngredient[];
   sourceSteps?: RecipeSourceStep[];
+  sourceStepsLocalized?: {
+    en?: RecipeSourceStep[];
+    es?: RecipeSourceStep[];
+    zh?: RecipeSourceStep[];
+    fr?: RecipeSourceStep[];
+    ar?: RecipeSourceStep[];
+    ja?: RecipeSourceStep[];
+    vi?: RecipeSourceStep[];
+    tl?: RecipeSourceStep[];
+  };
   cookingMethods?: CookingMethod[];
   emojiTags: string[];
   prepTimeMinutes: number;

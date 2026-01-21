@@ -346,53 +346,125 @@ const schema = defineSchema({
     ),
     sourceStepsLocalized: v.optional(
       v.object({
-        en: v.array(
-          v.object({
-            stepNumber: v.number(),
-            text: v.string(),
-          })
+        en: v.optional(
+          v.array(
+            v.object({
+              stepNumber: v.number(),
+              text: v.string(),
+              timeInMinutes: v.optional(v.number()),
+              temperature: v.optional(
+                v.object({
+                  value: v.number(),
+                  unit: v.union(v.literal("F"), v.literal("C")),
+                }),
+              ),
+            })
+          )
         ),
-        es: v.array(
-          v.object({
-            stepNumber: v.number(),
-            text: v.string(),
-          })
+        es: v.optional(
+          v.array(
+            v.object({
+              stepNumber: v.number(),
+              text: v.string(),
+              timeInMinutes: v.optional(v.number()),
+              temperature: v.optional(
+                v.object({
+                  value: v.number(),
+                  unit: v.union(v.literal("F"), v.literal("C")),
+                }),
+              ),
+            })
+          )
         ),
-        zh: v.array(
-          v.object({
-            stepNumber: v.number(),
-            text: v.string(),
-          })
+        zh: v.optional(
+          v.array(
+            v.object({
+              stepNumber: v.number(),
+              text: v.string(),
+              timeInMinutes: v.optional(v.number()),
+              temperature: v.optional(
+                v.object({
+                  value: v.number(),
+                  unit: v.union(v.literal("F"), v.literal("C")),
+                }),
+              ),
+            })
+          )
         ),
-        fr: v.array(
-          v.object({
-            stepNumber: v.number(),
-            text: v.string(),
-          })
+        fr: v.optional(
+          v.array(
+            v.object({
+              stepNumber: v.number(),
+              text: v.string(),
+              timeInMinutes: v.optional(v.number()),
+              temperature: v.optional(
+                v.object({
+                  value: v.number(),
+                  unit: v.union(v.literal("F"), v.literal("C")),
+                }),
+              ),
+            })
+          )
         ),
-        ar: v.array(
-          v.object({
-            stepNumber: v.number(),
-            text: v.string(),
-          })
+        ar: v.optional(
+          v.array(
+            v.object({
+              stepNumber: v.number(),
+              text: v.string(),
+              timeInMinutes: v.optional(v.number()),
+              temperature: v.optional(
+                v.object({
+                  value: v.number(),
+                  unit: v.union(v.literal("F"), v.literal("C")),
+                }),
+              ),
+            })
+          )
         ),
-        ja: v.array(
-          v.object({
-            stepNumber: v.number(),
-            text: v.string(),
-          })
+        ja: v.optional(
+          v.array(
+            v.object({
+              stepNumber: v.number(),
+              text: v.string(),
+              timeInMinutes: v.optional(v.number()),
+              temperature: v.optional(
+                v.object({
+                  value: v.number(),
+                  unit: v.union(v.literal("F"), v.literal("C")),
+                }),
+              ),
+            })
+          )
         ),
-        vi: v.array(
-          v.object({
-            stepNumber: v.number(),
-            text: v.string(),
-          })
+        vi: v.optional(
+          v.array(
+            v.object({
+              stepNumber: v.number(),
+              text: v.string(),
+              timeInMinutes: v.optional(v.number()),
+              temperature: v.optional(
+                v.object({
+                  value: v.number(),
+                  unit: v.union(v.literal("F"), v.literal("C")),
+                }),
+              ),
+            })
+          )
         ),
-        tl: v.array(
-          v.object({
-            stepNumber: v.number(),
-            text: v.string(),
-          })
+        tl: v.optional(
+          v.array(
+            v.object({
+              stepNumber: v.number(),
+              text: v.string(),
+              timeInMinutes: v.optional(v.number()),
+              temperature: v.optional(
+                v.object({
+                  value: v.number(),
+                  unit: v.union(v.literal("F"), v.literal("C")),
+                }),
+              ),
+            })
+          )
         ),
       })
     ),
