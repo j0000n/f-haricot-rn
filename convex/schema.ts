@@ -446,6 +446,7 @@ const schema = defineSchema({
     difficultyLevel: v.optional(
       v.union(v.literal("easy"), v.literal("medium"), v.literal("hard"))
     ),
+    searchText: v.optional(v.string()),
     nutritionProfile: v.optional(
       v.object({
         caloriesPerServing: v.number(),
@@ -462,12 +463,18 @@ const schema = defineSchema({
     .index("by_emoji_tags", ["emojiTags"])
     .index("by_total_time", ["totalTimeMinutes"])
     .index("by_created_at", ["createdAt"])
+    .index("by_cook_time", ["cookTimeMinutes"])
+    .index("by_prep_time", ["prepTimeMinutes"])
+    .index("by_dietary_tag_created_at", ["dietaryTags", "createdAt"])
+    .index("by_cuisine_tag_created_at", ["cuisineTags", "createdAt"])
+    .index("by_cooking_style_tag_created_at", ["cookingStyleTags", "createdAt"])
     .index("by_source_host", ["sourceHost"])
     .index("by_author_name", ["authorName"])
     .index("by_author_instagram", ["authorSocialInstagram"])
     .index("by_author_pinterest", ["authorSocialPinterest"])
     .index("by_author_youtube", ["authorSocialYoutube"])
-    .index("by_author_facebook", ["authorSocialFacebook"]),
+    .index("by_author_facebook", ["authorSocialFacebook"])
+    .searchIndex("search_recipes", { searchField: "searchText" }),
   translationGuides: defineTable({
     code: v.string(),
     language: v.string(),
