@@ -292,28 +292,18 @@ export default function RecipeDetailScreen() {
   const userInventory = useQuery(api.users.getCurrentInventory, {});
   const currentUser = useQuery(api.users.getCurrentUser);
 
-  if (recipe === undefined) {
-    return <LoadingScreen />;
-  }
-
-  if (recipe === null) {
-    return (
-      <SafeAreaView style={styles.emptyState}>
-        <Text style={styles.emptyStateText}>{t("recipe.notFound")}</Text>
-      </SafeAreaView>
-    );
-  }
-
   const inventoryCodes = Array.isArray(userInventory) ? userInventory : [];
 
-  // Determine if recipe has multiple cooking methods
-  const hasMultipleMethods = recipe.cookingMethods && recipe.cookingMethods.length >= 2;
+  // Determine if recipe has multiple cooking methods (safe when recipe is null/undefined)
+  const hasMultipleMethods = recipe?.cookingMethods && recipe.cookingMethods.length >= 2;
 
-  // Determine which steps to display
+  // Determine which steps to display (must be called before conditional returns)
   const stepsToDisplay = useMemo(() => {
-    if (hasMultipleMethods && selectedCookingMethod) {
+    if (!recipe) return [];
+    
+    if (hasMultipleMethods && selectedCookingMethod && recipe.cookingMethods) {
       // Find selected method's steps
-      const method = recipe.cookingMethods!.find((m) => m.methodName === selectedCookingMethod);
+      const method = recipe.cookingMethods.find((m) => m.methodName === selectedCookingMethod);
       if (method) {
         // Decode steps for this method (if encodedSteps exists) or use sourceSteps
         return decodeEncodedSteps(
@@ -336,38 +326,51 @@ export default function RecipeDetailScreen() {
       translationGuides ?? undefined,
     );
   }, [
+    recipe,
     hasMultipleMethods,
     selectedCookingMethod,
-    recipe.cookingMethods,
-    recipe.encodedSteps,
-    recipe.sourceSteps,
+    recipe?.cookingMethods,
+    recipe?.encodedSteps,
+    recipe?.sourceSteps,
     recipeLanguage,
     translationGuides,
-    recipe.sourceStepsLocalized,
+    recipe?.sourceStepsLocalized,
   ]);
 
-  // Set default selected method on mount
+  // Set default selected method on mount (must be called before conditional returns)
   useEffect(() => {
-    if (hasMultipleMethods && !selectedCookingMethod && recipe.cookingMethods) {
+    if (recipe && hasMultipleMethods && !selectedCookingMethod && recipe.cookingMethods) {
       setSelectedCookingMethod(recipe.cookingMethods[0].methodName);
     }
-  }, [hasMultipleMethods, selectedCookingMethod, recipe.cookingMethods]);
+  }, [recipe, hasMultipleMethods, selectedCookingMethod, recipe?.cookingMethods]);
 
-  // Keep decodedSteps for backward compatibility (used in other places)
+  // Keep decodedSteps for backward compatibility (must be called before conditional returns)
   const decodedSteps = useMemo(
-    () =>
-      decodeEncodedSteps(
+    () => {
+      if (!recipe) return [];
+      return decodeEncodedSteps(
         recipe.encodedSteps,
         recipeLanguage,
         "cards",
         recipe.sourceSteps,
         translationGuides ?? undefined,
         recipe.sourceStepsLocalized,
-      ),
-    [recipeLanguage, recipe.encodedSteps, recipe.sourceSteps, translationGuides],
+      );
+    },
+    [recipe, recipeLanguage, recipe?.encodedSteps, recipe?.sourceSteps, translationGuides, recipe?.sourceStepsLocalized],
   );
 
   const attributionDetails = useMemo(() => {
+    if (!recipe) {
+      return {
+        sourceHost: undefined,
+        authorLine: undefined,
+        websiteLine: undefined,
+        socialLine: undefined,
+        fallbackSource: undefined,
+      };
+    }
+    
     const authorName =
       recipe.attribution.authorName ||
       recipe.attribution.author ||
@@ -413,21 +416,25 @@ export default function RecipeDetailScreen() {
       ),
   };
 
-  if (isRunnerMode) {
-    return (
-      <>
-        <Stack.Screen options={headerOptions} />
-        <RecipeRunner
-          recipe={recipe}
-          language={recipeLanguage}
-          translationGuides={translationGuides ?? undefined}
-          onExit={() => setIsRunnerMode(false)}
-        />
-      </>
-    );
-  }
-
   const nutritionFacts = useMemo(() => {
+    if (!recipe) {
+      return {
+        servingPerContainer: "1",
+        servingSize: "1 serving",
+        calories: 0,
+        nutrients: [],
+        notes: [
+          t("recipe.nutrition.nutritionNotAvailable"),
+          t("recipe.nutrition.dailyValueNote"),
+        ],
+        caloriesPerGram: {
+          fat: 9,
+          carbohydrate: 4,
+          protein: 4,
+        },
+      };
+    }
+    
     const profile = recipe.nutritionProfile;
 
     // Determine serving size: use stored value if available, otherwise estimate
@@ -543,7 +550,7 @@ export default function RecipeDetailScreen() {
         protein: 4,
       },
     };
-  }, [recipe.nutritionProfile, recipe.servings, recipe.mealTypeTags, recipe.recipeName, t]);
+  }, [recipe, recipe?.nutritionProfile, recipe?.servings, recipe?.mealTypeTags, recipe?.recipeName, t]);
 
   const dailyValues = useMemo(() => {
     const userGoals = (currentUser as { nutritionGoals?: { targets?: {
@@ -585,18 +592,45 @@ export default function RecipeDetailScreen() {
   }, [currentUser]);
 
   const handleOpenInBrowser = async () => {
-    if (recipe.sourceUrl) {
-      await WebBrowser.openBrowserAsync(recipe.sourceUrl);
+    if (recipe?.sourceUrl) {
+      await WebBrowser.openBrowserAsync(recipe.sourceUrl!);
     }
   };
 
-  // Reset WebView loading state when switching tabs
+  // Reset WebView loading state when switching tabs (must be called before conditional returns)
   useEffect(() => {
     if (activeTab === "source") {
       setWebViewLoading(true);
       setWebViewError(false);
     }
   }, [activeTab]);
+
+  // Early returns must come AFTER all hooks
+  if (recipe === undefined) {
+    return <LoadingScreen />;
+  }
+
+  if (recipe === null) {
+    return (
+      <SafeAreaView style={styles.emptyState}>
+        <Text style={styles.emptyStateText}>{t("recipe.notFound")}</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (isRunnerMode) {
+    return (
+      <>
+        <Stack.Screen options={headerOptions} />
+        <RecipeRunner
+          recipe={recipe}
+          language={recipeLanguage}
+          translationGuides={translationGuides ?? undefined}
+          onExit={() => setIsRunnerMode(false)}
+        />
+      </>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.screen}>
