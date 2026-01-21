@@ -3866,6 +3866,281 @@ export const updateMetadata = mutation({
   },
 });
 
+type PersonalizedRailType =
+  | "forYou"
+  | "readyToCook"
+  | "quickEasy"
+  | "cuisines"
+  | "dietaryFriendly"
+  | "householdCompatible";
+
+const PRECOMPUTE_RAIL_TYPES: PersonalizedRailType[] = [
+  "forYou",
+  "readyToCook",
+  "quickEasy",
+  "cuisines",
+  "dietaryFriendly",
+  "householdCompatible",
+];
+
+const buildInventoryData = (
+  inventory: UserInventoryEntry[] | undefined,
+  foodLibraryIndex: Map<string, FoodLibraryIndexEntry>,
+  now: number
+) => {
+  const inventoryExpirationData = new Map<string, number>();
+  if (!inventory || inventory.length === 0) {
+    return {
+      userInventory: [] as string[],
+      inventoryExpirationData,
+    };
+  }
+
+  const codes = new Set<string>();
+  for (const item of inventory) {
+    codes.add(item.itemCode);
+    const libraryEntry = foodLibraryIndex.get(item.itemCode);
+    if (item.varietyCode && libraryEntry?.varietyCodes.has(item.varietyCode)) {
+      codes.add(item.varietyCode);
+    }
+    const shelfLifeDays = libraryEntry?.shelfLifeDays ?? 7;
+    const daysSincePurchase = Math.floor(
+      (now - item.purchaseDate) / (1000 * 60 * 60 * 24)
+    );
+    const daysUntilExpiration = shelfLifeDays - daysSincePurchase;
+    inventoryExpirationData.set(item.itemCode, daysUntilExpiration);
+  }
+
+  return {
+    userInventory: Array.from(codes),
+    inventoryExpirationData,
+  };
+};
+
+const buildRailCandidates = ({
+  recipes,
+  userInventory,
+  dietaryRestrictions,
+  allergies,
+  favoriteCuisines,
+  cookingStylePreferences,
+  householdMembers,
+}: {
+  recipes: Doc<"recipes">[];
+  userInventory: string[];
+  dietaryRestrictions: string[];
+  allergies: string[];
+  favoriteCuisines: string[];
+  cookingStylePreferences: string[];
+  householdMembers: HouseholdMember[] | null;
+}): Record<PersonalizedRailType, Doc<"recipes">[]> => {
+  const criticalRestrictions = dietaryRestrictions.filter((r) =>
+    ["Halal", "Kosher"].some((cdr) => r.toLowerCase().includes(cdr.toLowerCase()))
+  );
+
+  const baseRecipes = recipes.filter((recipe) => {
+    if (allergies.length > 0 && !matchesAllergies(recipe, allergies)) {
+      return false;
+    }
+    if (
+      criticalRestrictions.length > 0 &&
+      !matchesDietaryRestrictions(recipe, criticalRestrictions)
+    ) {
+      return false;
+    }
+    return true;
+  });
+
+  const rails: Record<PersonalizedRailType, Doc<"recipes">[]> = {
+    forYou: [],
+    readyToCook: [],
+    quickEasy: [],
+    cuisines: [],
+    dietaryFriendly: [],
+    householdCompatible: [],
+  };
+
+  for (const recipe of baseRecipes) {
+    rails.forYou.push(recipe);
+
+    const recipeIngredientCodes = recipe.ingredients.map((ing) => ing.foodCode);
+    const isReadyToCook = recipeIngredientCodes.every((code) =>
+      userInventory.includes(code)
+    );
+    if (isReadyToCook) {
+      rails.readyToCook.push(recipe);
+    }
+
+    const isQuick =
+      recipe.totalTimeMinutes <= 30 ||
+      recipe.cookingStyleTags?.some((tag) => tag.toLowerCase().includes("quick"));
+    if (isQuick && matchesCookingStyles(recipe, cookingStylePreferences)) {
+      rails.quickEasy.push(recipe);
+    }
+
+    if (matchesCuisines(recipe, favoriteCuisines)) {
+      rails.cuisines.push(recipe);
+    }
+
+    if (matchesDietaryRestrictions(recipe, dietaryRestrictions)) {
+      rails.dietaryFriendly.push(recipe);
+    }
+
+    if (!householdMembers || householdMembers.length === 0) {
+      rails.householdCompatible.push(recipe);
+    } else {
+      const compatibility = getRecipeCompatibility(recipe, householdMembers);
+      if (compatibility.incompatibleMembers.length === 0) {
+        rails.householdCompatible.push(recipe);
+      }
+    }
+  }
+
+  return rails;
+};
+
+const scoreAndSortRecipes = ({
+  recipes,
+  dietaryRestrictions,
+  allergies,
+  favoriteCuisines,
+  cookingStylePreferences,
+  nutritionGoals,
+  userInventory,
+  inventoryExpirationData,
+  limit,
+}: {
+  recipes: Doc<"recipes">[];
+  dietaryRestrictions: string[];
+  allergies: string[];
+  favoriteCuisines: string[];
+  cookingStylePreferences: string[];
+  nutritionGoals?: NutritionGoals;
+  userInventory: string[];
+  inventoryExpirationData: Map<string, number>;
+  limit: number;
+}) => {
+  const filterOptions: RecipeFilterOptions = {
+    dietaryRestrictions,
+    allergies,
+    favoriteCuisines,
+    cookingStylePreferences,
+    nutritionGoals,
+  };
+
+  const scoredRecipes = recipes.map((recipe) => {
+    const score = calculateRecipeScore(
+      recipe,
+      filterOptions,
+      userInventory,
+      inventoryExpirationData
+    );
+    return { recipe, score };
+  });
+
+  scoredRecipes.sort((a, b) => {
+    if (b.score !== a.score) {
+      return b.score - a.score;
+    }
+    return b.recipe.createdAt - a.recipe.createdAt;
+  });
+
+  return scoredRecipes.slice(0, limit).map((entry) => entry.recipe);
+};
+
+/**
+ * List all recipes for precompute runs (shared across users).
+ */
+export const listAllRecipesForPrecompute = query({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db.query("recipes").collect();
+  },
+});
+
+export const getHouseholdContextForPrecompute = query({
+  args: {
+    householdId: v.id("households"),
+  },
+  handler: async (ctx, args) => {
+    const household = await ctx.db.get(args.householdId);
+    if (!household) {
+      return null;
+    }
+
+    const memberDocs = await Promise.all(
+      household.members.map((id: Id<"users">) => ctx.db.get(id))
+    );
+    const householdMembers: HouseholdMember[] = memberDocs
+      .filter((member): member is Doc<"users"> => member !== null)
+      .map((member) => ({
+        memberId: member._id as unknown as string,
+        memberName: member.name ?? "Unknown",
+        allergies: (member.allergies ?? []) as string[],
+        dietaryRestrictions: (member.dietaryRestrictions ?? []) as string[],
+      }));
+
+    return {
+      inventory: (household.inventory ?? []) as UserInventoryEntry[],
+      householdMembers,
+    };
+  },
+});
+
+export const tryAcquirePrecomputeLock = mutation({
+  args: {
+    name: v.string(),
+    lockDurationMs: v.number(),
+    minIntervalMs: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    const existing = await ctx.db
+      .query("precomputeLocks")
+      .withIndex("by_name", (q) => q.eq("name", args.name))
+      .first();
+
+    if (existing) {
+      if (existing.lockedUntil > now) {
+        return { acquired: false, reason: "locked" as const };
+      }
+      if (
+        existing.lastRunAt !== undefined &&
+        now - existing.lastRunAt < args.minIntervalMs
+      ) {
+        return { acquired: false, reason: "throttled" as const };
+      }
+      await ctx.db.patch(existing._id, {
+        lockedUntil: now + args.lockDurationMs,
+        lastRunAt: now,
+      });
+      return { acquired: true, lockId: existing._id };
+    }
+
+    const lockId = await ctx.db.insert("precomputeLocks", {
+      name: args.name,
+      lockedUntil: now + args.lockDurationMs,
+      lastRunAt: now,
+      lastCompletedAt: undefined,
+    });
+
+    return { acquired: true, lockId };
+  },
+});
+
+export const releasePrecomputeLock = mutation({
+  args: {
+    lockId: v.id("precomputeLocks"),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.lockId, {
+      lockedUntil: 0,
+      lastCompletedAt: Date.now(),
+    });
+    return args.lockId;
+  },
+});
+
 /**
  * Pre-compute personalized recipe lists for all users
  * This should be called by a scheduled action periodically
@@ -3873,48 +4148,124 @@ export const updateMetadata = mutation({
 export const precomputePersonalizedRecipes = internalAction({
   args: {
     userId: v.optional(v.id("users")), // If provided, only compute for this user
+    limitUserIds: v.optional(v.array(v.id("users"))),
+    adminToken: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const now = Date.now();
-    const expiresAt = now + 60 * 60 * 1000; // 1 hour from now
+    const LOCK_NAME = "personalizedRecipes";
+    const LOCK_DURATION_MS = 30 * 60 * 1000; // 30 minutes
+    const MIN_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
+    const MAX_USERS_PER_RUN = 200;
+    const BATCH_SIZE = 20;
+    const PER_RAIL_LIMIT = 20;
 
-    // Get users to process
-    let userIds: Id<"users">[];
-    if (args.userId) {
-      userIds = [args.userId];
-    } else {
-      // Get all user IDs from database
-      const allUsers = await ctx.runQuery(api.recipes.getAllUserIds, {});
-      userIds = allUsers;
+    const lock = await ctx.runMutation(api.recipes.tryAcquirePrecomputeLock, {
+      name: LOCK_NAME,
+      lockDurationMs: LOCK_DURATION_MS,
+      minIntervalMs: MIN_INTERVAL_MS,
+    });
+
+    if (!lock.acquired) {
+      return {
+        computed: 0,
+        errors: 0,
+        total: 0,
+        skippedReason: lock.reason,
+      } as {
+        computed: number;
+        errors: number;
+        total: number;
+        skippedReason: "locked" | "throttled";
+      };
     }
 
-    let computed = 0;
-    let errors = 0;
+    try {
+      const now = Date.now();
+      const expiresAt = now + 60 * 60 * 1000; // 1 hour from now
 
-    const railTypes = [
-      "forYou",
-      "readyToCook",
-      "quickEasy",
-      "cuisines",
-      "dietaryFriendly",
-      "householdCompatible",
-    ] as const;
+      // Get users to process
+      let userIds: Id<"users">[];
+      if (args.userId) {
+        userIds = [args.userId];
+      } else if (args.limitUserIds && args.limitUserIds.length > 0) {
+        const adminToken = process.env.ADMIN_PRECOMPUTE_TOKEN;
+        if (!adminToken || args.adminToken !== adminToken) {
+          throw new Error("Admin token required to limit precompute scope.");
+        }
+        userIds = args.limitUserIds;
+      } else {
+        // Get all user IDs from database
+        const allUsers = await ctx.runQuery(api.recipes.getAllUserIds, {});
+        userIds = allUsers;
+      }
 
-    for (const userId of userIds) {
-      try {
-        // Get user data
+      const totalUsers = Math.min(userIds.length, MAX_USERS_PER_RUN);
+      userIds = userIds.slice(0, totalUsers);
+
+      const recipes = await ctx.runQuery(
+        api.recipes.listAllRecipesForPrecompute,
+        {}
+      );
+      const foodLibrary = await ctx.runQuery(api.foodLibrary.listAll, {});
+      const foodLibraryIndex = buildFoodLibraryIndex(foodLibrary);
+
+      let computed = 0;
+      let errors = 0;
+
+      const processUser = async (userId: Id<"users">) => {
         const user = await ctx.runQuery(api.users.getUserById, { userId });
-        if (!user) continue;
+        if (!user) {
+          return { computed: false };
+        }
 
-        // Compute personalized lists for each rail type
-        for (const railType of railTypes) {
-          const recipes = (await ctx.runQuery(api.recipes.listPersonalizedForUser, {
-            userId,
-            railType,
-            limit: 20,
-          })) as Doc<"recipes">[];
+        let householdContext: {
+          inventory: UserInventoryEntry[];
+          householdMembers: HouseholdMember[];
+        } | null = null;
 
-          // Store in cache
+        if (user.householdId) {
+          householdContext = await ctx.runQuery(
+            api.recipes.getHouseholdContextForPrecompute,
+            { householdId: user.householdId }
+          );
+        }
+
+        const { userInventory, inventoryExpirationData } = buildInventoryData(
+          householdContext?.inventory,
+          foodLibraryIndex,
+          now
+        );
+
+        const dietaryRestrictions = (user.dietaryRestrictions ?? []) as string[];
+        const allergies = (user.allergies ?? []) as string[];
+        const favoriteCuisines = (user.favoriteCuisines ?? []) as string[];
+        const cookingStylePreferences = (user.cookingStylePreferences ??
+          []) as string[];
+        const nutritionGoals = user.nutritionGoals ?? undefined;
+
+        const railCandidates = buildRailCandidates({
+          recipes,
+          userInventory,
+          dietaryRestrictions,
+          allergies,
+          favoriteCuisines,
+          cookingStylePreferences,
+          householdMembers: householdContext?.householdMembers ?? null,
+        });
+
+        for (const railType of PRECOMPUTE_RAIL_TYPES) {
+          const scoredRecipes = scoreAndSortRecipes({
+            recipes: railCandidates[railType],
+            dietaryRestrictions,
+            allergies,
+            favoriteCuisines,
+            cookingStylePreferences,
+            nutritionGoals,
+            userInventory,
+            inventoryExpirationData,
+            limit: PER_RAIL_LIMIT,
+          });
+
           const existing = await ctx.runQuery(api.recipes.getPersonalizedCache, {
             userId,
             railType,
@@ -3923,7 +4274,7 @@ export const precomputePersonalizedRecipes = internalAction({
           const cacheData = {
             userId,
             railType,
-            recipeIds: recipes.map((r: Doc<"recipes">) => r._id),
+            recipeIds: scoredRecipes.map((recipe) => recipe._id),
             computedAt: now,
             expiresAt,
           };
@@ -3938,28 +4289,51 @@ export const precomputePersonalizedRecipes = internalAction({
           }
         }
 
-        computed++;
-      } catch (error) {
-        console.error(`Failed to precompute for user ${userId}:`, error);
-        errors++;
+        return { computed: true };
+      };
+
+      for (let i = 0; i < userIds.length; i += BATCH_SIZE) {
+        const batch = userIds.slice(i, i + BATCH_SIZE);
+        const results = await Promise.all(
+          batch.map(async (userId) => {
+            try {
+              return await processUser(userId);
+            } catch (error) {
+              console.error(`Failed to precompute for user ${userId}:`, error);
+              return { computed: false, error: true };
+            }
+          })
+        );
+
+        for (const result of results) {
+          if (result.computed) {
+            computed++;
+          } else if (result.error) {
+            errors++;
+          }
+        }
       }
+
+      // Clean up expired cache entries
+      const expiredCutoff = now - 24 * 60 * 60 * 1000; // 24 hours ago
+      await ctx.runMutation(api.recipes.cleanupExpiredCache, {
+        expiredBefore: expiredCutoff,
+      });
+
+      return {
+        computed,
+        errors,
+        total: userIds.length,
+      } as {
+        computed: number;
+        errors: number;
+        total: number;
+      };
+    } finally {
+      await ctx.runMutation(api.recipes.releasePrecomputeLock, {
+        lockId: lock.lockId,
+      });
     }
-
-    // Clean up expired cache entries
-    const expiredCutoff = now - 24 * 60 * 60 * 1000; // 24 hours ago
-    await ctx.runMutation(api.recipes.cleanupExpiredCache, {
-      expiredBefore: expiredCutoff,
-    });
-
-    return {
-      computed,
-      errors,
-      total: userIds.length,
-    } as {
-      computed: number;
-      errors: number;
-      total: number;
-    };
   },
 });
 
