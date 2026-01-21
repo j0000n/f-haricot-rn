@@ -390,6 +390,7 @@ export default function HomeScreen() {
             "cards",
             createdRecipe.sourceSteps,
             translationGuides ?? undefined,
+            createdRecipe.sourceStepsLocalized,
           )
         : [],
     [createdRecipe, language, translationGuides],
