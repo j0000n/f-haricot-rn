@@ -4,6 +4,7 @@ import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { useQuery } from "convex/react";
 
 import { api } from "@/convex/_generated/api";
+import type { Doc } from "@/convex/_generated/dataModel";
 import { useTranslation } from "@/i18n/useTranslation";
 import type { Recipe, RecipeIngredient } from "@/types/recipe";
 import { formatIngredientQuantity, extractIngredientNameFromText } from "@/utils/inventory";
@@ -17,6 +18,11 @@ interface IngredientsListProps {
 }
 
 type Styles = ReturnType<typeof createStyles>;
+
+type FoodLibraryLookupItem = Pick<
+  Doc<"foodLibrary">,
+  "code" | "translations" | "varieties"
+>;
 
 const createStyles = (tokens: ThemeTokens) =>
   StyleSheet.create({
@@ -99,7 +105,24 @@ export const IngredientsList: React.FC<IngredientsListProps> = ({
   const tokens = useTokens();
   const { t } = useTranslation();
 
-  const library = useQuery(api.foodLibrary.listAll, {});
+  const ingredientCodes = useMemo(() => {
+    const codes = new Set<string>();
+    for (const ingredient of ingredients) {
+      codes.add(ingredient.foodCode);
+    }
+    return Array.from(codes);
+  }, [ingredients]);
+
+  const library = useQuery(api.foodLibrary.getByCodes, {
+    codes: ingredientCodes,
+  });
+  const libraryByCode = useMemo(() => {
+    if (!Array.isArray(library)) {
+      return new Map<string, FoodLibraryLookupItem>();
+    }
+
+    return new Map(library.map((item) => [item.code, item]));
+  }, [library]);
   const inventorySet = useMemo(() => new Set(userInventory), [userInventory]);
 
   if (library === undefined) {
@@ -112,7 +135,7 @@ export const IngredientsList: React.FC<IngredientsListProps> = ({
   }
 
   const getDisplayName = (ingredient: RecipeIngredient) => {
-    const entry = library?.find((item) => item.code === ingredient.foodCode);
+    const entry = libraryByCode.get(ingredient.foodCode);
     
     if (entry) {
       // Handle database translation format (can be {singular, plural} object or string)

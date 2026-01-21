@@ -43,7 +43,11 @@ type FoodLibraryIndexEntry = {
 };
 
 const buildFoodLibraryIndex = (
-  foodLibrary: Doc<"foodLibrary">[],
+  foodLibrary: Array<{
+    code: string;
+    shelfLifeDays: number;
+    varieties: Array<{ code: string }>;
+  }>,
 ): Map<string, FoodLibraryIndexEntry> => {
   const index = new Map<string, FoodLibraryIndexEntry>();
   for (const item of foodLibrary) {
@@ -1495,19 +1499,26 @@ export const listPersonalized = query({
     const cookingStylePreferences = (user.cookingStylePreferences ??
       []) as string[];
     const nutritionGoals = user.nutritionGoals;
-    const foodLibrary = await ctx.runQuery(api.foodLibrary.listAll, {});
-    const foodLibraryIndex = buildFoodLibraryIndex(foodLibrary);
 
     // Get user inventory
     let userInventory: string[] = [];
     let inventoryExpirationData = new Map<string, number>();
+    let foodLibraryIndex = new Map<string, FoodLibraryIndexEntry>();
     if (user.householdId) {
       const household = await ctx.db.get(user.householdId);
       if (household?.inventory) {
         const inventory = household.inventory as UserInventoryEntry[];
+        const itemCodes = new Set<string>(inventory.map((item) => item.itemCode));
+        const foodLibrary =
+          itemCodes.size > 0
+            ? await ctx.runQuery(api.foodLibrary.getByCodes, {
+                codes: Array.from(itemCodes),
+              })
+            : [];
+        foodLibraryIndex = buildFoodLibraryIndex(foodLibrary);
+
         const codes = new Set<string>();
         for (const item of inventory) {
-          const inventoryItem = item as UserInventoryEntry;
           codes.add(item.itemCode);
           const libraryEntry = foodLibraryIndex.get(item.itemCode);
           if (item.varietyCode && libraryEntry?.varietyCodes.has(item.varietyCode)) {
@@ -1942,7 +1953,15 @@ export const extractRecipeMetadata = action({
     }
 
     // Get food library to understand ingredients better
-    const foodLibrary = await ctx.runQuery(api.foodLibrary.listAll, {});
+    const ingredientCodes = Array.from(
+      new Set(args.ingredients.map((ing) => ing.foodCode)),
+    );
+    const foodLibrary =
+      ingredientCodes.length > 0
+        ? await ctx.runQuery(api.foodLibrary.getByCodes, {
+            codes: ingredientCodes,
+          })
+        : [];
 
     // Build ingredient list with names
     const ingredientNames = args.ingredients
@@ -2387,7 +2406,7 @@ export const ingestUniversal = action({
       console.log(`[ingestUniversal] Auto-detected source type: ${detectedSourceType} from URL: ${args.sourceUrl}`);
     }
 
-    const foodLibrary = await ctx.runQuery(api.foodLibrary.listAll, {});
+    const foodLibraryPreview = foodLibrarySeed.slice(0, 100);
     const translationGuides = await ctx.runQuery(api.translationGuides.listAll, {});
 
     // For video platforms, try oEmbed extraction
@@ -2528,7 +2547,7 @@ Use decoding guide at plan/decoding-guide.md to ensure qualifier order and deter
 Include a single-language fallback steps array for display resilience alongside encodedSteps.
 
 Available food library items (code: name):
-${foodLibrary
+${foodLibraryPreview
       .slice(0, 100)
       .map((f: { code: string; name: string }) => `${f.code}: ${f.name}`)
       .join(", ")}
@@ -2763,6 +2782,22 @@ Captured text: ${sourceSummary}`;
 
     const validationSummary = { ambiguous: 0, missing: 0 };
     const foodItemsAdded: Id<"foodLibrary">[] = [];
+    const ingredientCodes = Array.from(
+      new Set(
+        (enhanced.ingredients || [])
+          .map((ingredient: any) => ingredient.foodCode)
+          .filter((code: unknown): code is string => typeof code === "string"),
+      ),
+    );
+    const ingredientLibrary =
+      ingredientCodes.length > 0
+        ? await ctx.runQuery(api.foodLibrary.getByCodes, {
+            codes: ingredientCodes,
+          })
+        : [];
+    const ingredientLibraryByCode = new Map(
+      ingredientLibrary.map((item) => [item.code, item]),
+    );
     const normalizedIngredients = await Promise.all(
       (enhanced.ingredients || []).map(async (ingredient: any) => {
         // Ensure foodCode exists - generate a provisional one if missing
@@ -2778,9 +2813,7 @@ Captured text: ${sourceSummary}`;
           foodCode = `provisional.${sanitized}`;
         }
 
-        const match = foodLibrary.find(
-          (entry: Doc<"foodLibrary">) => entry.code === foodCode,
-        );
+        const match = ingredientLibraryByCode.get(foodCode);
         let status: "matched" | "ambiguous" | "missing" = "matched";
         let suggestions: string[] | undefined;
 
@@ -2790,7 +2823,7 @@ Captured text: ${sourceSummary}`;
 
           // Try to find similar items in the food library by name
           const ingredientNameLower = (ingredient.originalText || ingredient.displayText || "").toLowerCase();
-          const similarItems = foodLibrary
+          const similarItems = foodLibrarySeed
             .filter((entry) =>
               entry.name.toLowerCase().includes(ingredientNameLower) ||
               ingredientNameLower.includes(entry.name.toLowerCase())
@@ -3409,10 +3442,19 @@ Captured text: ${sourceSummary}`;
     }
 
     // Calculate nutrition profile from ingredients if possible
+    const nutritionLibraryCodes = Array.from(
+      new Set(normalizedIngredients.map((ingredient) => ingredient.foodCode)),
+    );
+    const nutritionLibrary =
+      nutritionLibraryCodes.length > 0
+        ? await ctx.runQuery(api.foodLibrary.getByCodes, {
+            codes: nutritionLibraryCodes,
+          })
+        : [];
     const calculatedNutrition = computeNutritionProfile(
       normalizedIngredients,
       recipeData.servings,
-      foodLibrary,
+      nutritionLibrary,
     );
 
     // Merge extracted nutrition (from HTML/LLM) with calculated nutrition
@@ -3545,7 +3587,7 @@ export const enhanceRecipeWithAI = action({
     }
 
     // Get food library for ingredient matching
-    const foodLibrary = await ctx.runQuery(api.foodLibrary.listAll, {});
+    const foodLibrary = foodLibrarySeed.slice(0, 50);
 
     const prompt = `You are a recipe translator and enhancer. Given a recipe name and optional details, generate a complete structured recipe in JSON format.
 
@@ -3712,7 +3754,15 @@ export const backfillRecipeMetadata = internalAction({
             });
 
             // Calculate nutrition profile if possible
-            const foodLibrary = await ctx.runQuery(api.foodLibrary.listAll, {});
+            const ingredientCodes = Array.from(
+              new Set(recipe.ingredients.map((ingredient) => ingredient.foodCode)),
+            );
+            const foodLibrary =
+              ingredientCodes.length > 0
+                ? await ctx.runQuery(api.foodLibrary.getByCodes, {
+                    codes: ingredientCodes,
+                  })
+                : [];
             const perServing = computeNutritionProfile(
               recipe.ingredients,
               recipe.servings,
@@ -4139,15 +4189,23 @@ export const listPersonalizedForUser = query({
     const cookingStylePreferences = (user.cookingStylePreferences ??
       []) as string[];
     const nutritionGoals = user.nutritionGoals;
-    const foodLibrary = await ctx.runQuery(api.foodLibrary.listAll, {});
-    const foodLibraryIndex = buildFoodLibraryIndex(foodLibrary);
 
     let userInventory: string[] = [];
     let inventoryExpirationData = new Map<string, number>();
+    let foodLibraryIndex = new Map<string, FoodLibraryIndexEntry>();
     if (user.householdId) {
       const household = await ctx.db.get(user.householdId);
       if (household?.inventory) {
         const inventory = household.inventory as UserInventoryEntry[];
+        const itemCodes = new Set<string>(inventory.map((item) => item.itemCode));
+        const foodLibrary =
+          itemCodes.size > 0
+            ? await ctx.runQuery(api.foodLibrary.getByCodes, {
+                codes: Array.from(itemCodes),
+              })
+            : [];
+        foodLibraryIndex = buildFoodLibraryIndex(foodLibrary);
+
         const codes = new Set<string>();
         for (const item of inventory) {
           codes.add(item.itemCode);
