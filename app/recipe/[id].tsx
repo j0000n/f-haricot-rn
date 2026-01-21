@@ -322,6 +322,7 @@ export default function RecipeDetailScreen() {
           "cards",
           method.steps,
           translationGuides ?? undefined,
+          undefined, // sourceStepsLocalized not available for cooking methods yet
         );
       }
     }
@@ -342,6 +343,7 @@ export default function RecipeDetailScreen() {
     recipe.sourceSteps,
     recipeLanguage,
     translationGuides,
+    recipe.sourceStepsLocalized,
   ]);
 
   // Set default selected method on mount
@@ -360,6 +362,7 @@ export default function RecipeDetailScreen() {
         "cards",
         recipe.sourceSteps,
         translationGuides ?? undefined,
+        recipe.sourceStepsLocalized,
       ),
     [recipeLanguage, recipe.encodedSteps, recipe.sourceSteps, translationGuides],
   );

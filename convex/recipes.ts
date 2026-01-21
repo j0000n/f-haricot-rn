@@ -2763,8 +2763,44 @@ Captured text: ${sourceSummary}`;
 
     const validationSummary = { ambiguous: 0, missing: 0 };
     const foodItemsAdded: Id<"foodLibrary">[] = [];
+    
+    // Helper function to detect optional/serving ingredients
+    const isOptionalServingIngredient = (ingredient: any): boolean => {
+      const origText = ((ingredient.originalText || "") + " " + (ingredient.displayText || "")).toLowerCase();
+      const patterns = [
+        /\(pictured\)/i,
+        /\(optional\)/i,
+        /for serving/i,
+        /for garnish/i,
+        /optional serving/i,
+        /serving suggestion/i,
+      ];
+      
+      if (patterns.some(p => p.test(origText))) {
+        return true;
+      }
+      
+      // Check if it's a count-based ingredient that mentions serving/garnish
+      if (ingredient.unit === "count" && ingredient.quantity === 1) {
+        if (origText.includes("optional") || origText.includes("garnish") || origText.includes("serving")) {
+          return true;
+        }
+      }
+      
+      return false;
+    };
+    
+    // Filter out optional/serving ingredients before normalization
+    const filteredIngredients = (enhanced.ingredients || []).filter((ingredient: any) => {
+      const isOptional = isOptionalServingIngredient(ingredient);
+      if (isOptional) {
+        console.log(`[ingestUniversal] Filtering out optional/serving ingredient: ${ingredient.originalText || ingredient.displayText || ingredient.foodCode}`);
+      }
+      return !isOptional;
+    });
+    
     const normalizedIngredients = await Promise.all(
-      (enhanced.ingredients || []).map(async (ingredient: any) => {
+      filteredIngredients.map(async (ingredient: any) => {
         // Ensure foodCode exists - generate a provisional one if missing
         let foodCode = ingredient.foodCode;
         if (!foodCode || typeof foodCode !== "string") {
@@ -2897,8 +2933,17 @@ Captured text: ${sourceSummary}`;
           origText = origText.replace(/\b(\w+)\s+\1\b/gi, "$1");
           
           // Remove parenthetical notes that contain instructions or notes (e.g., "(or other non-dairy milk) *see note")
+          // Specifically target "(pictured)", "(optional)", and similar patterns
+          origText = origText.replace(/\s*\(pictured\)/gi, "");
+          origText = origText.replace(/\s*\(optional\)/gi, "");
           origText = origText.replace(/\s*\([^)]*\)/g, "");
           origText = origText.replace(/\s*\*[^*]*\*/g, "");
+          
+          // Remove "for serving", "for garnish", "optional serving" patterns
+          origText = origText.replace(/\s*for serving/gi, "");
+          origText = origText.replace(/\s*for garnish/gi, "");
+          origText = origText.replace(/\s*optional serving/gi, "");
+          origText = origText.replace(/\s*serving suggestion/gi, "");
           
           // Remove extra whitespace
           origText = origText.replace(/\s+/g, " ").trim();
@@ -3036,6 +3081,123 @@ Captured text: ${sourceSummary}`;
         return normalizedIngredient;
       }),
     );
+
+    // Translate provisional ingredient names
+    const provisionalIngredients = normalizedIngredients.filter(
+      (ing) => ing.foodCode.startsWith("provisional.")
+    );
+    
+    if (provisionalIngredients.length > 0) {
+      try {
+        const ingredientNames = provisionalIngredients.map((ing) => {
+          const name = ing.originalText || ing.foodCode.replace("provisional.", "").replace(/_/g, " ");
+          return { code: ing.foodCode, name };
+        });
+        
+        const translationPrompt = `Translate these ingredient names into 8 languages (en, es, zh, fr, ar, ja, vi, tl).
+Return ONLY valid JSON with this structure:
+{
+  "ingredients": [
+    {
+      "code": "provisional.ingredient_code",
+      "translations": {
+        "en": "English name",
+        "es": "Spanish name",
+        "zh": "Chinese name",
+        "fr": "French name",
+        "ar": "Arabic name",
+        "ja": "Japanese name",
+        "vi": "Vietnamese name",
+        "tl": "Tagalog name"
+      }
+    }
+  ]
+}
+
+Ingredient names to translate:
+${JSON.stringify(ingredientNames.map(i => ({ code: i.code, name: i.name })))}
+
+CRITICAL: Return ONLY valid JSON. No markdown, no explanations.`;
+
+        const translationResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${openAiKey}`,
+          },
+          body: JSON.stringify({
+            model: "gpt-4o-mini",
+            temperature: 0.2,
+            messages: [
+              {
+                role: "system",
+                content: "You are a recipe ingredient translator. Return ONLY valid JSON. No markdown code blocks, no explanations.",
+              },
+              { role: "user", content: translationPrompt },
+            ],
+          }),
+        });
+
+        if (translationResponse.ok) {
+          const translationPayload = await translationResponse.json();
+          const translationMessage = translationPayload?.choices?.[0]?.message?.content;
+          if (translationMessage) {
+            let translationJson = translationMessage.trim();
+            if (translationJson.startsWith("```")) {
+              translationJson = translationJson.replace(/^```json\n?/, "").replace(/```$/, "").trim();
+            }
+            
+            try {
+              const translations = JSON.parse(translationJson);
+              if (translations.ingredients && Array.isArray(translations.ingredients)) {
+                // Update food library entries with translations
+                for (const item of translations.ingredients) {
+                  const foodLibraryEntry = await ctx.runQuery(api.foodLibrary.getByCode, {
+                    code: item.code,
+                  });
+                  
+                  if (foodLibraryEntry && foodLibraryEntry.isProvisional && item.translations) {
+                    // Update translations in food library
+                    const englishName = item.translations.en || ingredientNames.find(i => i.code === item.code)?.name || "";
+                    const updatedTranslations: {
+                      en: { singular: string; plural: string };
+                      es: { singular: string; plural: string };
+                      zh: { singular: string; plural: string };
+                      fr: { singular: string; plural: string };
+                      ar: { singular: string; plural: string };
+                      ja: { singular: string; plural: string };
+                      vi: { singular: string; plural: string };
+                      tl: { singular: string; plural: string };
+                    } = {
+                      en: { singular: item.translations.en || englishName, plural: `${item.translations.en || englishName}s` },
+                      es: { singular: item.translations.es || englishName, plural: `${item.translations.es || englishName}s` },
+                      zh: { singular: item.translations.zh || englishName, plural: `${item.translations.zh || englishName}s` },
+                      fr: { singular: item.translations.fr || englishName, plural: `${item.translations.fr || englishName}s` },
+                      ar: { singular: item.translations.ar || englishName, plural: `${item.translations.ar || englishName}s` },
+                      ja: { singular: item.translations.ja || englishName, plural: `${item.translations.ja || englishName}s` },
+                      vi: { singular: item.translations.vi || englishName, plural: `${item.translations.vi || englishName}s` },
+                      tl: { singular: item.translations.tl || englishName, plural: `${item.translations.tl || englishName}s` },
+                    };
+                    
+                    await ctx.runMutation(api.foodLibrary.updateTranslations, {
+                      foodLibraryId: foodLibraryEntry._id,
+                      translations: updatedTranslations,
+                    });
+                  }
+                }
+              }
+            } catch (parseError) {
+              console.warn("[ingestUniversal] Failed to parse ingredient translations:", parseError);
+            }
+          }
+        } else {
+          console.warn("[ingestUniversal] Failed to translate provisional ingredients:", translationResponse.status);
+        }
+      } catch (error) {
+        console.warn("[ingestUniversal] Error translating provisional ingredients:", error);
+        // Continue without translations - ingredients will use English names
+      }
+    }
 
     const now = Date.now();
     const encodingVersion = enhanced.encodingVersion || "URES-4.6";
@@ -3329,11 +3491,100 @@ Captured text: ${sourceSummary}`;
     const authorNameLookup = normalizedAuthorName?.toLowerCase();
     const authorWebsite = rawAttribution.authorWebsite?.trim();
 
+    // Translate source steps into all languages
+    let sourceStepsLocalized: Record<string, typeof normalizedSourceSteps> | undefined;
+    if (normalizedSourceSteps && normalizedSourceSteps.length > 0) {
+      try {
+        const stepTranslationPrompt = `Translate these recipe steps into 8 languages (en, es, zh, fr, ar, ja, vi, tl).
+Return ONLY valid JSON with this structure:
+{
+  "steps": {
+    "en": [{"stepNumber": 1, "text": "English step text", "timeInMinutes": 5}],
+    "es": [{"stepNumber": 1, "text": "Spanish step text", "timeInMinutes": 5}],
+    "zh": [{"stepNumber": 1, "text": "Chinese step text", "timeInMinutes": 5}],
+    "fr": [{"stepNumber": 1, "text": "French step text", "timeInMinutes": 5}],
+    "ar": [{"stepNumber": 1, "text": "Arabic step text", "timeInMinutes": 5}],
+    "ja": [{"stepNumber": 1, "text": "Japanese step text", "timeInMinutes": 5}],
+    "vi": [{"stepNumber": 1, "text": "Vietnamese step text", "timeInMinutes": 5}],
+    "tl": [{"stepNumber": 1, "text": "Tagalog step text", "timeInMinutes": 5}]
+  }
+}
+
+Steps to translate:
+${JSON.stringify(normalizedSourceSteps)}
+
+CRITICAL: 
+- Preserve stepNumber, timeInMinutes, and temperature fields exactly
+- Only translate the "text" field
+- Return ONLY valid JSON. No markdown, no explanations.`;
+
+        const stepTranslationResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${openAiKey}`,
+          },
+          body: JSON.stringify({
+            model: "gpt-4o-mini",
+            temperature: 0.2,
+            messages: [
+              {
+                role: "system",
+                content: "You are a recipe step translator. Return ONLY valid JSON. No markdown code blocks, no explanations.",
+              },
+              { role: "user", content: stepTranslationPrompt },
+            ],
+          }),
+        });
+
+        if (stepTranslationResponse.ok) {
+          const stepTranslationPayload = await stepTranslationResponse.json();
+          const stepTranslationMessage = stepTranslationPayload?.choices?.[0]?.message?.content;
+          if (stepTranslationMessage) {
+            let stepTranslationJson = stepTranslationMessage.trim();
+            if (stepTranslationJson.startsWith("```")) {
+              stepTranslationJson = stepTranslationJson.replace(/^```json\n?/, "").replace(/```$/, "").trim();
+            }
+            
+            try {
+              const stepTranslations = JSON.parse(stepTranslationJson);
+              if (stepTranslations.steps && typeof stepTranslations.steps === "object") {
+                sourceStepsLocalized = {};
+                const languages = ["en", "es", "zh", "fr", "ar", "ja", "vi", "tl"] as const;
+                for (const lang of languages) {
+                  if (stepTranslations.steps[lang] && Array.isArray(stepTranslations.steps[lang])) {
+                    // Ensure all steps have the same structure as original
+                    sourceStepsLocalized[lang] = stepTranslations.steps[lang].map((translatedStep: any, index: number) => {
+                      const originalStep = normalizedSourceSteps[index];
+                      return {
+                        stepNumber: originalStep?.stepNumber ?? translatedStep.stepNumber ?? index + 1,
+                        text: translatedStep.text || originalStep?.text || "",
+                        ...(originalStep?.timeInMinutes !== undefined ? { timeInMinutes: originalStep.timeInMinutes } : {}),
+                        ...(originalStep?.temperature ? { temperature: originalStep.temperature } : {}),
+                      };
+                    });
+                  }
+                }
+              }
+            } catch (parseError) {
+              console.warn("[ingestUniversal] Failed to parse step translations:", parseError);
+            }
+          }
+        } else {
+          console.warn("[ingestUniversal] Failed to translate source steps:", stepTranslationResponse.status);
+        }
+      } catch (error) {
+        console.warn("[ingestUniversal] Error translating source steps:", error);
+        // Continue without translations - steps will use English fallback
+      }
+    }
+
     const recipeData = {
       recipeName: normalizedRecipeName,
       description: normalizedDescription,
       ingredients: normalizedIngredients,
       sourceSteps: normalizedSourceSteps,
+      ...(sourceStepsLocalized ? { sourceStepsLocalized } : {}),
       ...(normalizedCookingMethods ? { cookingMethods: normalizedCookingMethods } : {}),
       encodedSteps: normalizedEncodedSteps ?? "",
       encodingVersion,
@@ -4686,6 +4937,130 @@ export const insertFromIngestion = mutation({
             ),
           })
         )
+      ),
+      sourceStepsLocalized: v.optional(
+        v.object({
+          en: v.optional(
+            v.array(
+              v.object({
+                stepNumber: v.number(),
+                text: v.string(),
+                timeInMinutes: v.optional(v.number()),
+                temperature: v.optional(
+                  v.object({
+                    value: v.number(),
+                    unit: v.union(v.literal("F"), v.literal("C")),
+                  }),
+                ),
+              })
+            )
+          ),
+          es: v.optional(
+            v.array(
+              v.object({
+                stepNumber: v.number(),
+                text: v.string(),
+                timeInMinutes: v.optional(v.number()),
+                temperature: v.optional(
+                  v.object({
+                    value: v.number(),
+                    unit: v.union(v.literal("F"), v.literal("C")),
+                  }),
+                ),
+              })
+            )
+          ),
+          zh: v.optional(
+            v.array(
+              v.object({
+                stepNumber: v.number(),
+                text: v.string(),
+                timeInMinutes: v.optional(v.number()),
+                temperature: v.optional(
+                  v.object({
+                    value: v.number(),
+                    unit: v.union(v.literal("F"), v.literal("C")),
+                  }),
+                ),
+              })
+            )
+          ),
+          fr: v.optional(
+            v.array(
+              v.object({
+                stepNumber: v.number(),
+                text: v.string(),
+                timeInMinutes: v.optional(v.number()),
+                temperature: v.optional(
+                  v.object({
+                    value: v.number(),
+                    unit: v.union(v.literal("F"), v.literal("C")),
+                  }),
+                ),
+              })
+            )
+          ),
+          ar: v.optional(
+            v.array(
+              v.object({
+                stepNumber: v.number(),
+                text: v.string(),
+                timeInMinutes: v.optional(v.number()),
+                temperature: v.optional(
+                  v.object({
+                    value: v.number(),
+                    unit: v.union(v.literal("F"), v.literal("C")),
+                  }),
+                ),
+              })
+            )
+          ),
+          ja: v.optional(
+            v.array(
+              v.object({
+                stepNumber: v.number(),
+                text: v.string(),
+                timeInMinutes: v.optional(v.number()),
+                temperature: v.optional(
+                  v.object({
+                    value: v.number(),
+                    unit: v.union(v.literal("F"), v.literal("C")),
+                  }),
+                ),
+              })
+            )
+          ),
+          vi: v.optional(
+            v.array(
+              v.object({
+                stepNumber: v.number(),
+                text: v.string(),
+                timeInMinutes: v.optional(v.number()),
+                temperature: v.optional(
+                  v.object({
+                    value: v.number(),
+                    unit: v.union(v.literal("F"), v.literal("C")),
+                  }),
+                ),
+              })
+            )
+          ),
+          tl: v.optional(
+            v.array(
+              v.object({
+                stepNumber: v.number(),
+                text: v.string(),
+                timeInMinutes: v.optional(v.number()),
+                temperature: v.optional(
+                  v.object({
+                    value: v.number(),
+                    unit: v.union(v.literal("F"), v.literal("C")),
+                  }),
+                ),
+              })
+            )
+          ),
+        })
       ),
       cookingMethods: v.optional(
         v.array(

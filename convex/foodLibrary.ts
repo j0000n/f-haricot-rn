@@ -81,6 +81,18 @@ export const listAll = query({
   },
 });
 
+export const getByCode = query({
+  args: {
+    code: v.string(),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("foodLibrary")
+      .withIndex("by_code", (q) => q.eq("code", args.code))
+      .unique();
+  },
+});
+
 export const seed = mutation({
   args: {},
   handler: async (ctx) => {
@@ -430,6 +442,34 @@ export const listNutritionSummaries = query({
           densityHints: row.densityHints,
         })),
       );
+  },
+});
+
+export const updateTranslations = mutation({
+  args: {
+    foodLibraryId: v.id("foodLibrary"),
+    translations: v.object({
+      en: v.object({ singular: v.string(), plural: v.string() }),
+      es: v.object({ singular: v.string(), plural: v.string() }),
+      zh: v.object({ singular: v.string(), plural: v.string() }),
+      fr: v.object({ singular: v.string(), plural: v.string() }),
+      ar: v.object({ singular: v.string(), plural: v.string() }),
+      ja: v.object({ singular: v.string(), plural: v.string() }),
+      vi: v.object({ singular: v.string(), plural: v.string() }),
+      tl: v.object({ singular: v.string(), plural: v.string() }),
+    }),
+  },
+  handler: async (ctx, args) => {
+    const entry = await ctx.db.get(args.foodLibraryId);
+    if (!entry) {
+      throw new Error("Food library entry not found");
+    }
+
+    await ctx.db.patch(args.foodLibraryId, {
+      translations: args.translations,
+    });
+
+    return args.foodLibraryId;
   },
 });
 
