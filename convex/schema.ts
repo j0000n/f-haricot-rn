@@ -112,6 +112,12 @@ const schema = defineSchema({
   })
     .index("email", ["email"])
     .index("phone", ["phone"]),
+  precomputeLocks: defineTable({
+    name: v.string(),
+    lockedUntil: v.number(),
+    lastRunAt: v.optional(v.number()),
+    lastCompletedAt: v.optional(v.number()),
+  }).index("by_name", ["name"]),
   crashReports: defineTable({
     userId: v.optional(v.id("users")),
     message: v.string(),
