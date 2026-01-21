@@ -315,7 +315,21 @@ const getPersonalizedFromCacheOrFallback = async (
     .first();
 
   if (cached && cached.expiresAt > now) {
-    return await loadRecipesByIds(ctx, cached.recipeIds);
+    // Check if there are any recipes newer than the cache timestamp
+    // If so, ignore cache and compute fresh results to include new recipes
+    const newestRecipe = await ctx.db
+      .query("recipes")
+      .withIndex("by_created_at", (q) => q.gt("createdAt", cached.computedAt))
+      .order("desc")
+      .first();
+    
+    const cacheIsStale = newestRecipe !== null;
+    
+    if (!cacheIsStale) {
+      // Return cached results only if no newer recipes exist
+      return await loadRecipesByIds(ctx, cached.recipeIds);
+    }
+    // If cache is stale (newer recipes exist), fall through to compute fresh results
   }
 
   const user = await ctx.db.get(userId);
@@ -1825,9 +1839,27 @@ export const listPersonalizedRails = query({
     const cachedByRail = new Map<RailType, Doc<"userPersonalizedRecipes">>();
     const missingRails: RailType[] = [];
 
-    cachedEntries.forEach((entry, index) => {
-      const railType = railTypes[index];
-      if (entry && entry.expiresAt > now) {
+    // Check cache staleness for all entries in parallel
+    const stalenessChecks = await Promise.all(
+      cachedEntries.map(async (entry, index) => {
+        const railType = railTypes[index];
+        if (entry && entry.expiresAt > now) {
+          // Check if there are any recipes newer than the cache timestamp
+          const newestRecipe = await ctx.db
+            .query("recipes")
+            .withIndex("by_created_at", (q) => q.gt("createdAt", entry.computedAt))
+            .order("desc")
+            .first();
+          
+          const cacheIsStale = newestRecipe !== null;
+          return { railType, entry, cacheIsStale };
+        }
+        return { railType, entry: null, cacheIsStale: true };
+      })
+    );
+
+    stalenessChecks.forEach(({ railType, entry, cacheIsStale }) => {
+      if (entry && !cacheIsStale) {
         cachedByRail.set(railType, entry);
       } else {
         missingRails.push(railType);
