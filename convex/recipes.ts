@@ -3219,11 +3219,13 @@ Captured text: ${sourceSummary}`;
           suggestions = nearby;
 
           try {
+            // Note: translations parameter can be added here when translations become available during ingestion
             const createdId = await ctx.runMutation(api.foodLibrary.ensureProvisional, {
               code: foodCode,
               name: ingredient.originalText || ingredient.displayText || foodCode,
               namespace: foodCode.split(".")[0] || "provisional",
               category: ingredient.category || "Provisional",
+              // translations: ingredient.translations, // Add when translations are available
             });
             foodItemsAdded.push(createdId);
           } catch (error) {
@@ -3696,6 +3698,38 @@ Captured text: ${sourceSummary}`;
       );
     }
 
+    // Extract localized steps if provided by LLM
+    // Note: The prompt should be updated to request sourceStepsLocalized and cookingMethods[].stepsLocalized
+    // For now, we extract them if present but don't require them
+    let normalizedSourceStepsLocalized: {
+      en?: Array<{ stepNumber: number; text: string; timeInMinutes?: number; temperature?: { value: number; unit: "F" | "C" } }>;
+      es?: Array<{ stepNumber: number; text: string; timeInMinutes?: number; temperature?: { value: number; unit: "F" | "C" } }>;
+      zh?: Array<{ stepNumber: number; text: string; timeInMinutes?: number; temperature?: { value: number; unit: "F" | "C" } }>;
+      fr?: Array<{ stepNumber: number; text: string; timeInMinutes?: number; temperature?: { value: number; unit: "F" | "C" } }>;
+      ar?: Array<{ stepNumber: number; text: string; timeInMinutes?: number; temperature?: { value: number; unit: "F" | "C" } }>;
+      ja?: Array<{ stepNumber: number; text: string; timeInMinutes?: number; temperature?: { value: number; unit: "F" | "C" } }>;
+      vi?: Array<{ stepNumber: number; text: string; timeInMinutes?: number; temperature?: { value: number; unit: "F" | "C" } }>;
+      tl?: Array<{ stepNumber: number; text: string; timeInMinutes?: number; temperature?: { value: number; unit: "F" | "C" } }>;
+    } | undefined;
+
+    if (enhanced.sourceStepsLocalized && typeof enhanced.sourceStepsLocalized === "object") {
+      normalizedSourceStepsLocalized = enhanced.sourceStepsLocalized as typeof normalizedSourceStepsLocalized;
+    }
+
+    // Extract localized steps for cooking methods if provided
+    if (normalizedCookingMethods && enhanced.cookingMethods && Array.isArray(enhanced.cookingMethods)) {
+      normalizedCookingMethods = normalizedCookingMethods.map((method, index) => {
+        const enhancedMethod = enhanced.cookingMethods[index];
+        if (enhancedMethod?.stepsLocalized && typeof enhancedMethod.stepsLocalized === "object") {
+          return {
+            ...method,
+            stepsLocalized: enhancedMethod.stepsLocalized as typeof normalizedSourceStepsLocalized,
+          };
+        }
+        return method;
+      });
+    }
+
     // Normalize encodedSteps: if it's an array, convert to JSON string; if string, use as-is; otherwise undefined
     // IMPORTANT: Ensure encodedSteps doesn't accidentally contain sourceSteps data
     let normalizedEncodedSteps: string | undefined;
@@ -3746,6 +3780,7 @@ Captured text: ${sourceSummary}`;
       description: normalizedDescription,
       ingredients: normalizedIngredients,
       sourceSteps: normalizedSourceSteps,
+      ...(normalizedSourceStepsLocalized ? { sourceStepsLocalized: normalizedSourceStepsLocalized } : {}),
       ...(normalizedCookingMethods ? { cookingMethods: normalizedCookingMethods } : {}),
       encodedSteps: normalizedEncodedSteps ?? "",
       encodingVersion,
@@ -5624,6 +5659,130 @@ export const insertFromIngestion = mutation({
           })
         )
       ),
+      sourceStepsLocalized: v.optional(
+        v.object({
+          en: v.optional(
+            v.array(
+              v.object({
+                stepNumber: v.number(),
+                text: v.string(),
+                timeInMinutes: v.optional(v.number()),
+                temperature: v.optional(
+                  v.object({
+                    unit: v.union(v.literal("F"), v.literal("C")),
+                    value: v.number(),
+                  })
+                ),
+              })
+            )
+          ),
+          es: v.optional(
+            v.array(
+              v.object({
+                stepNumber: v.number(),
+                text: v.string(),
+                timeInMinutes: v.optional(v.number()),
+                temperature: v.optional(
+                  v.object({
+                    unit: v.union(v.literal("F"), v.literal("C")),
+                    value: v.number(),
+                  })
+                ),
+              })
+            )
+          ),
+          zh: v.optional(
+            v.array(
+              v.object({
+                stepNumber: v.number(),
+                text: v.string(),
+                timeInMinutes: v.optional(v.number()),
+                temperature: v.optional(
+                  v.object({
+                    unit: v.union(v.literal("F"), v.literal("C")),
+                    value: v.number(),
+                  })
+                ),
+              })
+            )
+          ),
+          fr: v.optional(
+            v.array(
+              v.object({
+                stepNumber: v.number(),
+                text: v.string(),
+                timeInMinutes: v.optional(v.number()),
+                temperature: v.optional(
+                  v.object({
+                    unit: v.union(v.literal("F"), v.literal("C")),
+                    value: v.number(),
+                  })
+                ),
+              })
+            )
+          ),
+          ar: v.optional(
+            v.array(
+              v.object({
+                stepNumber: v.number(),
+                text: v.string(),
+                timeInMinutes: v.optional(v.number()),
+                temperature: v.optional(
+                  v.object({
+                    unit: v.union(v.literal("F"), v.literal("C")),
+                    value: v.number(),
+                  })
+                ),
+              })
+            )
+          ),
+          ja: v.optional(
+            v.array(
+              v.object({
+                stepNumber: v.number(),
+                text: v.string(),
+                timeInMinutes: v.optional(v.number()),
+                temperature: v.optional(
+                  v.object({
+                    unit: v.union(v.literal("F"), v.literal("C")),
+                    value: v.number(),
+                  })
+                ),
+              })
+            )
+          ),
+          vi: v.optional(
+            v.array(
+              v.object({
+                stepNumber: v.number(),
+                text: v.string(),
+                timeInMinutes: v.optional(v.number()),
+                temperature: v.optional(
+                  v.object({
+                    unit: v.union(v.literal("F"), v.literal("C")),
+                    value: v.number(),
+                  })
+                ),
+              })
+            )
+          ),
+          tl: v.optional(
+            v.array(
+              v.object({
+                stepNumber: v.number(),
+                text: v.string(),
+                timeInMinutes: v.optional(v.number()),
+                temperature: v.optional(
+                  v.object({
+                    unit: v.union(v.literal("F"), v.literal("C")),
+                    value: v.number(),
+                  })
+                ),
+              })
+            )
+          ),
+        })
+      ),
       cookingMethods: v.optional(
         v.array(
           v.object({
@@ -5642,6 +5801,130 @@ export const insertFromIngestion = mutation({
               })
             ),
             encodedSteps: v.optional(v.string()),
+            stepsLocalized: v.optional(
+              v.object({
+                en: v.optional(
+                  v.array(
+                    v.object({
+                      stepNumber: v.number(),
+                      text: v.string(),
+                      timeInMinutes: v.optional(v.number()),
+                      temperature: v.optional(
+                        v.object({
+                          unit: v.union(v.literal("F"), v.literal("C")),
+                          value: v.number(),
+                        }),
+                      ),
+                    })
+                  )
+                ),
+                es: v.optional(
+                  v.array(
+                    v.object({
+                      stepNumber: v.number(),
+                      text: v.string(),
+                      timeInMinutes: v.optional(v.number()),
+                      temperature: v.optional(
+                        v.object({
+                          unit: v.union(v.literal("F"), v.literal("C")),
+                          value: v.number(),
+                        }),
+                      ),
+                    })
+                  )
+                ),
+                zh: v.optional(
+                  v.array(
+                    v.object({
+                      stepNumber: v.number(),
+                      text: v.string(),
+                      timeInMinutes: v.optional(v.number()),
+                      temperature: v.optional(
+                        v.object({
+                          unit: v.union(v.literal("F"), v.literal("C")),
+                          value: v.number(),
+                        }),
+                      ),
+                    })
+                  )
+                ),
+                fr: v.optional(
+                  v.array(
+                    v.object({
+                      stepNumber: v.number(),
+                      text: v.string(),
+                      timeInMinutes: v.optional(v.number()),
+                      temperature: v.optional(
+                        v.object({
+                          unit: v.union(v.literal("F"), v.literal("C")),
+                          value: v.number(),
+                        }),
+                      ),
+                    })
+                  )
+                ),
+                ar: v.optional(
+                  v.array(
+                    v.object({
+                      stepNumber: v.number(),
+                      text: v.string(),
+                      timeInMinutes: v.optional(v.number()),
+                      temperature: v.optional(
+                        v.object({
+                          unit: v.union(v.literal("F"), v.literal("C")),
+                          value: v.number(),
+                        }),
+                      ),
+                    })
+                  )
+                ),
+                ja: v.optional(
+                  v.array(
+                    v.object({
+                      stepNumber: v.number(),
+                      text: v.string(),
+                      timeInMinutes: v.optional(v.number()),
+                      temperature: v.optional(
+                        v.object({
+                          unit: v.union(v.literal("F"), v.literal("C")),
+                          value: v.number(),
+                        }),
+                      ),
+                    })
+                  )
+                ),
+                vi: v.optional(
+                  v.array(
+                    v.object({
+                      stepNumber: v.number(),
+                      text: v.string(),
+                      timeInMinutes: v.optional(v.number()),
+                      temperature: v.optional(
+                        v.object({
+                          unit: v.union(v.literal("F"), v.literal("C")),
+                          value: v.number(),
+                        }),
+                      ),
+                    })
+                  )
+                ),
+                tl: v.optional(
+                  v.array(
+                    v.object({
+                      stepNumber: v.number(),
+                      text: v.string(),
+                      timeInMinutes: v.optional(v.number()),
+                      temperature: v.optional(
+                        v.object({
+                          unit: v.union(v.literal("F"), v.literal("C")),
+                          value: v.number(),
+                        }),
+                      ),
+                    })
+                  )
+                ),
+              })
+            ),
           })
         )
       ),

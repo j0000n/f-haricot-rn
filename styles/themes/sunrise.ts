@@ -117,6 +117,6 @@ export const sunriseTheme: ThemeDefinition = {
     },
   },
   assets: {
-    logo: require("@/assets/images/sunrise-logo.svg"),
+    logo: require("@/assets/images/logo-jan-23.svg"),
   },
 };

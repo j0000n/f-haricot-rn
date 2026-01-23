@@ -1,0 +1,9 @@
+** BUILD FAILED **
+
+
+The following build commands failed:
+	CompileC /Users/jlw/Library/Developer/Xcode/DerivedData/haricot-dzytsbhnriqwkccnwockfisopxxh/Build/Intermediates.noindex/Pods.build/Debug-iphonesimulator/ReactCodegen.build/Objects-normal/arm64/ComponentDescriptors-583ba6c6a4a66ec8fe3a3b490b828c22.o /Users/jlw/haricot/react-native/ios/build/generated/ios/react/renderer/components/RNCSlider/ComponentDescriptors.cpp normal arm64 c++ com.apple.compilers.llvm.clang.1_0.compiler (in target 'ReactCodegen' from project 'Pods')
+	CompileC /Users/jlw/Library/Developer/Xcode/DerivedData/haricot-dzytsbhnriqwkccnwockfisopxxh/Build/Intermediates.noindex/Pods.build/Debug-iphonesimulator/ReactAppDependencyProvider.build/Objects-normal/arm64/RCTAppDependencyProvider.o /Users/jlw/haricot/react-native/ios/build/generated/ios/RCTAppDependencyProvider.mm normal arm64 objective-c++ com.apple.compilers.llvm.clang.1_0.compiler (in target 'ReactAppDependencyProvider' from project 'Pods')
+	CompileC /Users/jlw/Library/Developer/Xcode/DerivedData/haricot-dzytsbhnriqwkccnwockfisopxxh/Build/Intermediates.noindex/Pods.build/Debug-iphonesimulator/ReactCodegen.build/Objects-normal/arm64/ComponentDescriptors-08d4fb218fdd72e02aa5a7c9eefaa580.o /Users/jlw/haricot/react-native/ios/build/generated/ios/react/renderer/components/rnsvg/ComponentDescriptors.cpp normal arm64 c++ com.apple.compilers.llvm.clang.1_0.compiler (in target 'ReactCodegen' from project 'Pods')
+	Building workspace haricot with scheme haricot and configuration Debug
+(4 failures)

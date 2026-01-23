@@ -254,7 +254,7 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
 
         {variant === "detailed" && (
           <Text style={styles.description} numberOfLines={2}>
-           {recipe._id} - {recipe.description[currentLanguage] || recipe.description.en}
+            {recipe.description[currentLanguage] || recipe.description.en}
           </Text>
         )}
 

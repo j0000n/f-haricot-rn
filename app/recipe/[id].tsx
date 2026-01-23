@@ -306,13 +306,14 @@ export default function RecipeDetailScreen() {
       const method = recipe.cookingMethods.find((m) => m.methodName === selectedCookingMethod);
       if (method) {
         // Decode steps for this method (if encodedSteps exists) or use sourceSteps
+        // Prioritize method-specific localized steps, fallback to recipe-level localized steps
         return decodeEncodedSteps(
           method.encodedSteps,
           recipeLanguage,
           "cards",
           method.steps,
           translationGuides ?? undefined,
-          undefined, // sourceStepsLocalized not available for cooking methods yet
+          method.stepsLocalized || recipe.sourceStepsLocalized,
         );
       }
     }
@@ -324,6 +325,7 @@ export default function RecipeDetailScreen() {
       "cards",
       recipe.sourceSteps,
       translationGuides ?? undefined,
+      recipe.sourceStepsLocalized,
     );
   }, [
     recipe,
@@ -332,9 +334,9 @@ export default function RecipeDetailScreen() {
     recipe?.cookingMethods,
     recipe?.encodedSteps,
     recipe?.sourceSteps,
+    recipe?.sourceStepsLocalized,
     recipeLanguage,
     translationGuides,
-    recipe?.sourceStepsLocalized,
   ]);
 
   // Set default selected method on mount (must be called before conditional returns)

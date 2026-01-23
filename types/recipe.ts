@@ -47,6 +47,16 @@ export interface CookingMethod {
   methodName: string;
   steps: RecipeSourceStep[];
   encodedSteps?: string;
+  stepsLocalized?: {
+    en?: RecipeSourceStep[];
+    es?: RecipeSourceStep[];
+    zh?: RecipeSourceStep[];
+    fr?: RecipeSourceStep[];
+    ar?: RecipeSourceStep[];
+    ja?: RecipeSourceStep[];
+    vi?: RecipeSourceStep[];
+    tl?: RecipeSourceStep[];
+  };
 }
 
 export interface RecipeAttribution {

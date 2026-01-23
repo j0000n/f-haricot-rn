@@ -22,6 +22,7 @@ const SVG_LOGO_PATHS: Record<string, string> = {
   "@/assets/images/1950s.svg": "@/assets/images/1950s.svg",
   "@/assets/images/1960s.svg": "@/assets/images/1960s.svg",
   "@/assets/images/1990s.svg": "@/assets/images/1990s.svg",
+  "@/assets/images/logo-jan-23.svg": "@/assets/images/logo-jan-23.svg",
 };
 
 export function BrandLogo({
@@ -37,6 +38,7 @@ export function BrandLogo({
 
   // Get logo source and path
   const logoSource = assets.logo;
+  console.log("logoSource", logoSource);
 
   // EARLY DETECTION: Check for React components FIRST (before any other logic)
   // SVG transformers can return components in various formats:

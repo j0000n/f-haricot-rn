@@ -188,13 +188,14 @@ export const RecipeRunner: React.FC<RecipeRunnerProps> = ({
       // Find selected method's steps
       const method = recipe.cookingMethods!.find((m) => m.methodName === selectedCookingMethod);
       if (method) {
+        // Prioritize method-specific localized steps, fallback to recipe-level localized steps
         return decodeEncodedSteps(
           method.encodedSteps,
           language,
           "runner",
           method.steps,
           translationGuides,
-          undefined, // sourceStepsLocalized not available for cooking methods yet
+          method.stepsLocalized || recipe.sourceStepsLocalized,
         );
       }
     }
@@ -214,6 +215,7 @@ export const RecipeRunner: React.FC<RecipeRunnerProps> = ({
     recipe.cookingMethods,
     recipe.encodedSteps,
     recipe.sourceSteps,
+    recipe.sourceStepsLocalized,
     language,
     translationGuides,
   ]);
