@@ -43,6 +43,22 @@ export interface RecipeSourceStep {
   temperature?: RecipeStepTemperature;
 }
 
+export interface CookingMethod {
+  methodName: string;
+  steps: RecipeSourceStep[];
+  encodedSteps?: string;
+  stepsLocalized?: {
+    en?: RecipeSourceStep[];
+    es?: RecipeSourceStep[];
+    zh?: RecipeSourceStep[];
+    fr?: RecipeSourceStep[];
+    ar?: RecipeSourceStep[];
+    ja?: RecipeSourceStep[];
+    vi?: RecipeSourceStep[];
+    tl?: RecipeSourceStep[];
+  };
+}
+
 export interface RecipeAttribution {
   source: string;
   sourceUrl: string;
@@ -65,6 +81,17 @@ export interface Recipe {
   description: LocalizedRecipeText;
   ingredients: RecipeIngredient[];
   sourceSteps?: RecipeSourceStep[];
+  sourceStepsLocalized?: {
+    en?: RecipeSourceStep[];
+    es?: RecipeSourceStep[];
+    zh?: RecipeSourceStep[];
+    fr?: RecipeSourceStep[];
+    ar?: RecipeSourceStep[];
+    ja?: RecipeSourceStep[];
+    vi?: RecipeSourceStep[];
+    tl?: RecipeSourceStep[];
+  };
+  cookingMethods?: CookingMethod[];
   emojiTags: string[];
   prepTimeMinutes: number;
   cookTimeMinutes: number;
@@ -107,5 +134,6 @@ export interface Recipe {
     fiberPerServing?: number;
     sugarsPerServing?: number;
     sodiumPerServing?: number;
+    servingSize?: string;
   };
 }

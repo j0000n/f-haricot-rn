@@ -358,9 +358,11 @@ export const mapSpeechToInventory = action({
       // For now, use the item code as the name
       for (const itemCode of unmatchedItems) {
         try {
+          // Note: translations parameter can be added here when translations become available
           await ctx.runMutation(api.foodLibrary.ensureProvisional, {
             code: itemCode,
             name: itemCode.split(".").pop() || itemCode, // Use last part of code as name
+            // translations: itemTranslations, // Add when translations are available
           });
           warnings.push(
             `Created provisional entry for "${itemCode}". Please review and complete the entry.`
@@ -447,10 +449,12 @@ export const applyInventoryUpdates = mutation({
         // Ensure item code exists in food library
         if (!libraryCodes.has(itemCode)) {
           // Create provisional entry
+          // Note: translations parameter can be added here when translations become available
           try {
             await ctx.runMutation(api.foodLibrary.ensureProvisional, {
               code: itemCode,
               name: itemCode.split(".").pop() || itemCode,
+              // translations: itemTranslations, // Add when translations are available
             });
             // Refresh library codes
             libraryCodes.add(itemCode);

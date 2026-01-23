@@ -112,6 +112,12 @@ const schema = defineSchema({
   })
     .index("email", ["email"])
     .index("phone", ["phone"]),
+  precomputeLocks: defineTable({
+    name: v.string(),
+    lockedUntil: v.number(),
+    lastRunAt: v.optional(v.number()),
+    lastCompletedAt: v.optional(v.number()),
+  }).index("by_name", ["name"]),
   crashReports: defineTable({
     userId: v.optional(v.id("users")),
     message: v.string(),
@@ -344,6 +350,275 @@ const schema = defineSchema({
         })
       )
     ),
+    sourceStepsLocalized: v.optional(
+      v.object({
+        en: v.optional(
+          v.array(
+            v.object({
+              stepNumber: v.number(),
+              text: v.string(),
+              timeInMinutes: v.optional(v.number()),
+              temperature: v.optional(
+                v.object({
+                  value: v.number(),
+                  unit: v.union(v.literal("F"), v.literal("C")),
+                }),
+              ),
+            })
+          )
+        ),
+        es: v.optional(
+          v.array(
+            v.object({
+              stepNumber: v.number(),
+              text: v.string(),
+              timeInMinutes: v.optional(v.number()),
+              temperature: v.optional(
+                v.object({
+                  value: v.number(),
+                  unit: v.union(v.literal("F"), v.literal("C")),
+                }),
+              ),
+            })
+          )
+        ),
+        zh: v.optional(
+          v.array(
+            v.object({
+              stepNumber: v.number(),
+              text: v.string(),
+              timeInMinutes: v.optional(v.number()),
+              temperature: v.optional(
+                v.object({
+                  value: v.number(),
+                  unit: v.union(v.literal("F"), v.literal("C")),
+                }),
+              ),
+            })
+          )
+        ),
+        fr: v.optional(
+          v.array(
+            v.object({
+              stepNumber: v.number(),
+              text: v.string(),
+              timeInMinutes: v.optional(v.number()),
+              temperature: v.optional(
+                v.object({
+                  value: v.number(),
+                  unit: v.union(v.literal("F"), v.literal("C")),
+                }),
+              ),
+            })
+          )
+        ),
+        ar: v.optional(
+          v.array(
+            v.object({
+              stepNumber: v.number(),
+              text: v.string(),
+              timeInMinutes: v.optional(v.number()),
+              temperature: v.optional(
+                v.object({
+                  value: v.number(),
+                  unit: v.union(v.literal("F"), v.literal("C")),
+                }),
+              ),
+            })
+          )
+        ),
+        ja: v.optional(
+          v.array(
+            v.object({
+              stepNumber: v.number(),
+              text: v.string(),
+              timeInMinutes: v.optional(v.number()),
+              temperature: v.optional(
+                v.object({
+                  value: v.number(),
+                  unit: v.union(v.literal("F"), v.literal("C")),
+                }),
+              ),
+            })
+          )
+        ),
+        vi: v.optional(
+          v.array(
+            v.object({
+              stepNumber: v.number(),
+              text: v.string(),
+              timeInMinutes: v.optional(v.number()),
+              temperature: v.optional(
+                v.object({
+                  value: v.number(),
+                  unit: v.union(v.literal("F"), v.literal("C")),
+                }),
+              ),
+            })
+          )
+        ),
+        tl: v.optional(
+          v.array(
+            v.object({
+              stepNumber: v.number(),
+              text: v.string(),
+              timeInMinutes: v.optional(v.number()),
+              temperature: v.optional(
+                v.object({
+                  value: v.number(),
+                  unit: v.union(v.literal("F"), v.literal("C")),
+                }),
+              ),
+            })
+          )
+        ),
+      })
+    ),
+    cookingMethods: v.optional(
+      v.array(
+        v.object({
+          methodName: v.string(),
+          steps: v.array(
+            v.object({
+              stepNumber: v.number(),
+              text: v.string(),
+              timeInMinutes: v.optional(v.number()),
+              temperature: v.optional(
+                v.object({
+                  value: v.number(),
+                  unit: v.union(v.literal("F"), v.literal("C")),
+                }),
+              ),
+            })
+          ),
+          encodedSteps: v.optional(v.string()),
+          stepsLocalized: v.optional(
+            v.object({
+              en: v.optional(
+                v.array(
+                  v.object({
+                    stepNumber: v.number(),
+                    text: v.string(),
+                    timeInMinutes: v.optional(v.number()),
+                    temperature: v.optional(
+                      v.object({
+                        value: v.number(),
+                        unit: v.union(v.literal("F"), v.literal("C")),
+                      }),
+                    ),
+                  })
+                )
+              ),
+              es: v.optional(
+                v.array(
+                  v.object({
+                    stepNumber: v.number(),
+                    text: v.string(),
+                    timeInMinutes: v.optional(v.number()),
+                    temperature: v.optional(
+                      v.object({
+                        value: v.number(),
+                        unit: v.union(v.literal("F"), v.literal("C")),
+                      }),
+                    ),
+                  })
+                )
+              ),
+              zh: v.optional(
+                v.array(
+                  v.object({
+                    stepNumber: v.number(),
+                    text: v.string(),
+                    timeInMinutes: v.optional(v.number()),
+                    temperature: v.optional(
+                      v.object({
+                        value: v.number(),
+                        unit: v.union(v.literal("F"), v.literal("C")),
+                      }),
+                    ),
+                  })
+                )
+              ),
+              fr: v.optional(
+                v.array(
+                  v.object({
+                    stepNumber: v.number(),
+                    text: v.string(),
+                    timeInMinutes: v.optional(v.number()),
+                    temperature: v.optional(
+                      v.object({
+                        value: v.number(),
+                        unit: v.union(v.literal("F"), v.literal("C")),
+                      }),
+                    ),
+                  })
+                )
+              ),
+              ar: v.optional(
+                v.array(
+                  v.object({
+                    stepNumber: v.number(),
+                    text: v.string(),
+                    timeInMinutes: v.optional(v.number()),
+                    temperature: v.optional(
+                      v.object({
+                        value: v.number(),
+                        unit: v.union(v.literal("F"), v.literal("C")),
+                      }),
+                    ),
+                  })
+                )
+              ),
+              ja: v.optional(
+                v.array(
+                  v.object({
+                    stepNumber: v.number(),
+                    text: v.string(),
+                    timeInMinutes: v.optional(v.number()),
+                    temperature: v.optional(
+                      v.object({
+                        value: v.number(),
+                        unit: v.union(v.literal("F"), v.literal("C")),
+                      }),
+                    ),
+                  })
+                )
+              ),
+              vi: v.optional(
+                v.array(
+                  v.object({
+                    stepNumber: v.number(),
+                    text: v.string(),
+                    timeInMinutes: v.optional(v.number()),
+                    temperature: v.optional(
+                      v.object({
+                        value: v.number(),
+                        unit: v.union(v.literal("F"), v.literal("C")),
+                      }),
+                    ),
+                  })
+                )
+              ),
+              tl: v.optional(
+                v.array(
+                  v.object({
+                    stepNumber: v.number(),
+                    text: v.string(),
+                    timeInMinutes: v.optional(v.number()),
+                    temperature: v.optional(
+                      v.object({
+                        value: v.number(),
+                        unit: v.union(v.literal("F"), v.literal("C")),
+                      }),
+                    ),
+                  })
+                )
+              ),
+            })
+          ),
+        })
+      )
+    ),
     emojiTags: v.array(v.string()),
     prepTimeMinutes: v.number(),
     cookTimeMinutes: v.number(),
@@ -425,6 +700,7 @@ const schema = defineSchema({
     difficultyLevel: v.optional(
       v.union(v.literal("easy"), v.literal("medium"), v.literal("hard"))
     ),
+    searchText: v.optional(v.string()),
     nutritionProfile: v.optional(
       v.object({
         caloriesPerServing: v.number(),
@@ -434,18 +710,25 @@ const schema = defineSchema({
         fiberPerServing: v.optional(v.number()),
         sugarsPerServing: v.optional(v.number()),
         sodiumPerServing: v.optional(v.number()),
+        servingSize: v.optional(v.string()),
       })
     ),
   })
     .index("by_emoji_tags", ["emojiTags"])
     .index("by_total_time", ["totalTimeMinutes"])
     .index("by_created_at", ["createdAt"])
+    .index("by_cook_time", ["cookTimeMinutes"])
+    .index("by_prep_time", ["prepTimeMinutes"])
+    .index("by_dietary_tag_created_at", ["dietaryTags", "createdAt"])
+    .index("by_cuisine_tag_created_at", ["cuisineTags", "createdAt"])
+    .index("by_cooking_style_tag_created_at", ["cookingStyleTags", "createdAt"])
     .index("by_source_host", ["sourceHost"])
     .index("by_author_name", ["authorName"])
     .index("by_author_instagram", ["authorSocialInstagram"])
     .index("by_author_pinterest", ["authorSocialPinterest"])
     .index("by_author_youtube", ["authorSocialYoutube"])
-    .index("by_author_facebook", ["authorSocialFacebook"]),
+    .index("by_author_facebook", ["authorSocialFacebook"])
+    .searchIndex("search_recipes", { searchField: "searchText" }),
   translationGuides: defineTable({
     code: v.string(),
     language: v.string(),

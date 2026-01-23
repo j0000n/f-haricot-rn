@@ -405,14 +405,14 @@ export const generateAndSaveRecipeImages = internalAction({
       console.log(`[generateAndSaveRecipeImages] Generating enhanced subject for recipe ${args.recipeId}`);
       
       // Map ingredients to only the fields needed by generateEnhancedRecipeSubject
-      const ingredientsForPrompt = recipe.ingredients.map((ing) => ({
+      const ingredientsForPrompt = recipe.ingredients.map((ing: { foodCode: string; originalText?: string; preparation?: string }) => ({
         foodCode: ing.foodCode,
         originalText: ing.originalText,
         preparation: ing.preparation,
       }));
       
       // Map sourceSteps to only the text field if they exist
-      const stepsForPrompt = recipe.sourceSteps?.map((step) => ({
+      const stepsForPrompt = recipe.sourceSteps?.map((step: { text: string }) => ({
         text: step.text,
       }));
       

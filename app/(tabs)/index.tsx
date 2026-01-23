@@ -13,6 +13,7 @@ import { useWidgetSync } from "@/hooks/useWidgetSync";
 import { useTranslation } from "@/i18n/useTranslation";
 import createHomeStyles from "@/styles/homeStyles";
 import { useThemedStyles, useTokens } from "@/styles/tokens";
+import { getRecipeLanguage } from "@/utils/translation";
 import type { InventoryDisplayItem } from "@/types/food";
 import type { NutrientDish } from "@/types/nutrition";
 import type { Recipe } from "@/types/recipe";
@@ -20,7 +21,7 @@ import type { Id } from "@/convex/_generated/dataModel";
 import { decodeEncodedSteps } from "@/utils/decodeEncodedSteps";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { Link, useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { LinkPreviewRail } from "@/components/LinkPreviewRail";
 import { useLinkPreviews, createFallbackImage } from "@/hooks/useLinkPreviews";
@@ -92,6 +93,28 @@ export default function HomeScreen() {
   const [isSeedingLists, setIsSeedingLists] = useState(false);
   const [isSeedingFoodLibrary, setIsSeedingFoodLibrary] = useState(false);
   const [isIngestingRecipe, setIsIngestingRecipe] = useState(false);
+  // Client-side function to detect media type from URL
+  const detectMediaTypeFromUrl = (url: string): typeof sourceType => {
+    if (!url) return "website";
+    try {
+      const urlObj = new URL(url);
+      const hostname = urlObj.hostname.toLowerCase();
+      
+      if (hostname.includes('tiktok.com')) return 'tiktok';
+      if (hostname.includes('youtube.com') || hostname.includes('youtu.be')) return 'youtube';
+      if (hostname.includes('instagram.com')) return 'instagram';
+      if (hostname.includes('pinterest.com') || hostname.includes('pin.it')) return 'pinterest';
+      if (hostname.includes('facebook.com') || hostname.includes('fb.com')) return 'facebook';
+      if (hostname.includes('twitter.com') || hostname.includes('x.com')) return 'twitter';
+      if (hostname.includes('reddit.com')) return 'reddit';
+      if (hostname.includes('blogspot.com') || hostname.includes('wordpress.com') || 
+          hostname.includes('medium.com') || hostname.includes('substack.com')) return 'blog';
+      return 'website';
+    } catch {
+      return 'website';
+    }
+  };
+
   const [sourceType, setSourceType] = useState<
     | "website"
     | "audio"
@@ -118,6 +141,14 @@ export default function HomeScreen() {
   const [sourceUrl, setSourceUrl] = useState("");
   const [rawText, setRawText] = useState("");
   const [ingestError, setIngestError] = useState<string | null>(null);
+
+  // Auto-detect source type when URL changes
+  useEffect(() => {
+    if (sourceUrl.trim()) {
+      const detected = detectMediaTypeFromUrl(sourceUrl.trim());
+      setSourceType(detected);
+    }
+  }, [sourceUrl]);
   const [ingestResult, setIngestResult] = useState<
     | {
         recipeId: Id<"recipes">;
@@ -132,46 +163,26 @@ export default function HomeScreen() {
   const tokens = useTokens();
   const { user, inventoryItems, inventoryEntries, isLoading: isInventoryLoading } =
     useInventoryDisplay();
-  // Personalized recipe queries
-  const personalizedRecipes = useQuery(api.recipes.listPersonalized, {
+  const personalizedRails = useQuery(api.recipes.listPersonalizedRails, {
     limit: 10,
-    railType: "forYou",
+    railTypes: [
+      "forYou",
+      "readyToCook",
+      "quickEasy",
+      "cuisines",
+      "householdCompatible",
+    ],
   });
-  const quickMeals = useQuery(
-    api.recipes.listByPreferences,
-    user?.cookingStylePreferences && user.cookingStylePreferences.length > 0
-      ? {
-          cookingStylePreferences: user.cookingStylePreferences as string[],
-          maxPrepTime: 15,
-          maxCookTime: 30,
-          limit: 10,
-        }
-      : "skip"
-  );
-  const cuisineRecipes = useQuery(
-    api.recipes.listByPreferences,
-    user?.favoriteCuisines && user.favoriteCuisines.length > 0
-      ? {
-          favoriteCuisines: user.favoriteCuisines as string[],
-          limit: 10,
-        }
-      : "skip"
-  );
-  const readyToCook = useQuery(api.recipes.listPersonalized, {
-    limit: 10,
-    railType: "readyToCook",
-  });
-  const householdCompatible = useQuery(api.recipes.listPersonalized, {
-    limit: 10,
-    railType: "householdCompatible",
-  });
+  const personalizedRecipes = personalizedRails?.forYou ?? [];
+  const quickMeals = personalizedRails?.quickEasy ?? [];
+  const cuisineRecipes = personalizedRails?.cuisines ?? [];
+  const readyToCook = personalizedRails?.readyToCook ?? [];
+  const householdCompatible = personalizedRails?.householdCompatible ?? [];
 
   // Fallback to featured recipes if no personalized recipes available
   const featuredRecipes = useQuery(api.recipes.listFeatured, { limit: 10 });
   const recipes =
-    personalizedRecipes && personalizedRecipes.length > 0
-      ? personalizedRecipes
-      : featuredRecipes ?? [];
+    personalizedRecipes.length > 0 ? personalizedRecipes : featuredRecipes ?? [];
   const [searchTerm, setSearchTerm] = useState("");
   const trimmedSearchTerm = searchTerm.trim();
   const { previews: linkPreviews, isLoading: isLoadingLinkPreviews } = useLinkPreviews(
@@ -341,10 +352,12 @@ export default function HomeScreen() {
     try {
       setIsIngestingRecipe(true);
       setIngestError(null);
+      // sourceType is now optional - backend will auto-detect if not provided
       const response = await ingestUniversal({
-        sourceType,
         sourceUrl: sourceUrl.trim(),
         rawText: rawText.trim() || undefined,
+        // Optionally pass sourceType if user wants to override auto-detection
+        ...(sourceType && sourceType !== "website" ? { sourceType } : {}),
       });
 
       setIngestResult(response);
@@ -363,7 +376,8 @@ export default function HomeScreen() {
     [searchPreview],
   );
   const isSearching = searchPreview === undefined && trimmedSearchTerm.length > 0;
-  const language = (i18n.language || "en") as keyof Recipe["recipeName"];
+  // Map i18n language code (e.g., "fr-FR") to recipe language code (e.g., "fr")
+  const language = getRecipeLanguage(i18n.language || "en") as keyof Recipe["recipeName"];
   const createdRecipe = useQuery(
     api.recipes.getById,
     createdRecipeId ? { id: createdRecipeId } : "skip",
@@ -378,6 +392,7 @@ export default function HomeScreen() {
             "cards",
             createdRecipe.sourceSteps,
             translationGuides ?? undefined,
+            createdRecipe.sourceStepsLocalized,
           )
         : [],
     [createdRecipe, language, translationGuides],
@@ -510,31 +525,13 @@ export default function HomeScreen() {
             The UI below calls the same Convex action used by the ingestion pipeline. Use it to try URLs, paste OCR text, or validate social posts. Missing ingredients are auto-added to the food library so nothing blocks testing.
           </Text>
 
-          <View style={styles.sourceTypeRow}>
-            {["website", "instagram", "tiktok", "pinterest", "youtube", "photograph", "text", "other"].map(
-              (type) => (
-                <Pressable
-                  key={type}
-                  onPress={() => setSourceType(type as typeof sourceType)}
-                  style={[
-                    styles.sourcePill,
-                    sourceType === type && styles.sourcePillActive,
-                  ]}
-                  accessibilityRole="button"
-                >
-                  <Text
-                    style={
-                      sourceType === type
-                        ? styles.sourcePillTextActive
-                        : styles.sourcePillText
-                    }
-                  >
-                    {type}
-                  </Text>
-                </Pressable>
-              ),
-            )}
-          </View>
+          {sourceUrl && (
+            <View style={styles.sourceTypeRow}>
+              <Text style={styles.ingestionLabel}>
+                Detected source type: <Text style={{ fontWeight: "bold" }}>{sourceType}</Text>
+              </Text>
+            </View>
+          )}
 
           <Text style={styles.ingestionLabel}>Link or source URL</Text>
           <TextInput

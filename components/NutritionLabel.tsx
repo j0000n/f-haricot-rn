@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 
 import type { ThemeTokens } from "@/styles/themes/types";
 import { useThemedStyles } from "@/styles/tokens";
+import { useTranslation } from "@/i18n/useTranslation";
 
 type NutrientLine = {
   key: string;
@@ -188,6 +189,7 @@ export const NutritionLabel: React.FC<NutritionLabelProps> = ({
   showGoalContextLabel = false,
 }) => {
   const styles = useThemedStyles<Styles>(createStyles);
+  const { t } = useTranslation();
 
   return (
     <View style={styles.container} accessibilityRole="summary">
@@ -197,16 +199,18 @@ export const NutritionLabel: React.FC<NutritionLabelProps> = ({
         </View>
       ) : null}
 
-      <Text style={styles.title}>Nutrition Facts</Text>
+      <Text style={styles.title}>{t("recipe.nutrition.nutritionFacts")}</Text>
       <View style={styles.boldDivider} />
 
       <View style={styles.labelRow}>
         <Text style={styles.labelText}>
-          {facts.servingPerContainer ? `${facts.servingPerContainer} Servings Per Container` : "1 Serving Per Container"}
+          {facts.servingPerContainer 
+            ? t("recipe.nutrition.servingsPerContainer", { count: facts.servingPerContainer })
+            : t("recipe.nutrition.servingsPerContainerOne")}
         </Text>
       </View>
       <View style={styles.labelRow}>
-        <Text style={styles.labelText}>Serving Size</Text>
+        <Text style={styles.labelText}>{t("recipe.nutrition.servingSize")}</Text>
         <Text style={styles.labelText}>{facts.servingSize}</Text>
       </View>
 
@@ -214,14 +218,14 @@ export const NutritionLabel: React.FC<NutritionLabelProps> = ({
 
       <View style={styles.calorieRow}>
         <View>
-          <Text style={styles.caloriesLabel}>Amount Per Serving</Text>
-          <Text style={styles.caloriesLabel}>Calories</Text>
+          <Text style={styles.caloriesLabel}>{t("recipe.nutrition.amountPerServing")}</Text>
+          <Text style={styles.caloriesLabel}>{t("recipe.nutrition.calories")}</Text>
         </View>
         <Text style={styles.caloriesValue}>{facts.calories}</Text>
       </View>
 
       <View style={styles.boldDivider} />
-      <Text style={styles.dailyValueHeading}>% Daily Value *</Text>
+      <Text style={styles.dailyValueHeading}>{t("recipe.nutrition.dailyValue")}</Text>
 
       {facts.nutrients.map((line) => {
         const percent = resolveDailyValuePercent(line, goalContext, dailyValues);
@@ -246,7 +250,11 @@ export const NutritionLabel: React.FC<NutritionLabelProps> = ({
 
       {facts.caloriesPerGram ? (
         <Text style={styles.caloriesPerGram}>
-          Calories per gram: Fat {facts.caloriesPerGram.fat} • Carbohydrate {facts.caloriesPerGram.carbohydrate} • Protein {facts.caloriesPerGram.protein}
+          {t("recipe.nutrition.caloriesPerGram", {
+            fat: facts.caloriesPerGram.fat,
+            carb: facts.caloriesPerGram.carbohydrate,
+            protein: facts.caloriesPerGram.protein,
+          })}
         </Text>
       ) : null}
     </View>

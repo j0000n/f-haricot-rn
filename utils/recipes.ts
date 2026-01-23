@@ -45,7 +45,7 @@ export function formatRecipeTime(totalMinutes: number, t: TFunction): string {
 }
 
 export type IngredientDisplayOptions = {
-  foodLibrary: Map<string, Doc<"foodLibrary">>;
+  foodLibrary: Map<string, Pick<Doc<"foodLibrary">, "translations" | "name">>;
   language: keyof Recipe["recipeName"];
 };
 

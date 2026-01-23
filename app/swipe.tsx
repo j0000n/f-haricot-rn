@@ -13,10 +13,11 @@ export default function SwipeScreen() {
   const styles = useThemedStyles(createHomeStyles);
   const router = useRouter();
   const { user, inventoryEntries } = useInventoryDisplay();
-  const personalizedRecipes = useQuery(api.recipes.listPersonalized, {
+  const personalizedRails = useQuery(api.recipes.listPersonalizedRails, {
     limit: 25,
-    railType: "forYou",
+    railTypes: ["forYou"],
   });
+  const personalizedRecipes = personalizedRails?.forYou ?? [];
   const featuredRecipes = useQuery(api.recipes.listFeatured, { limit: 25 });
   const recipeList = useMemo(
     () =>

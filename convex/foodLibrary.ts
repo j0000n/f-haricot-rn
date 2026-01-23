@@ -81,6 +81,32 @@ export const listAll = query({
   },
 });
 
+export const getByCodes = query({
+  args: {
+    codes: v.array(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const uniqueCodes = Array.from(
+      new Set(args.codes.map((code) => code.trim()).filter(Boolean)),
+    );
+
+    if (uniqueCodes.length === 0) {
+      return [] as Doc<"foodLibrary">[];
+    }
+
+    const entries = await Promise.all(
+      uniqueCodes.map((code) =>
+        ctx.db
+          .query("foodLibrary")
+          .withIndex("by_code", (q) => q.eq("code", code))
+          .unique(),
+      ),
+    );
+
+    return entries.filter(Boolean) as Doc<"foodLibrary">[];
+  },
+});
+
 export const seed = mutation({
   args: {},
   handler: async (ctx) => {
@@ -127,6 +153,18 @@ export const ensureProvisional = mutation({
     name: v.string(),
     namespace: v.optional(v.string()),
     category: v.optional(v.string()),
+    translations: v.optional(
+      v.object({
+        en: v.object({ singular: v.string(), plural: v.string() }),
+        es: v.object({ singular: v.string(), plural: v.string() }),
+        zh: v.object({ singular: v.string(), plural: v.string() }),
+        fr: v.object({ singular: v.string(), plural: v.string() }),
+        ar: v.object({ singular: v.string(), plural: v.string() }),
+        ja: v.object({ singular: v.string(), plural: v.string() }),
+        vi: v.object({ singular: v.string(), plural: v.string() }),
+        tl: v.object({ singular: v.string(), plural: v.string() }),
+      }),
+    ),
   },
   handler: async (ctx, args) => {
     const existing = await ctx.db
@@ -144,7 +182,9 @@ export const ensureProvisional = mutation({
     const baseCategory = args.category || "Provisional";
     const storageLocation = inferStorageLocation(baseCategory);
     const languages = ["en", "es", "zh", "fr", "ar", "ja", "vi", "tl"] as const;
-    const blankTranslations = languages.reduce(
+    
+    // Use provided translations if available, otherwise create fallback translations
+    const translations = args.translations || languages.reduce(
       (acc, lang) => {
         acc[lang] = {
           singular: fallbackName,
@@ -179,7 +219,7 @@ export const ensureProvisional = mutation({
       code: args.code,
       namespace,
       name: fallbackName,
-      translations: blankTranslations,
+      translations,
       category: baseCategory,
       categoryTranslations,
       defaultImageUrl:
@@ -430,6 +470,34 @@ export const listNutritionSummaries = query({
           densityHints: row.densityHints,
         })),
       );
+  },
+});
+
+export const updateTranslations = mutation({
+  args: {
+    foodLibraryId: v.id("foodLibrary"),
+    translations: v.object({
+      en: v.object({ singular: v.string(), plural: v.string() }),
+      es: v.object({ singular: v.string(), plural: v.string() }),
+      zh: v.object({ singular: v.string(), plural: v.string() }),
+      fr: v.object({ singular: v.string(), plural: v.string() }),
+      ar: v.object({ singular: v.string(), plural: v.string() }),
+      ja: v.object({ singular: v.string(), plural: v.string() }),
+      vi: v.object({ singular: v.string(), plural: v.string() }),
+      tl: v.object({ singular: v.string(), plural: v.string() }),
+    }),
+  },
+  handler: async (ctx, args) => {
+    const entry = await ctx.db.get(args.foodLibraryId);
+    if (!entry) {
+      throw new Error("Food library entry not found");
+    }
+
+    await ctx.db.patch(args.foodLibraryId, {
+      translations: args.translations,
+    });
+
+    return args.foodLibraryId;
   },
 });
 

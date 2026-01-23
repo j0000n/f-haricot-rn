@@ -1,4 +1,5 @@
-import { action, internalAction, mutation, query } from "./_generated/server";
+import { action, internalAction, internalQuery, mutation, query } from "./_generated/server";
+import type { QueryCtx } from "./_generated/server";
 import { v } from "convex/values";
 import { Doc, Id } from "./_generated/dataModel";
 import { api, internal } from "./_generated/api";
@@ -37,9 +38,33 @@ interface RecipeCompatibility {
 }
 
 const CRITICAL_DIETARY_RESTRICTIONS = ["Halal", "Kosher"];
+const DEFAULT_PERSONALIZED_LIMIT = 10;
+const FALLBACK_RECIPE_SCAN_LIMIT = 200;
+
+type RailType =
+  | "forYou"
+  | "readyToCook"
+  | "quickEasy"
+  | "cuisines"
+  | "dietaryFriendly"
+  | "householdCompatible";
+
+const RAIL_TYPES: RailType[] = [
+  "forYou",
+  "readyToCook",
+  "quickEasy",
+  "cuisines",
+  "dietaryFriendly",
+  "householdCompatible",
+];
+
 type FoodLibraryIndexEntry = {
   shelfLifeDays: number;
   varietyCodes: Set<string>;
+};
+
+type QueryCtxWithRunQuery = QueryCtx & {
+  runQuery: <T extends (...args: any[]) => Promise<any>>(query: T, ...args: Parameters<T>) => ReturnType<T>;
 };
 
 const buildFoodLibraryIndex = (
@@ -55,6 +80,259 @@ const buildFoodLibraryIndex = (
   return index;
 };
 
+const loadHouseholdMembers = async (ctx: QueryCtx, user: Doc<"users">) => {
+  if (!user.householdId) {
+    return [] as HouseholdMember[];
+  }
+
+  const household = await ctx.db.get(user.householdId);
+  if (!household) {
+    return [] as HouseholdMember[];
+  }
+
+  const memberDocs = await Promise.all(
+    household.members.map((id: Id<"users">) => ctx.db.get(id))
+  );
+  return memberDocs
+    .filter((member): member is Doc<"users"> => member !== null)
+    .map((member: Doc<"users">) => ({
+      memberId: member._id as unknown as string,
+      memberName: member.name ?? "Unknown",
+      allergies: (member.allergies ?? []) as string[],
+      dietaryRestrictions: (member.dietaryRestrictions ?? []) as string[],
+    }));
+};
+
+const loadInventoryData = async (
+  ctx: QueryCtxWithRunQuery,
+  user: Doc<"users">,
+  now: number,
+) => {
+  let userInventory: string[] = [];
+  const inventoryExpirationData = new Map<string, number>();
+
+  if (!user.householdId) {
+    return { userInventory, inventoryExpirationData };
+  }
+
+  const household = await ctx.db.get(user.householdId);
+  if (!household?.inventory) {
+    return { userInventory, inventoryExpirationData };
+  }
+
+  const inventory = household.inventory as UserInventoryEntry[];
+  const itemCodes = Array.from(new Set(inventory.map((item) => item.itemCode)));
+  const foodLibrary =
+    itemCodes.length > 0
+      ? await ctx.runQuery(api.foodLibrary.getByCodes, { codes: itemCodes })
+      : [];
+  const foodLibraryIndex = buildFoodLibraryIndex(foodLibrary);
+
+  const codes = new Set<string>();
+  for (const item of inventory) {
+    codes.add(item.itemCode);
+    const libraryEntry = foodLibraryIndex.get(item.itemCode);
+    if (item.varietyCode && libraryEntry?.varietyCodes.has(item.varietyCode)) {
+      codes.add(item.varietyCode);
+    }
+    const shelfLifeDays = libraryEntry?.shelfLifeDays ?? 7;
+    const daysSincePurchase = Math.floor(
+      (now - item.purchaseDate) / (1000 * 60 * 60 * 24),
+    );
+    const daysUntilExpiration = shelfLifeDays - daysSincePurchase;
+    inventoryExpirationData.set(item.itemCode, daysUntilExpiration);
+  }
+
+  userInventory = Array.from(codes);
+  return { userInventory, inventoryExpirationData };
+};
+
+const buildPersonalizationInputs = async (
+  ctx: QueryCtxWithRunQuery,
+  user: Doc<"users">,
+  now: number,
+) => {
+  const dietaryRestrictions = (user.dietaryRestrictions ?? []) as string[];
+  const allergies = (user.allergies ?? []) as string[];
+  const favoriteCuisines = (user.favoriteCuisines ?? []) as string[];
+  const cookingStylePreferences = (user.cookingStylePreferences ?? []) as string[];
+  const nutritionGoals = user.nutritionGoals;
+  const { userInventory, inventoryExpirationData } = await loadInventoryData(ctx, user, now);
+  const householdMembers = await loadHouseholdMembers(ctx, user);
+
+  return {
+    dietaryRestrictions,
+    allergies,
+    favoriteCuisines,
+    cookingStylePreferences,
+    nutritionGoals,
+    userInventory,
+    inventoryExpirationData,
+    householdMembers,
+  };
+};
+
+const applyPersonalizationFilters = (
+  recipes: Doc<"recipes">[],
+  railType: RailType,
+  inputs: Awaited<ReturnType<typeof buildPersonalizationInputs>>,
+): Doc<"recipes">[] => {
+  const {
+    dietaryRestrictions,
+    allergies,
+    favoriteCuisines,
+    cookingStylePreferences,
+    householdMembers,
+  } = inputs;
+
+  let filteredRecipes = recipes.filter((recipe) => {
+    if (allergies.length > 0 && !matchesAllergies(recipe, allergies)) {
+      return false;
+    }
+
+    const criticalRestrictions = dietaryRestrictions.filter((r) =>
+      CRITICAL_DIETARY_RESTRICTIONS.some((cdr) => r.toLowerCase().includes(cdr.toLowerCase())),
+    );
+    if (
+      criticalRestrictions.length > 0 &&
+      !matchesDietaryRestrictions(recipe, criticalRestrictions)
+    ) {
+      return false;
+    }
+
+    return true;
+  });
+
+  if (railType === "readyToCook") {
+    filteredRecipes = filteredRecipes.filter((recipe) => {
+      const recipeIngredientCodes = recipe.ingredients.map((ing) => ing.foodCode);
+      return recipeIngredientCodes.every((code) => inputs.userInventory.includes(code));
+    });
+  } else if (railType === "quickEasy") {
+    filteredRecipes = filteredRecipes.filter((recipe) => {
+      const isQuick =
+        recipe.totalTimeMinutes <= 30 ||
+        recipe.cookingStyleTags?.some((tag) => tag.toLowerCase().includes("quick"));
+      return isQuick && matchesCookingStyles(recipe, cookingStylePreferences);
+    });
+  } else if (railType === "cuisines") {
+    filteredRecipes = filteredRecipes.filter((recipe) =>
+      matchesCuisines(recipe, favoriteCuisines),
+    );
+  } else if (railType === "dietaryFriendly") {
+    filteredRecipes = filteredRecipes.filter((recipe) =>
+      matchesDietaryRestrictions(recipe, dietaryRestrictions),
+    );
+  } else if (railType === "householdCompatible" && householdMembers.length > 0) {
+    filteredRecipes = filteredRecipes.filter((recipe) => {
+      const compatibility = getRecipeCompatibility(recipe, householdMembers);
+      return compatibility.incompatibleMembers.length === 0;
+    });
+  }
+
+  return filteredRecipes;
+};
+
+const scoreAndSortRecipesForPersonalization = (
+  recipes: Doc<"recipes">[],
+  inputs: Awaited<ReturnType<typeof buildPersonalizationInputs>>,
+  limit: number,
+) => {
+  const filterOptions: RecipeFilterOptions = {
+    dietaryRestrictions: inputs.dietaryRestrictions,
+    allergies: inputs.allergies,
+    favoriteCuisines: inputs.favoriteCuisines,
+    cookingStylePreferences: inputs.cookingStylePreferences,
+    nutritionGoals: inputs.nutritionGoals ?? undefined,
+  };
+
+  const scoredRecipes = recipes.map((recipe) => {
+    const score = calculateRecipeScore(
+      recipe,
+      filterOptions,
+      inputs.userInventory,
+      inputs.inventoryExpirationData,
+    );
+    return { recipe, score };
+  });
+
+  scoredRecipes.sort((a, b) => {
+    if (b.score !== a.score) {
+      return b.score - a.score;
+    }
+    return b.recipe.createdAt - a.recipe.createdAt;
+  });
+
+  return scoredRecipes.slice(0, limit).map((entry) => entry.recipe);
+};
+
+const computePersonalizedRecipes = (
+  recipes: Doc<"recipes">[],
+  railType: RailType,
+  inputs: Awaited<ReturnType<typeof buildPersonalizationInputs>>,
+  limit: number,
+) => {
+  const filteredRecipes = applyPersonalizationFilters(recipes, railType, inputs);
+  return scoreAndSortRecipesForPersonalization(filteredRecipes, inputs, limit);
+};
+
+const loadRecipesByIds = async (ctx: QueryCtx, recipeIds: Id<"recipes">[]) => {
+  if (recipeIds.length === 0) {
+    return [] as Doc<"recipes">[];
+  }
+
+  const recipes = await Promise.all(recipeIds.map((id) => ctx.db.get(id)));
+  return recipes.filter(Boolean) as Doc<"recipes">[];
+};
+
+const getFallbackRecipeSet = async (ctx: QueryCtx, limit: number) => {
+  const scanLimit = Math.max(limit * 20, FALLBACK_RECIPE_SCAN_LIMIT);
+  return await ctx.db
+    .query("recipes")
+    .withIndex("by_created_at")
+    .order("desc")
+    .take(scanLimit);
+};
+
+const getPersonalizedFromCacheOrFallback = async (
+  ctx: QueryCtxWithRunQuery,
+  userId: Id<"users">,
+  railType: RailType,
+  limit: number,
+) => {
+  const now = Date.now();
+  const cached = await ctx.db
+    .query("userPersonalizedRecipes")
+    .withIndex("by_user_and_type", (q: any) => q.eq("userId", userId).eq("railType", railType))
+    .first();
+
+  if (cached && cached.expiresAt > now) {
+    // Check if there are any recipes newer than the cache timestamp
+    // If so, ignore cache and compute fresh results to include new recipes
+    const newestRecipe = await ctx.db
+      .query("recipes")
+      .withIndex("by_created_at", (q: any) => q.gt("createdAt", cached.computedAt))
+      .order("desc")
+      .first();
+    
+    const cacheIsStale = newestRecipe !== null;
+    
+    if (!cacheIsStale) {
+      // Return cached results only if no newer recipes exist
+      return await loadRecipesByIds(ctx, cached.recipeIds);
+    }
+    // If cache is stale (newer recipes exist), fall through to compute fresh results
+  }
+
+  const user = await ctx.db.get(userId);
+  if (!user) {
+    return [] as Doc<"recipes">[];
+  }
+
+  const fallbackRecipes = await getFallbackRecipeSet(ctx, limit);
+  const inputs = await buildPersonalizationInputs(ctx, user, now);
+  return computePersonalizedRecipes(fallbackRecipes, railType, inputs, limit);
+};
 function matchesDietaryRestrictions(recipe: Doc<"recipes">, restrictions: string[]): boolean {
   if (!restrictions || restrictions.length === 0) return true;
   if (!recipe.dietaryTags || recipe.dietaryTags.length === 0) return false;
@@ -259,6 +537,214 @@ const normalizeToGrams = (
   return baseQuantity;
 };
 
+/**
+ * Extracts nutrition information from Schema.org structured data
+ */
+function extractNutritionFromSchema(data: any): {
+  calories?: number;
+  protein?: number;
+  carbohydrates?: number;
+  fat?: number;
+  fiber?: number;
+  sugars?: number;
+  sodium?: number;
+  servingSize?: string;
+} | null {
+  if (!data || typeof data !== "object") return null;
+
+  // Handle arrays (multiple schemas)
+  if (Array.isArray(data)) {
+    for (const item of data) {
+      const result = extractNutritionFromSchema(item);
+      if (result) return result;
+    }
+    return null;
+  }
+
+  // Check for Recipe schema with nutrition
+  if (data["@type"] === "Recipe" || data["@type"] === "schema:Recipe") {
+    const nutrition = data.nutrition || data.nutritionInformation;
+    if (nutrition) {
+      return {
+        calories: parseNutritionValue(nutrition.calories || nutrition.calorieContent),
+        protein: parseNutritionValue(nutrition.proteinContent),
+        carbohydrates: parseNutritionValue(nutrition.carbohydrateContent),
+        fat: parseNutritionValue(nutrition.fatContent),
+        fiber: parseNutritionValue(nutrition.fiberContent),
+        sugars: parseNutritionValue(nutrition.sugarContent),
+        sodium: parseNutritionValue(nutrition.sodiumContent),
+        servingSize: nutrition.servingSize || nutrition.servingSize?.value,
+      };
+    }
+  }
+
+  // Check for NutritionInformation schema directly
+  if (data["@type"] === "NutritionInformation" || data["@type"] === "schema:NutritionInformation") {
+    return {
+      calories: parseNutritionValue(data.calories || data.calorieContent),
+      protein: parseNutritionValue(data.proteinContent),
+      carbohydrates: parseNutritionValue(data.carbohydrateContent),
+      fat: parseNutritionValue(data.fatContent),
+      fiber: parseNutritionValue(data.fiberContent),
+      sugars: parseNutritionValue(data.sugarContent),
+      sodium: parseNutritionValue(data.sodiumContent),
+      servingSize: data.servingSize || data.servingSize?.value,
+    };
+  }
+
+  // Recursively check nested objects
+  for (const key in data) {
+    if (typeof data[key] === "object" && data[key] !== null) {
+      const result = extractNutritionFromSchema(data[key]);
+      if (result) return result;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Parses nutrition values that may be strings like "415 kcal" or numbers
+ */
+function parseNutritionValue(value: any): number | undefined {
+  if (typeof value === "number") return value;
+  if (typeof value === "string") {
+    // Extract number from strings like "415 kcal", "23g", "1.5mg"
+    const match = value.match(/([\d.]+)/);
+    if (match) {
+      const num = parseFloat(match[1]);
+      // Convert mg to g for sodium
+      if (value.toLowerCase().includes("mg") && !value.toLowerCase().includes("kcal")) {
+        return num / 1000;
+      }
+      return num;
+    }
+  }
+  if (value && typeof value === "object" && typeof value.value === "number") {
+    return value.value;
+  }
+  return undefined;
+}
+
+/**
+ * Extracts nutrition information from HTML table patterns
+ */
+function extractNutritionFromTable(html: string): {
+  calories?: number;
+  protein?: number;
+  carbohydrates?: number;
+  fat?: number;
+  fiber?: number;
+  sugars?: number;
+  sodium?: number;
+  servingSize?: string;
+} | null {
+  // Look for nutrition facts table
+  const tableRegex = /<table[^>]*>[\s\S]*?nutrition[\s\S]*?<\/table>/i;
+  const tableMatch = html.match(tableRegex);
+  if (!tableMatch) return null;
+
+  const tableHtml = tableMatch[0];
+  const result: any = {};
+
+  // Extract calories
+  const caloriesMatch = tableHtml.match(/(?:calories|cal)[\s:]*(\d+)/i);
+  if (caloriesMatch) {
+    result.calories = parseInt(caloriesMatch[1], 10);
+  }
+
+  // Extract macronutrients
+  const proteinMatch = tableHtml.match(/(?:protein|prot)[\s:]*(\d+(?:\.\d+)?)\s*g/i);
+  if (proteinMatch) {
+    result.protein = parseFloat(proteinMatch[1]);
+  }
+
+  const carbsMatch = tableHtml.match(/(?:carbohydrates|carbs|carb)[\s:]*(\d+(?:\.\d+)?)\s*g/i);
+  if (carbsMatch) {
+    result.carbohydrates = parseFloat(carbsMatch[1]);
+  }
+
+  const fatMatch = tableHtml.match(/(?:total\s+)?fat[\s:]*(\d+(?:\.\d+)?)\s*g/i);
+  if (fatMatch) {
+    result.fat = parseFloat(fatMatch[1]);
+  }
+
+  const fiberMatch = tableHtml.match(/(?:fiber|fibre)[\s:]*(\d+(?:\.\d+)?)\s*g/i);
+  if (fiberMatch) {
+    result.fiber = parseFloat(fiberMatch[1]);
+  }
+
+  const sugarsMatch = tableHtml.match(/(?:sugars?|sugar)[\s:]*(\d+(?:\.\d+)?)\s*g/i);
+  if (sugarsMatch) {
+    result.sugars = parseFloat(sugarsMatch[1]);
+  }
+
+  // Extract sodium (may be in mg)
+  const sodiumMatch = tableHtml.match(/(?:sodium)[\s:]*(\d+(?:\.\d+)?)\s*(mg|g)/i);
+  if (sodiumMatch) {
+    const value = parseFloat(sodiumMatch[1]);
+    result.sodium = sodiumMatch[2].toLowerCase() === "mg" ? value / 1000 : value;
+  }
+
+  // Extract serving size
+  const servingSizeMatch = tableHtml.match(/(?:serving\s+size)[\s:]*([^<\n]+)/i);
+  if (servingSizeMatch) {
+    result.servingSize = servingSizeMatch[1].trim();
+  }
+
+  // Return result if we found at least calories or macronutrients
+  if (result.calories || result.protein || result.carbohydrates || result.fat) {
+    return result;
+  }
+
+  return null;
+}
+
+/**
+ * Extracts nutrition information from HTML using Schema.org and table patterns
+ */
+function extractNutritionFromHtml(html: string): {
+  calories?: number;
+  protein?: number;
+  carbohydrates?: number;
+  fat?: number;
+  fiber?: number;
+  sugars?: number;
+  sodium?: number;
+  servingSize?: string;
+} | null {
+  if (!html) return null;
+
+  // Try Schema.org first
+  const schemaMatches = html.match(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi);
+  if (schemaMatches) {
+    for (const script of schemaMatches) {
+      try {
+        const jsonMatch = script.match(/>([\s\S]*?)</);
+        if (jsonMatch) {
+          const data = JSON.parse(jsonMatch[1]);
+          const nutrition = extractNutritionFromSchema(data);
+          if (nutrition) {
+            console.log("[extractNutritionFromHtml] Found nutrition in Schema.org data");
+            return nutrition;
+          }
+        }
+      } catch (error) {
+        // Continue to next script tag
+      }
+    }
+  }
+
+  // Try HTML table patterns
+  const nutritionTable = extractNutritionFromTable(html);
+  if (nutritionTable) {
+    console.log("[extractNutritionFromHtml] Found nutrition in HTML table");
+    return nutritionTable;
+  }
+
+  return null;
+}
+
 const computeNutritionProfile = (
   ingredients: Array<{
     foodCode: string;
@@ -358,6 +844,206 @@ const normalizeSocialHandles = (social?: any) => {
   return Object.keys(normalized).length > 0 ? normalized : undefined;
 };
 
+/**
+ * Extracts nutrition information using LLM as fallback
+ */
+async function extractNutritionWithLLM(
+  sourceText: string,
+  recipeData: {
+    servings: number;
+    recipeName?: { en?: string };
+  },
+  openAiKey: string,
+): Promise<{
+  calories?: number;
+  protein?: number;
+  carbohydrates?: number;
+  fat?: number;
+  fiber?: number;
+  sugars?: number;
+  sodium?: number;
+  servingSize?: string;
+} | null> {
+  const prompt = `Extract nutrition information from this recipe. Look for:
+- Calories per serving
+- Protein, carbohydrates, fat (in grams)
+- Fiber, sugars, sodium if mentioned
+- Serving size information
+
+Recipe Name: ${recipeData.recipeName?.en || "Unknown"}
+Servings: ${recipeData.servings}
+Recipe Text: ${sourceText.substring(0, 3000)}${sourceText.length > 3000 ? "..." : ""}
+
+Return ONLY valid JSON (no markdown, no explanation):
+{
+  "calories": number or null,
+  "protein": number or null,
+  "carbohydrates": number or null,
+  "fat": number or null,
+  "fiber": number or null,
+  "sugars": number or null,
+  "sodium": number or null,
+  "servingSize": string or null
+}
+
+If nutrition information is not found, return all null values.`;
+
+  try {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${openAiKey}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        temperature: 0.2,
+        messages: [
+          {
+            role: "system",
+            content: "You are a nutrition data extractor. Return only valid JSON, no markdown formatting.",
+          },
+          {
+            role: "user",
+            content: prompt,
+          },
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      console.warn(`[extractNutritionWithLLM] OpenAI request failed: ${response.status}`);
+      return null;
+    }
+
+    const payload = await response.json();
+    const content = payload?.choices?.[0]?.message?.content;
+    if (!content) {
+      console.warn("[extractNutritionWithLLM] OpenAI response missing content");
+      return null;
+    }
+
+    // Parse JSON response (remove markdown code blocks if present)
+    let jsonText = content.trim();
+    if (jsonText.startsWith("```")) {
+      jsonText = jsonText.replace(/^```json\n?/, "").replace(/```$/, "").trim();
+    }
+
+    const nutrition = JSON.parse(jsonText);
+    
+    // Validate and convert to proper format
+    const result: any = {};
+    if (nutrition.calories && typeof nutrition.calories === "number") {
+      result.calories = Math.round(nutrition.calories);
+    }
+    if (nutrition.protein && typeof nutrition.protein === "number") {
+      result.protein = Math.round(nutrition.protein * 10) / 10;
+    }
+    if (nutrition.carbohydrates && typeof nutrition.carbohydrates === "number") {
+      result.carbohydrates = Math.round(nutrition.carbohydrates * 10) / 10;
+    }
+    if (nutrition.fat && typeof nutrition.fat === "number") {
+      result.fat = Math.round(nutrition.fat * 10) / 10;
+    }
+    if (nutrition.fiber && typeof nutrition.fiber === "number") {
+      result.fiber = Math.round(nutrition.fiber * 10) / 10;
+    }
+    if (nutrition.sugars && typeof nutrition.sugars === "number") {
+      result.sugars = Math.round(nutrition.sugars * 10) / 10;
+    }
+    if (nutrition.sodium && typeof nutrition.sodium === "number") {
+      // Convert mg to g if needed (assume values > 1000 are in mg)
+      result.sodium = nutrition.sodium > 1000 ? nutrition.sodium / 1000 : nutrition.sodium;
+      result.sodium = Math.round(result.sodium * 10) / 10;
+    }
+    if (nutrition.servingSize && typeof nutrition.servingSize === "string") {
+      result.servingSize = nutrition.servingSize;
+    }
+
+    // Return result if we found at least calories or macronutrients
+    if (result.calories || result.protein || result.carbohydrates || result.fat) {
+      console.log("[extractNutritionWithLLM] Extracted nutrition via LLM:", result);
+      return result;
+    }
+
+    return null;
+  } catch (error) {
+    console.warn("[extractNutritionWithLLM] Error extracting nutrition:", error);
+    return null;
+  }
+}
+
+/**
+ * Merges extracted nutrition data with calculated nutrition data
+ * Prefers extracted data but fills gaps with calculated values
+ */
+function mergeNutritionData(
+  extracted: {
+    calories?: number;
+    protein?: number;
+    carbohydrates?: number;
+    fat?: number;
+    fiber?: number;
+    sugars?: number;
+    sodium?: number;
+    servingSize?: string;
+  } | null,
+  calculated: {
+    calories: number;
+    macronutrients: {
+      protein: number;
+      carbohydrates: number;
+      fat: number;
+      fiber?: number;
+      sugars?: number;
+    };
+  },
+  servings: number,
+): {
+  caloriesPerServing: number;
+  proteinPerServing: number;
+  carbsPerServing: number;
+  fatPerServing: number;
+  fiberPerServing?: number;
+  sugarsPerServing?: number;
+  sodiumPerServing?: number;
+  servingSize?: string;
+} | undefined {
+  // If we have extracted data, use it (prefer extracted over calculated)
+  const calories = extracted?.calories ?? (calculated.calories > 0 ? Math.round(calculated.calories) : undefined);
+  const protein = extracted?.protein ?? (calculated.macronutrients.protein > 0 ? Math.round(calculated.macronutrients.protein * 10) / 10 : undefined);
+  const carbs = extracted?.carbohydrates ?? (calculated.macronutrients.carbohydrates > 0 ? Math.round(calculated.macronutrients.carbohydrates * 10) / 10 : undefined);
+  const fat = extracted?.fat ?? (calculated.macronutrients.fat > 0 ? Math.round(calculated.macronutrients.fat * 10) / 10 : undefined);
+  const fiber = extracted?.fiber ?? (calculated.macronutrients.fiber && calculated.macronutrients.fiber > 0 ? Math.round(calculated.macronutrients.fiber * 10) / 10 : undefined);
+  const sugars = extracted?.sugars ?? (calculated.macronutrients.sugars && calculated.macronutrients.sugars > 0 ? Math.round(calculated.macronutrients.sugars * 10) / 10 : undefined);
+  const sodium = extracted?.sodium;
+
+  // Only return nutrition profile if we have at least calories or macronutrients
+  if (!calories && !protein && !carbs && !fat) {
+    return undefined;
+  }
+
+  // Validate nutrition makes sense (calories ≈ 4*carbs + 4*protein + 9*fat, allow 20% variance)
+  if (calories && protein && carbs && fat) {
+    const calculatedCalories = 4 * carbs + 4 * protein + 9 * fat;
+    const variance = Math.abs(calories - calculatedCalories) / calculatedCalories;
+    if (variance > 0.2) {
+      console.warn(`[mergeNutritionData] Nutrition validation failed: calories ${calories} doesn't match macronutrients (calculated: ${calculatedCalories.toFixed(0)})`);
+    }
+  }
+
+  return {
+    caloriesPerServing: calories ?? 0,
+    proteinPerServing: protein ?? 0,
+    carbsPerServing: carbs ?? 0,
+    fatPerServing: fat ?? 0,
+    fiberPerServing: fiber,
+    sugarsPerServing: sugars,
+    sodiumPerServing: sodium,
+    servingSize: extracted?.servingSize,
+  };
+}
+
 const URL_SOURCE_TYPES = new Set<SourceType>([
   "website",
   "blog",
@@ -369,6 +1055,122 @@ const URL_SOURCE_TYPES = new Set<SourceType>([
   "twitter",
   "reddit",
 ]);
+
+/**
+ * Detects media type from URL patterns
+ */
+function detectMediaTypeFromUrl(url: string): SourceType {
+  try {
+    const urlObj = new URL(url);
+    const hostname = urlObj.hostname.toLowerCase();
+    
+    // TikTok detection
+    if (hostname.includes('tiktok.com')) {
+      return 'tiktok';
+    }
+    
+    // YouTube detection
+    if (hostname.includes('youtube.com') || hostname.includes('youtu.be')) {
+      return 'youtube';
+    }
+    
+    // Instagram detection
+    if (hostname.includes('instagram.com')) {
+      return 'instagram';
+    }
+    
+    // Pinterest detection
+    if (hostname.includes('pinterest.com') || hostname.includes('pin.it')) {
+      return 'pinterest';
+    }
+    
+    // Facebook detection
+    if (hostname.includes('facebook.com') || hostname.includes('fb.com')) {
+      return 'facebook';
+    }
+    
+    // Twitter/X detection
+    if (hostname.includes('twitter.com') || hostname.includes('x.com')) {
+      return 'twitter';
+    }
+    
+    // Reddit detection
+    if (hostname.includes('reddit.com')) {
+      return 'reddit';
+    }
+    
+    // Blog detection (common blog platforms)
+    if (hostname.includes('blogspot.com') || 
+        hostname.includes('wordpress.com') ||
+        hostname.includes('medium.com') ||
+        hostname.includes('substack.com')) {
+      return 'blog';
+    }
+    
+    // Default to website for other URLs
+    return 'website';
+  } catch {
+    return 'other';
+  }
+}
+
+/**
+ * Extracts text content from HTML by removing tags and decoding entities
+ */
+function extractTextFromHtml(html: string): string {
+  // Remove script and style tags
+  let text = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
+  text = text.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
+  
+  // Extract text content from common tags
+  text = text.replace(/<[^>]+>/g, ' ');
+  
+  // Decode HTML entities
+  text = decodeHtmlEntities(text);
+  
+  // Clean up whitespace
+  text = text.replace(/\s+/g, ' ').trim();
+  
+  return text;
+}
+
+/**
+ * Fetches oEmbed data for video platforms (TikTok, YouTube, Instagram)
+ */
+async function fetchOEmbedData(url: string, platform: 'tiktok' | 'youtube' | 'instagram'): Promise<any> {
+  try {
+    let oembedUrl: string;
+    
+    if (platform === 'tiktok') {
+      // TikTok oEmbed endpoint
+      oembedUrl = `https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`;
+    } else if (platform === 'youtube') {
+      // YouTube oEmbed endpoint
+      oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`;
+    } else if (platform === 'instagram') {
+      // Instagram oEmbed endpoint
+      oembedUrl = `https://api.instagram.com/oembed?url=${encodeURIComponent(url)}`;
+    } else {
+      return null;
+    }
+    
+    const response = await fetch(oembedUrl, {
+      headers: {
+        'User-Agent': 'HaricotRecipeIngest/1.0',
+      },
+    });
+    
+    if (!response.ok) {
+      console.warn(`[fetchOEmbedData] Failed to fetch oEmbed for ${platform}: ${response.status}`);
+      return null;
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.warn(`[fetchOEmbedData] Error fetching oEmbed for ${platform}:`, error);
+    return null;
+  }
+}
 
 const decodeHtmlEntities = (value: string) =>
   value
@@ -470,6 +1272,180 @@ const normalizeInstructionText = (value: unknown): string[] => {
   }
   return [];
 };
+
+/**
+ * Extracts instruction text from HTML, specifically targeting instruction sections
+ * Handles multi-method recipes by preserving method headers and their steps
+ */
+function extractInstructionsFromHtml(html: string): string {
+  // Try to find instruction sections using common patterns
+  const instructionPatterns = [
+    // Look for ordered lists in instruction sections
+    /<ol[^>]*class=["'][^"']*instruction[^"']*["'][^>]*>([\s\S]*?)<\/ol>/i,
+    // Look for divs with instruction-related classes
+    /<div[^>]*class=["'][^"']*(instruction|step|method|directions)[^"']*["'][^>]*>([\s\S]*?)<\/div>/i,
+    // Look for sections with instruction-related classes
+    /<section[^>]*class=["'][^"']*(instruction|step|method|directions)[^"']*["'][^>]*>([\s\S]*?)<\/section>/i,
+    // Look for h2/h3 headers followed by lists (common pattern for multi-method recipes)
+    /<h[23][^>]*>.*?(INSTANT\s+POT|CROCK-POT|SLOW\s+COOKER|STOVETOP|OVEN|MICROWAVE)[^<]*<\/h[23]>([\s\S]*?)(?=<h[23]|$)/i,
+  ];
+
+  let bestMatch = "";
+  let maxLength = 0;
+
+  for (const pattern of instructionPatterns) {
+    const matches = Array.from(html.matchAll(new RegExp(pattern.source, "gi")));
+    for (const match of matches) {
+      const content = match[1] || match[2] || match[0];
+      if (content && content.length > maxLength) {
+        // Extract text from HTML, preserving structure
+        const text = stripHtmlTags(content)
+          .replace(/\s+/g, " ")
+          .trim();
+        if (text.length > maxLength && text.length > 50) {
+          bestMatch = text;
+          maxLength = text.length;
+        }
+      }
+    }
+  }
+
+  // NEW: Look for h3/h4 headers with method names followed by content
+  // This is the peasandcrayons.com pattern
+  const methodSectionPattern =
+    /<h[234][^>]*>.*?(INSTANT\s+POT|CROCK-POT|SLOW\s+COOKER|STOVETOP|STOVE-TOP|OVEN|MICROWAVE)[^<]*<\/h[234]>([\s\S]*?)(?=<h[234]|$)/gi;
+  const methodSections: string[] = [];
+
+  let methodMatch;
+  while ((methodMatch = methodSectionPattern.exec(html)) !== null) {
+    const header = stripHtmlTags(methodMatch[0].split("</h")[0]);
+    const content = methodMatch[2] || methodMatch[1];
+    const text = stripHtmlTags(content).replace(/\s+/g, " ").trim();
+    if (text.length > 50) {
+      methodSections.push(`${header}\n${text}`);
+    }
+  }
+
+  if (methodSections.length > 0) {
+    const combined = methodSections.join("\n\n");
+    if (combined.length > maxLength) {
+      bestMatch = combined;
+      maxLength = combined.length;
+    }
+  }
+
+  // Fallback: look for any ordered list that seems to contain instructions
+  if (!bestMatch || bestMatch.length < 100) {
+    const olMatches = Array.from(html.matchAll(/<ol[^>]*>([\s\S]*?)<\/ol>/gi));
+    for (const match of olMatches) {
+      const text = stripHtmlTags(match[1])
+        .replace(/\s+/g, " ")
+        .trim();
+      // Check if it looks like instructions (contains action words, has multiple items)
+      if (text.length > 100 && (text.match(/\./g) || []).length >= 3) {
+        if (text.length > maxLength) {
+          bestMatch = text;
+          maxLength = text.length;
+        }
+      }
+    }
+  }
+
+  return bestMatch;
+}
+
+/**
+ * Directly parses HTML to extract cooking methods and their steps
+ * Handles common patterns: h2/h3/h4 headers followed by ul/ol lists
+ * Returns array of methods with their steps, or null if not found
+ */
+function parseMethodsFromHtml(html: string): Array<{
+  methodName: string;
+  steps: Array<{ stepNumber: number; text: string }>;
+}> | null {
+  // Pattern 1: h2/h3/h4 headers with method names followed by ul/ol lists
+  // Example: <h3>INSTANT POT INSTRUCTIONS</h3><ul><li>Step 1</li>...
+  const methodHeaderPattern =
+    /<h[234][^>]*>.*?(INSTANT\s+POT|CROCK-POT|SLOW\s+COOKER|STOVETOP|STOVE-TOP|OVEN|MICROWAVE|AIR\s+FRYER|PRESSURE\s+COOKER).*?INSTRUCTIONS?[^<]*<\/h[234]>([\s\S]*?)(?=<h[234]|$)/gi;
+
+  const methods: Array<{ methodName: string; steps: Array<{ stepNumber: number; text: string }> }> = [];
+
+  // Clean method name helper
+  const cleanMethodName = (text: string): string => {
+    const cleaned = text
+      .replace(/INSTRUCTIONS?.*$/i, "")
+      .replace(/\([^)]*\)/g, "")
+      .trim();
+
+    if (/INSTANT\s+POT/i.test(cleaned)) return "Instant Pot";
+    if (/CROCK-POT|SLOW\s+COOKER/i.test(cleaned)) return "Crock-Pot";
+    if (/STOVETOP|STOVE-TOP/i.test(cleaned)) return "Stovetop";
+    if (/OVEN/i.test(cleaned)) return "Oven";
+    if (/MICROWAVE/i.test(cleaned)) return "Microwave";
+    if (/AIR\s+FRYER/i.test(cleaned)) return "Air Fryer";
+    if (/PRESSURE\s+COOKER/i.test(cleaned)) return "Pressure Cooker";
+
+    return cleaned;
+  };
+
+  let match;
+  while ((match = methodHeaderPattern.exec(html)) !== null) {
+    const headerText = stripHtmlTags(match[0].split("</h")[0]);
+    const contentAfterHeader = match[2] || match[1];
+
+    const methodName = cleanMethodName(headerText);
+
+    // Extract steps from content (look for ul/ol lists or paragraph text)
+    const steps: Array<{ stepNumber: number; text: string }> = [];
+
+    // Try to find ul/ol lists first
+    const listMatches = contentAfterHeader.match(/<(ul|ol)[^>]*>([\s\S]*?)<\/\1>/i);
+    if (listMatches) {
+      const listContent = listMatches[2];
+      // Extract list items
+      const liMatches = Array.from(listContent.matchAll(/<li[^>]*>([\s\S]*?)<\/li>/gi));
+      liMatches.forEach((liMatch, index) => {
+        const stepText = stripHtmlTags(liMatch[1]).trim();
+        if (stepText && stepText.length > 10) {
+          steps.push({
+            stepNumber: index + 1,
+            text: stepText,
+          });
+        }
+      });
+    } else {
+      // Fallback: look for paragraphs or divs that might contain steps
+      // Split by periods and newlines to find step-like content
+      const textContent = stripHtmlTags(contentAfterHeader)
+        .replace(/\s+/g, " ")
+        .trim();
+
+      // Split by periods and filter for substantial sentences
+      const sentences = textContent
+        .split(/\.\s+/)
+        .map((s) => s.trim())
+        .filter((s) => s.length > 20 && !s.match(/^(NOTE|TIP|OPTIONAL)/i));
+
+      sentences.forEach((sentence, index) => {
+        steps.push({
+          stepNumber: index + 1,
+          text: sentence + (sentence.endsWith(".") ? "" : "."),
+        });
+      });
+    }
+
+    if (steps.length > 0) {
+      methods.push({ methodName, steps });
+    }
+  }
+
+  // Only return if we found 2+ methods with steps
+  if (methods.length >= 2) {
+    return methods;
+  }
+
+  return null;
+}
 
 const extractRecipeStructuredText = (html: string) => {
   const jsonLdMatches = Array.from(
@@ -777,11 +1753,24 @@ export const listPersonalized = query({
       .first();
 
     if (cached && cached.expiresAt > now) {
-      // Return cached results
-      const recipes = await Promise.all(
-        cached.recipeIds.map((id) => ctx.db.get(id))
-      );
-      return recipes.filter(Boolean) as Doc<"recipes">[];
+      // Check if there are any recipes newer than the cache timestamp
+      // If so, ignore cache and compute fresh results to include new recipes
+      const newestRecipe = await ctx.db
+        .query("recipes")
+        .withIndex("by_created_at", (q) => q.gt("createdAt", cached.computedAt))
+        .order("desc")
+        .first();
+      
+      const cacheIsStale = newestRecipe !== null;
+      
+      if (!cacheIsStale) {
+        // Return cached results only if no newer recipes exist
+        const recipes = await Promise.all(
+          cached.recipeIds.map((id) => ctx.db.get(id))
+        );
+        return recipes.filter(Boolean) as Doc<"recipes">[];
+      }
+      // If cache is stale (newer recipes exist), fall through to compute fresh results
     }
 
     // Cache expired or missing, compute fresh results
@@ -958,6 +1947,127 @@ export const listPersonalized = query({
     // This query computes on-demand if cache is expired
 
     return topRecipes;
+  },
+});
+
+/**
+ * List personalized recipes for multiple rail types at once.
+ * Returns an object with keys for each requested rail type.
+ */
+export const listPersonalizedRails = query({
+  args: {
+    limit: v.optional(v.number()),
+    railTypes: v.array(
+      v.union(
+        v.literal("forYou"),
+        v.literal("readyToCook"),
+        v.literal("quickEasy"),
+        v.literal("cuisines"),
+        v.literal("dietaryFriendly"),
+        v.literal("householdCompatible")
+      )
+    ),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) {
+      // Return empty object with all requested rail types
+      const result: Record<string, Doc<"recipes">[]> = {};
+      for (const railType of args.railTypes) {
+        result[railType] = [];
+      }
+      return result;
+    }
+
+    const limit = args.limit ?? DEFAULT_PERSONALIZED_LIMIT;
+    const railTypes = args.railTypes ?? RAIL_TYPES;
+    const now = Date.now();
+
+    const cachedEntries = await Promise.all(
+      railTypes.map((railType) =>
+        ctx.db
+          .query("userPersonalizedRecipes")
+          .withIndex("by_user_and_type", (q: any) => q.eq("userId", userId).eq("railType", railType))
+          .first(),
+      ),
+    );
+
+    const cachedByRail = new Map<RailType, Doc<"userPersonalizedRecipes">>();
+    const missingRails: RailType[] = [];
+
+    // Check cache staleness for all entries in parallel
+    const stalenessChecks = await Promise.all(
+      cachedEntries.map(async (entry, index) => {
+        const railType = railTypes[index];
+        if (entry && entry.expiresAt > now) {
+          // Check if there are any recipes newer than the cache timestamp
+          const newestRecipe = await ctx.db
+            .query("recipes")
+            .withIndex("by_created_at", (q: any) => q.gt("createdAt", entry.computedAt))
+            .order("desc")
+            .first();
+          
+          const cacheIsStale = newestRecipe !== null;
+          return { railType, entry, cacheIsStale };
+        }
+        return { railType, entry: null, cacheIsStale: true };
+      })
+    );
+
+    stalenessChecks.forEach(({ railType, entry, cacheIsStale }) => {
+      if (entry && !cacheIsStale) {
+        cachedByRail.set(railType, entry);
+      } else {
+        missingRails.push(railType);
+      }
+    });
+
+    const cachedRecipeIds = Array.from(cachedByRail.values()).flatMap((entry) => entry.recipeIds);
+    const uniqueRecipeIds = Array.from(new Set(cachedRecipeIds));
+    const cachedRecipes = await Promise.all(
+      uniqueRecipeIds.map((id) => ctx.db.get(id as Id<"recipes">)),
+    );
+    const recipeById = new Map<Id<"recipes">, Doc<"recipes">>();
+    cachedRecipes.forEach((recipe) => {
+      if (recipe) {
+        recipeById.set(recipe._id, recipe);
+      }
+    });
+
+    const results: Record<RailType, Doc<"recipes">[]> = {} as Record<
+      RailType,
+      Doc<"recipes">[]
+    >;
+
+    cachedByRail.forEach((entry, railType) => {
+      results[railType] = entry.recipeIds
+        .map((id) => recipeById.get(id))
+        .filter(Boolean) as Doc<"recipes">[];
+    });
+
+    if (missingRails.length > 0) {
+      const user = await ctx.db.get(userId);
+      if (!user) {
+        return results;
+      }
+
+      const fallbackRecipes = await getFallbackRecipeSet(ctx, limit);
+      const inputs = await buildPersonalizationInputs(
+        ctx as QueryCtxWithRunQuery,
+        user,
+        now,
+      );
+      for (const railType of missingRails) {
+        results[railType] = computePersonalizedRecipes(
+          fallbackRecipes,
+          railType,
+          inputs,
+          limit,
+        );
+      }
+    }
+
+    return results;
   },
 });
 
@@ -1249,7 +2359,7 @@ export const extractRecipeMetadata = action({
     // Build ingredient list with names
     const ingredientNames = args.ingredients
       .map((ing) => {
-        const foodItem = foodLibrary.find((item) => item.code === ing.foodCode);
+        const foodItem = foodLibrary.find((item: Doc<"foodLibrary">) => item.code === ing.foodCode);
         return foodItem
           ? `${ing.quantity} ${ing.unit} ${foodItem.name}${ing.preparation ? ` (${ing.preparation})` : ""}`
           : `${ing.quantity} ${ing.unit} ${ing.foodCode}`;
@@ -1532,30 +2642,123 @@ export const seed = mutation({
   },
 });
 
+/**
+ * Detects cooking methods from step text and groups steps by method
+ * Returns array of CookingMethod objects, or null if no methods detected
+ */
+function detectAndGroupCookingMethods(
+  steps: Array<{ stepNumber: number; text: string }>,
+): Array<{ methodName: string; steps: Array<{ stepNumber: number; text: string }> }> | null {
+  if (!steps || steps.length === 0) return null;
+
+  // Pattern to detect method headers (e.g., "INSTANT POT INSTRUCTIONS", "CROCK-POT SLOW COOKER INSTRUCTIONS")
+  const methodHeaderPattern =
+    /^(INSTANT\s+POT|CROCK-POT|SLOW\s+COOKER|STOVETOP|STOVE-TOP|OVEN|MICROWAVE|AIR\s+FRYER|PRESSURE\s+COOKER).*INSTRUCTIONS?/i;
+
+  const methods: Array<{ methodName: string; steps: Array<{ stepNumber: number; text: string }> }> = [];
+  let currentMethod: { methodName: string; steps: Array<{ stepNumber: number; text: string }> } | null = null;
+
+  // Clean method name helper
+  const cleanMethodName = (text: string): string => {
+    const cleaned = text
+      .replace(/INSTRUCTIONS?.*$/i, "")
+      .replace(/\([^)]*\)/g, "") // Remove parenthetical notes
+      .trim();
+
+    // Normalize common variations
+    if (/INSTANT\s+POT/i.test(cleaned)) return "Instant Pot";
+    if (/CROCK-POT|SLOW\s+COOKER/i.test(cleaned)) return "Crock-Pot";
+    if (/STOVETOP|STOVE-TOP/i.test(cleaned)) return "Stovetop";
+    if (/OVEN/i.test(cleaned)) return "Oven";
+    if (/MICROWAVE/i.test(cleaned)) return "Microwave";
+    if (/AIR\s+FRYER/i.test(cleaned)) return "Air Fryer";
+    if (/PRESSURE\s+COOKER/i.test(cleaned)) return "Pressure Cooker";
+
+    return cleaned;
+  };
+
+  for (const step of steps) {
+    const isHeader = methodHeaderPattern.test(step.text);
+
+    if (isHeader) {
+      // Save previous method if exists
+      if (currentMethod && currentMethod.steps.length > 0) {
+        methods.push(currentMethod);
+      }
+
+      // Start new method
+      const methodName = cleanMethodName(step.text);
+      currentMethod = {
+        methodName,
+        steps: [],
+      };
+    } else if (currentMethod) {
+      // Add step to current method
+      // Check if this step contains multiple instructions (common in HTML extraction)
+      const stepText = step.text.trim();
+      // Capture currentMethod reference to avoid null check issues in callbacks
+      const method = currentMethod;
+
+      // If step is very long, try to split it into multiple steps
+      if (stepText.length > 200 && stepText.includes(".")) {
+        const sentences = stepText.split(/\.\s+/).filter((s) => s.trim().length > 10);
+        sentences.forEach((sentence) => {
+          method.steps.push({
+            stepNumber: method.steps.length + 1,
+            text: sentence.trim() + (sentence.endsWith(".") ? "" : "."),
+          });
+        });
+      } else {
+        method.steps.push({
+          stepNumber: method.steps.length + 1,
+          text: stepText,
+        });
+      }
+    } else {
+      // Step without a method header - might be a single-method recipe
+      // Don't add to methods, let it fall through to sourceSteps
+    }
+  }
+
+  // Add final method
+  if (currentMethod && currentMethod.steps.length > 0) {
+    methods.push(currentMethod);
+  }
+
+  // Only return methods if we found 2+ methods with actual steps
+  if (methods.length >= 2) {
+    return methods;
+  }
+
+  return null;
+}
+
 export const ingestUniversal = action({
   args: {
-    sourceType: v.union(
-      v.literal("website"),
-      v.literal("audio"),
-      v.literal("text"),
-      v.literal("photograph"),
-      v.literal("instagram"),
-      v.literal("tiktok"),
-      v.literal("pinterest"),
-      v.literal("youtube"),
-      v.literal("cookbook"),
-      v.literal("magazine"),
-      v.literal("newspaper"),
-      v.literal("recipe_card"),
-      v.literal("handwritten"),
-      v.literal("voice_note"),
-      v.literal("video"),
-      v.literal("facebook"),
-      v.literal("twitter"),
-      v.literal("reddit"),
-      v.literal("blog"),
-      v.literal("podcast"),
-      v.literal("other"),
+    sourceType: v.optional(
+      v.union(
+        v.literal("website"),
+        v.literal("audio"),
+        v.literal("text"),
+        v.literal("photograph"),
+        v.literal("instagram"),
+        v.literal("tiktok"),
+        v.literal("pinterest"),
+        v.literal("youtube"),
+        v.literal("cookbook"),
+        v.literal("magazine"),
+        v.literal("newspaper"),
+        v.literal("recipe_card"),
+        v.literal("handwritten"),
+        v.literal("voice_note"),
+        v.literal("video"),
+        v.literal("facebook"),
+        v.literal("twitter"),
+        v.literal("reddit"),
+        v.literal("blog"),
+        v.literal("podcast"),
+        v.literal("other"),
+      )
     ),
     sourceUrl: v.string(),
     rawText: v.optional(v.string()),
@@ -1589,23 +2792,68 @@ export const ingestUniversal = action({
       throw new Error("OPEN_AI_KEY is not configured on the server");
     }
 
+    // Auto-detect source type if not provided
+    let detectedSourceType: SourceType = args.sourceType || "other";
+    if (!args.sourceType || args.sourceType === "other") {
+      detectedSourceType = detectMediaTypeFromUrl(args.sourceUrl);
+      console.log(`[ingestUniversal] Auto-detected source type: ${detectedSourceType} from URL: ${args.sourceUrl}`);
+    }
+
     const foodLibrary = await ctx.runQuery(api.foodLibrary.listAll, {});
     const translationGuides = await ctx.runQuery(api.translationGuides.listAll, {});
+
+    // For video platforms, try oEmbed extraction
+    let oembedData: any = args.oembedPayload;
+    if (!oembedData && ['tiktok', 'youtube', 'instagram'].includes(detectedSourceType)) {
+      oembedData = await fetchOEmbedData(args.sourceUrl, detectedSourceType as 'tiktok' | 'youtube' | 'instagram');
+      if (oembedData) {
+        console.log(`[ingestUniversal] Fetched oEmbed data for ${detectedSourceType}`);
+      }
+    }
 
     let htmlStructuredSummary: string | undefined;
     let htmlFallbackSummary: string | undefined;
     let htmlIngredientCount = 0;
     let htmlInstructionCount = 0;
+    let extractedNutrition: {
+      calories?: number;
+      protein?: number;
+      carbohydrates?: number;
+      fat?: number;
+      fiber?: number;
+      sugars?: number;
+      sodium?: number;
+      servingSize?: string;
+    } | null = null;
+    let html: string | undefined;
 
-    if (args.sourceUrl && URL_SOURCE_TYPES.has(args.sourceType as SourceType)) {
-      const html = await fetchSourceHtml(args.sourceUrl);
+    if (args.sourceUrl && URL_SOURCE_TYPES.has(detectedSourceType)) {
+      html = await fetchSourceHtml(args.sourceUrl);
       if (html) {
+        // Try extracting nutrition from HTML first
+        extractedNutrition = extractNutritionFromHtml(html);
+        if (extractedNutrition) {
+          console.log(`[ingestUniversal] Extracted nutrition from HTML for ${args.sourceUrl}`);
+        }
+
         const { ingredients, instructions } = extractRecipeStructuredText(html);
         htmlIngredientCount = ingredients.length;
         htmlInstructionCount = instructions.length;
         const structuredText = formatStructuredRecipeText(ingredients, instructions);
         if (structuredText) {
           htmlStructuredSummary = structuredText;
+        }
+
+        // Extract instruction-specific content for better multi-method recipe handling
+        const instructionText = extractInstructionsFromHtml(html);
+        if (instructionText && instructionText.length > 100) {
+          // Append instruction text to summary if it's substantial
+          if (htmlStructuredSummary) {
+            htmlStructuredSummary = `${htmlStructuredSummary}\n\nINSTRUCTIONS:\n${instructionText}`;
+          } else {
+            htmlStructuredSummary = `INSTRUCTIONS:\n${instructionText}`;
+          }
+          console.log(`[ingestUniversal] Extracted ${instructionText.length} chars of instruction text`);
         }
 
         if (!htmlStructuredSummary) {
@@ -1623,14 +2871,36 @@ export const ingestUniversal = action({
       }
     }
 
-    const sourceSummary =
-      htmlStructuredSummary ||
+    // Enhance sourceSummary with oEmbed data if available
+    let enhancedSourceSummary = htmlStructuredSummary ||
       htmlFallbackSummary ||
       args.rawText ||
       args.extractedText ||
       args.socialMetadata?.description ||
       args.socialMetadata?.title ||
-      "Provide a universal recipe representation for ingestion.";
+      "";
+
+    if (oembedData) {
+      const oembedTitle = oembedData.title || '';
+      const oembedDescription = oembedData.description || oembedData.author_name || '';
+      const oembedHtml = oembedData.html || ''; // May contain video embed with captions
+      
+      // Combine oEmbed metadata with existing source summary
+      enhancedSourceSummary = [
+        oembedTitle,
+        oembedDescription,
+        enhancedSourceSummary,
+        // Extract text from HTML if present (for video captions)
+        oembedHtml ? extractTextFromHtml(oembedHtml) : '',
+      ]
+        .filter((text) => text && text.trim())
+        .join('\n\n')
+        .trim();
+    }
+
+    const sourceSummary = enhancedSourceSummary || "Provide a universal recipe representation for ingestion.";
+
+    // Note: LLM extraction will happen after recipe data is extracted (servings needed)
 
     const sourceHostForLog = normalizeHost(args.sourceUrl);
     console.info(
@@ -1638,9 +2908,28 @@ export const ingestUniversal = action({
         `ingredients: ${htmlIngredientCount}, instructions: ${htmlInstructionCount}`,
     );
 
+    // Add social media context for better recipe name extraction
+    const socialMediaContext = ['tiktok', 'youtube', 'instagram', 'facebook', 'twitter'].includes(detectedSourceType)
+      ? `\n\nIMPORTANT: This recipe is from ${detectedSourceType}. Social media recipes often have:
+- Recipe name in the video title, caption, or first line of description
+- Ingredients and steps may be in video captions, comments, or description text
+- Look for hashtags or emojis that indicate the recipe name
+- Extract the actual recipe name from the content, not generic placeholders
+- If the recipe name is unclear, infer it from the main ingredients and dish type`
+      : '';
+
     const prompt = `You are the Universal Recipe Encoding System (URES) ingestion agent. Produce strict JSON for Convex mutation.
 
+CRITICAL JSON FORMATTING REQUIREMENTS:
+- Return ONLY valid JSON - no markdown code blocks, no explanations, no comments
+- All strings must be properly escaped (use \\" for quotes inside strings)
+- All commas must be correct (no trailing commas before closing brackets/braces)
+- All brackets [ ] and braces { } must be properly balanced
+- Double-check your JSON syntax before returning - it must parse without errors
+- If a field value contains special characters, ensure they are properly escaped
+
 CRITICAL REQUIREMENTS:
+${socialMediaContext}
 1. Extract ALL ingredients from the source - do not skip any, even if they seem optional or have notes
 2. Extract ALL steps from the source - include every instruction, even if they seem minor
 3. Extract complete attribution information in structured fields (authorName, authorWebsite, authorSocial, sourceHost) without merging them into the author string
@@ -1666,9 +2955,24 @@ INGREDIENT EXTRACTION RULES:
 STEP EXTRACTION RULES:
 - Extract ALL steps in order - do not combine or skip steps
 - Include sub-steps and detailed instructions
+- For recipes with multiple cooking methods (e.g., "Instant Pot" vs "Crock-Pot", "Stovetop" vs "Oven"):
+  * CRITICAL: When you see a method header like "INSTANT POT INSTRUCTIONS" or "CROCK-POT SLOW COOKER INSTRUCTIONS", 
+    you MUST extract ALL the detailed steps that follow that header, not just the header itself
+  * Method headers are NOT steps - they are section labels. The actual steps are the numbered or bulleted 
+    instructions that appear AFTER each header
+  * Example: If you see "INSTANT POT INSTRUCTIONS" followed by "Peel and dice onion...", "Add 6 cups broth...", 
+    etc., extract each of those as separate steps under the "Instant Pot" method
+  * Detect method headers (e.g., "INSTANT POT INSTRUCTIONS", "CROCK-POT SLOW COOKER INSTRUCTIONS")
+  * Extract ALL detailed steps under each method header
+  * Group steps by method in a cookingMethods array
+  * Each method should have: methodName (clean name like "Instant Pot"), steps (array of detailed steps)
+  * DO NOT extract only section headers - extract the actual steps under each header
+  * For single-method recipes, still populate steps as before (backward compatibility)
 - Preserve timing information (e.g., "4-5 minutes", "1-2 hours")
 - Preserve temperature information (e.g., "235–240°F")
 - Each major instruction should be a separate step
+- Steps should be actionable and detailed (not just headers or placeholders)
+- If a step is very long (more than 2 sentences), consider breaking it into multiple steps
 
 ATTRIBUTION EXTRACTION:
 - Extract author name from the page (look for "by [name]", author bio, or site name)
@@ -1695,12 +2999,30 @@ Return JSON with fields:
   * text REQUIRED - plain-text instruction (single language is acceptable)
   * timeInMinutes OPTIONAL - extract if mentioned
   * temperature OPTIONAL - {value: number, unit: "F" or "C"} if mentioned
+- cookingMethods (ARRAY, OPTIONAL) - for multi-method recipes:
+  * methodName (string) - clean method name (e.g., "Instant Pot", "Crock-Pot", "Stovetop", "Oven")
+  * steps (ARRAY) - detailed steps for this method (same structure as steps above)
+  * encodedSteps (string, OPTIONAL) - URES encoding for this method
 - emojiTags - array of 3-5 relevant emojis
 - prepTimeMinutes - extract from source or estimate
 - cookTimeMinutes - extract from source or estimate (0 if no-bake)
 - totalTimeMinutes - extract from source or calculate
 - servings - extract from source or default to 4
-- encodedSteps - as JSON string following URES encoding
+- encodedSteps - REQUIRED: Must be in URES encoding format (use -> to separate steps).
+  * CRITICAL: Encode COMPLETE INSTRUCTIONS, not individual ingredient operations
+  * Use technique codes (T.XX.XXX) for cooking actions: T.03.006 (bake), T.03.007 (roast), T.03.003 (sautÃ©), T.03.001 (boil)
+  * Use action codes (A.XX.XXX) for manipulation: A.01.001 (add), A.01.003 (transfer/place), A.02.001 (stir), A.02.002 (whisk)
+  * Example CORRECT: "Preheat oven to 425F" → T.03.006 @temp:425F
+  * Example CORRECT: "Place 2 pounds Brussels sprouts on baking sheet" → A.01.003 provisional.brussels_sprouts.form.halved @quantity:2 @unit:pounds @to:KT.04.009
+  * Example CORRECT: "Dice 2 onions and sautÃ© for 5 minutes" → 1.11.003.form.diced @quantity:2 -> T.03.003 @time:5min
+  * Example WRONG: "1.11.003.form.preheat @temperature:425F" (don't use ingredient codes with action qualifiers - use technique codes instead)
+  * Example WRONG: "quantity: 2 · unit: pounds" (don't encode quantities as separate steps - include them within action/technique codes)
+  * Each step should represent a complete instruction from the source recipe, not break down into individual ingredient operations
+  * Include ingredient codes WITHIN action/technique codes, not as separate steps
+  * Parameters like @quantity and @unit should be attached to ingredient codes within actions, not standalone
+  * DO NOT return JSON format like {"steps":[...]} 
+  * If URES encoding is not possible, return empty string "" and ensure sourceSteps contains complete detailed steps
+  * Reference plan/encoding-guide.md for URES format details
 - encodingVersion - default "URES-4.6"
 - attribution:
   * source REQUIRED - sourceType value
@@ -1713,7 +3035,7 @@ Return JSON with fields:
   * dateRetrieved REQUIRED - current date
 - imageUrls - array of image URLs if found
 
-Source context: ${args.sourceType} ${args.sourceUrl ?? "(no url)"}
+Source context: ${detectedSourceType} ${args.sourceUrl ?? "(no url)"}
 Captured text: ${sourceSummary}`;
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -1728,7 +3050,7 @@ Captured text: ${sourceSummary}`;
         messages: [
           {
             role: "system",
-            content: "You are a deterministic URES encoder. Always emit valid JSON only.",
+            content: "You are a deterministic URES encoder. CRITICAL: Return ONLY valid JSON. No markdown code blocks, no explanations, no comments. Ensure all strings are properly escaped, all commas are correct, and all brackets/braces are balanced. Double-check your JSON syntax before returning.",
           },
           { role: "user", content: prompt },
         ],
@@ -1751,7 +3073,92 @@ Captured text: ${sourceSummary}`;
       jsonText = jsonText.replace(/^```json\n?/, "").replace(/```$/, "").trim();
     }
 
-    const enhanced = JSON.parse(jsonText);
+    // Try to parse JSON, with repair attempts for common issues
+    let enhanced: any;
+    try {
+      enhanced = JSON.parse(jsonText);
+    } catch (parseError) {
+      const errorPos = (parseError as Error).message.match(/position (\d+)/)?.[1];
+      console.error(`[ingestUniversal] JSON parse error: ${(parseError as Error).message}`);
+      if (errorPos) {
+        const pos = parseInt(errorPos, 10);
+        console.error(`[ingestUniversal] JSON around error position (${pos}): ${jsonText.substring(Math.max(0, pos - 100), Math.min(jsonText.length, pos + 100))}`);
+      }
+      
+      // Attempt JSON repair for common issues
+      let repairedJson = jsonText;
+      
+      // Fix trailing commas before closing braces/brackets
+      repairedJson = repairedJson.replace(/,(\s*[}\]])/g, '$1');
+      
+      // Fix missing commas between object properties (look for } followed by " or number)
+      repairedJson = repairedJson.replace(/}\s*"/g, '}, "');
+      repairedJson = repairedJson.replace(/}\s*(\d)/g, '}, $1');
+      
+      try {
+        enhanced = JSON.parse(repairedJson);
+        console.log(`[ingestUniversal] Successfully parsed JSON after automatic repair`);
+      } catch (retryError) {
+        // If automatic repair fails, try asking LLM to fix the JSON
+        console.warn(`[ingestUniversal] Automatic JSON repair failed, attempting LLM-based repair...`);
+        try {
+          const repairResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${openAiKey}`,
+            },
+            body: JSON.stringify({
+              model: "gpt-4o-mini",
+              temperature: 0,
+              messages: [
+                {
+                  role: "system",
+                  content: "You are a JSON repair tool. Fix the malformed JSON and return ONLY the corrected JSON, no explanations.",
+                },
+                {
+                  role: "user",
+                  content: `Fix this malformed JSON. Return ONLY the corrected valid JSON:\n\n${jsonText.substring(0, 8000)}`,
+                },
+              ],
+            }),
+          });
+
+          if (repairResponse.ok) {
+            const repairPayload = await repairResponse.json();
+            const repairMessage = repairPayload?.choices?.[0]?.message?.content;
+            if (repairMessage) {
+              let repairJsonText = repairMessage.trim();
+              if (repairJsonText.startsWith("```")) {
+                repairJsonText = repairJsonText.replace(/^```json\n?/, "").replace(/```$/, "").trim();
+              }
+              enhanced = JSON.parse(repairJsonText);
+              console.log(`[ingestUniversal] Successfully parsed JSON after LLM repair`);
+            } else {
+              throw new Error("LLM repair returned no content");
+            }
+          } else {
+            throw new Error(`LLM repair request failed: ${repairResponse.status}`);
+          }
+        } catch (llmRepairError) {
+          // If LLM repair also fails, log the full JSON for debugging and throw a helpful error
+          console.error(`[ingestUniversal] Failed to parse JSON even after LLM repair attempt`);
+          console.error(`[ingestUniversal] Original parse error: ${(parseError as Error).message}`);
+          console.error(`[ingestUniversal] LLM repair error: ${(llmRepairError as Error).message}`);
+          console.error(`[ingestUniversal] JSON length: ${jsonText.length} characters`);
+          console.error(`[ingestUniversal] JSON preview (first 1000 chars): ${jsonText.substring(0, 1000)}`);
+          if (jsonText.length > 1000) {
+            console.error(`[ingestUniversal] JSON preview (last 1000 chars): ${jsonText.substring(Math.max(0, jsonText.length - 1000))}`);
+          }
+          throw new Error(
+            `Failed to parse JSON from LLM response after repair attempts. ` +
+            `Original error: ${(parseError as Error).message}. ` +
+            `This usually means the LLM returned severely malformed JSON. ` +
+            `Check the Convex logs for the raw JSON content.`
+          );
+        }
+      }
+    }
 
     // Validate that we extracted ingredients and steps
     const ingredientCount = (enhanced.ingredients || []).length;
@@ -1796,12 +3203,12 @@ Captured text: ${sourceSummary}`;
           // Try to find similar items in the food library by name
           const ingredientNameLower = (ingredient.originalText || ingredient.displayText || "").toLowerCase();
           const similarItems = foodLibrary
-            .filter((entry) =>
+            .filter((entry: Doc<"foodLibrary">) =>
               entry.name.toLowerCase().includes(ingredientNameLower) ||
               ingredientNameLower.includes(entry.name.toLowerCase())
             )
             .slice(0, 3)
-            .map((entry) => entry.code);
+            .map((entry: Doc<"foodLibrary">) => entry.code);
 
           const nearby = similarItems.length > 0
             ? similarItems
@@ -1812,11 +3219,13 @@ Captured text: ${sourceSummary}`;
           suggestions = nearby;
 
           try {
+            // Note: translations parameter can be added here when translations become available during ingestion
             const createdId = await ctx.runMutation(api.foodLibrary.ensureProvisional, {
               code: foodCode,
               name: ingredient.originalText || ingredient.displayText || foodCode,
               namespace: foodCode.split(".")[0] || "provisional",
               category: ingredient.category || "Provisional",
+              // translations: ingredient.translations, // Add when translations are available
             });
             foodItemsAdded.push(createdId);
           } catch (error) {
@@ -1876,7 +3285,38 @@ Captured text: ${sourceSummary}`;
 
         // Normalize optional string fields first
         const prep = normalizeOptionalString(ingredient.preparation);
-        const origText = normalizeOptionalString(ingredient.originalText);
+        let origText = normalizeOptionalString(ingredient.originalText);
+
+        // Clean originalText to remove duplicated quantity/unit information and malformed patterns
+        if (origText) {
+          // Remove patterns like "1 tablespoon 2½ tablespoons" or "1 lb 2 lbs"
+          origText = origText.replace(/\b\d+\s+\w+\s+(\d+[½¼¾]?\s*\w+)/gi, "$1");
+          // Remove patterns like "1 tablespoon 2 tablespoons" -> "2 tablespoons"
+          origText = origText.replace(/\b\d+\s+(\w+)\s+(\d+)\s+\1s?\b/gi, "$2 $1$3");
+          
+          // More aggressive: Remove leading quantity/unit patterns (e.g., "2 lbs", "1/2 cup", "2½ tablespoons")
+          // This handles cases where quantity/unit appears at the start
+          origText = origText.replace(
+            /^\s*\d+[½¼¾]?\s*(cup|cups|tablespoon|tablespoons|teaspoon|teaspoons|pound|pounds|lb|lbs|ounce|ounces|oz|gram|grams|g|milliliter|milliliters|ml|tbsp|tsp|count|clove|cloves|piece|pieces|item|items)\s+/gi,
+            ""
+          );
+          
+          // Remove fraction patterns at the start (e.g., "1/2 cup", "¾ cup")
+          origText = origText.replace(/^\s*\d+\/\d+\s+(cup|cups|tablespoon|tablespoons|teaspoon|teaspoons|pound|pounds|lb|lbs|ounce|ounces|oz|gram|grams|g|milliliter|milliliters|ml|tbsp|tsp)\s+/gi, "");
+          
+          // Remove Unicode fraction patterns (e.g., "½ cup", "¼ cup")
+          origText = origText.replace(/^\s*[½¼¾]\s+(cup|cups|tablespoon|tablespoons|teaspoon|teaspoons|pound|pounds|lb|lbs|ounce|ounces|oz|gram|grams|g|milliliter|milliliters|ml|tbsp|tsp)\s+/gi, "");
+          
+          // Remove duplicated words (e.g., "lean ground lean" -> "lean ground")
+          origText = origText.replace(/\b(\w+)\s+\1\b/gi, "$1");
+          
+          // Remove parenthetical notes that contain instructions or notes (e.g., "(or other non-dairy milk) *see note")
+          origText = origText.replace(/\s*\([^)]*\)/g, "");
+          origText = origText.replace(/\s*\*[^*]*\*/g, "");
+          
+          // Remove extra whitespace
+          origText = origText.replace(/\s+/g, " ").trim();
+        }
 
         const parseDisplayQuantity = (value?: string) => {
           if (!value) return undefined;
@@ -1925,7 +3365,58 @@ Captured text: ${sourceSummary}`;
         } else if (displayUnit) {
           unit = displayUnit;
         } else {
-          unit = "count";
+          // Validate unit: if quantity > 0 and not a count-based ingredient, require a unit
+          // For count-based ingredients (like "1 egg"), unit should be "count"
+          // For others, try to infer from originalText or default to "count"
+          if (quantity > 0 && origText) {
+            // Try to extract unit from originalText
+            const unitMatch = origText.match(/\b(cup|cups|tablespoon|tablespoons|teaspoon|teaspoons|pound|pounds|ounce|ounces|gram|grams|milliliter|milliliters|lb|lbs|oz|g|ml|tbsp|tsp)\b/i);
+            if (unitMatch) {
+              // Normalize common abbreviations
+              const matchedUnit = unitMatch[1].toLowerCase();
+              const unitMap: Record<string, string> = {
+                "tbsp": "tablespoon",
+                "tsp": "teaspoon",
+                "lb": "pound",
+                "lbs": "pound",
+                "oz": "ounce",
+                "g": "gram",
+                "ml": "milliliter",
+              };
+              unit = unitMap[matchedUnit] || matchedUnit;
+            } else {
+              // Check if it's a count-based ingredient (e.g., "1 egg", "2 cloves")
+              const countPattern = /\b\d+\s+(egg|clove|piece|item|count)\b/i;
+              if (countPattern.test(origText)) {
+                unit = "count";
+              } else {
+                // Default to "count" if we can't determine
+                unit = "count";
+                console.warn("[ingestUniversal] Could not determine unit, defaulting to 'count'", {
+                  originalText: origText,
+                  quantity,
+                });
+              }
+            }
+          } else {
+            unit = "count";
+          }
+        }
+
+        // Ensure displayQuantity and displayUnit are set for fractions
+        // If we have a fraction in originalText but not in displayQuantity, extract it
+        if (!displayQuantity && origText) {
+          const fractionMatch = origText.match(/(\d+\s*[½¼¾]|\d+\/\d+)/);
+          if (fractionMatch) {
+            displayQuantity = fractionMatch[1].trim();
+          }
+        }
+        if (!displayUnit && origText && unit !== "count") {
+          // Try to extract unit from originalText for display
+          const unitMatch = origText.match(/\b(cup|cups|tablespoon|tablespoons|teaspoon|teaspoons|pound|pounds|ounce|ounces|gram|grams|milliliter|milliliters)\b/i);
+          if (unitMatch) {
+            displayUnit = unitMatch[1];
+          }
         }
 
         // Build the normalized ingredient object, explicitly handling null values
@@ -1992,7 +3483,7 @@ Captured text: ${sourceSummary}`;
       }
     }
 
-    const normalizedSourceSteps = stepsArray
+    let normalizedSourceSteps = stepsArray
       .map((step: any, index: number) => {
         const text =
           typeof step === "string"
@@ -2023,6 +3514,221 @@ Captured text: ${sourceSummary}`;
         };
       })
       .filter((step: { text: string }) => Boolean(step.text?.trim()));
+
+    // Initialize cookingMethods variable early
+    let normalizedCookingMethods:
+      | Array<{
+          methodName: string;
+          steps: Array<{
+            stepNumber: number;
+            text: string;
+            timeInMinutes?: number;
+            temperature?: { value: number; unit: "F" | "C" };
+          }>;
+          encodedSteps?: string;
+        }>
+      | undefined;
+
+    // Validate that steps are complete (not just headers)
+    const hasOnlyHeaders = normalizedSourceSteps.every((step) => {
+      const text = step.text.toUpperCase();
+      return (
+        text.includes("INSTRUCTIONS") &&
+        (text.includes("INSTANT POT") ||
+          text.includes("CROCK-POT") ||
+          text.includes("SLOW COOKER") ||
+          text.includes("STOVETOP") ||
+          text.includes("OVEN")) &&
+        step.text.length < 100 // Headers are usually short
+      );
+    });
+
+    if (hasOnlyHeaders && html) {
+      console.warn(
+        "[ingestUniversal] Detected only method headers, attempting direct HTML parsing",
+      );
+
+      // Try direct HTML parsing first (more reliable for structured HTML)
+      const parsedMethods = parseMethodsFromHtml(html);
+      if (parsedMethods && parsedMethods.length >= 2) {
+        console.log(
+          `[ingestUniversal] Direct HTML parsing found ${parsedMethods.length} methods with steps`,
+        );
+
+        // Convert parsed methods to normalizedSourceSteps (all steps sequentially)
+        const allSteps: Array<{ stepNumber: number; text: string }> = [];
+        parsedMethods.forEach((method) => {
+          // Add method header as a step (for backward compatibility)
+          allSteps.push({
+            stepNumber: allSteps.length + 1,
+            text: `${method.methodName.toUpperCase()} INSTRUCTIONS`,
+          });
+          // Add method steps
+          method.steps.forEach((step) => {
+            allSteps.push({
+              stepNumber: allSteps.length + 1,
+              text: step.text,
+            });
+          });
+        });
+
+        normalizedSourceSteps = allSteps;
+
+        // Also set normalizedCookingMethods for UI tabs
+        normalizedCookingMethods = parsedMethods.map((method) => ({
+          methodName: method.methodName,
+          steps: method.steps,
+        }));
+      } else {
+        // Fallback to existing instruction text extraction
+        const instructionText = extractInstructionsFromHtml(html);
+        if (instructionText && instructionText.length > 200) {
+          // Parse instruction text into steps
+          // Look for numbered steps, bullet points, or line breaks
+          const stepMatches = instructionText.match(
+            /(?:^\d+\.|\*|\-|^[A-Z][^.!?]*[.!?])(.+?)(?=^\d+\.|\*|\-|^[A-Z]|$)/gm,
+          );
+          if (stepMatches && stepMatches.length > normalizedSourceSteps.length) {
+            const extractedSteps = stepMatches
+              .map((match, index) => ({
+                stepNumber: index + 1,
+                text: match.replace(/^\d+\.|\*|\-/, "").trim(),
+              }))
+              .filter((step) => step.text.length > 20); // Filter out very short steps
+
+            if (extractedSteps.length > normalizedSourceSteps.length) {
+              console.log(
+                `[ingestUniversal] Extracted ${extractedSteps.length} steps from HTML instruction text`,
+              );
+              normalizedSourceSteps = extractedSteps;
+            }
+          }
+        }
+      }
+    }
+
+    // Detect and group cooking methods from extracted steps
+    const detectedMethods = detectAndGroupCookingMethods(normalizedSourceSteps);
+
+    // Also check if LLM provided cookingMethods directly
+    if (enhanced.cookingMethods && Array.isArray(enhanced.cookingMethods) && enhanced.cookingMethods.length >= 2) {
+      // Use LLM-provided cookingMethods if available
+      normalizedCookingMethods = enhanced.cookingMethods.map((method: any) => ({
+        methodName: method.methodName || "Unknown Method",
+        steps: (method.steps || []).map((step: any, index: number) => {
+          const text =
+            typeof step === "string"
+              ? step
+              : step?.text ??
+                (typeof step?.instructions === "string"
+                  ? step.instructions
+                  : step?.instructions?.en) ??
+                "";
+
+          const timeInMinutes =
+            typeof step?.timeInMinutes === "number" ? step.timeInMinutes : undefined;
+
+          const temperature:
+            | { value: number; unit: "F" | "C" }
+            | undefined =
+            step?.temperature &&
+            typeof step.temperature.value === "number" &&
+            (step.temperature.unit === "F" || step.temperature.unit === "C")
+              ? { value: step.temperature.value, unit: step.temperature.unit as "F" | "C" }
+              : undefined;
+
+          return {
+            stepNumber: step?.stepNumber ?? index + 1,
+            text,
+            ...(timeInMinutes !== undefined ? { timeInMinutes } : {}),
+            ...(temperature ? { temperature } : {}),
+          };
+        }),
+        encodedSteps: method.encodedSteps,
+      }));
+      console.log(
+        `[ingestUniversal] Using LLM-provided cookingMethods: ${normalizedCookingMethods?.length || 0} methods`,
+      );
+    } else if (detectedMethods && detectedMethods.length >= 2) {
+      // Multi-method recipe - store methods separately
+      normalizedCookingMethods = detectedMethods.map((method) => ({
+        methodName: method.methodName,
+        steps: method.steps.map((step) => {
+          // Preserve timeInMinutes and temperature if available from original steps
+          const originalStep = normalizedSourceSteps.find((s) => s.text === step.text);
+          return {
+            stepNumber: step.stepNumber,
+            text: step.text,
+            ...(originalStep?.timeInMinutes !== undefined
+              ? { timeInMinutes: originalStep.timeInMinutes }
+              : {}),
+            ...(originalStep?.temperature !== undefined ? { temperature: originalStep.temperature } : {}),
+          };
+        }),
+        // TODO: Generate encodedSteps per method if needed
+      }));
+
+      console.log(
+        `[ingestUniversal] Detected ${normalizedCookingMethods.length} cooking methods: ${normalizedCookingMethods.map((m) => m.methodName).join(", ")}`,
+      );
+    } else {
+      // Single-method recipe - keep sourceSteps as-is
+      console.log("[ingestUniversal] Single-method recipe detected, using sourceSteps");
+    }
+
+    // Ensure cookingMethods is set if we detected methods but it wasn't set yet
+    if (!normalizedCookingMethods && detectedMethods && detectedMethods.length >= 2) {
+      // If we have detected methods but cookingMethods wasn't set, use detected methods
+      normalizedCookingMethods = detectedMethods.map((method) => ({
+        methodName: method.methodName,
+        steps: method.steps.map((step) => {
+          const originalStep = normalizedSourceSteps.find((s) => s.text === step.text);
+          return {
+            stepNumber: step.stepNumber,
+            text: step.text,
+            ...(originalStep?.timeInMinutes !== undefined
+              ? { timeInMinutes: originalStep.timeInMinutes }
+              : {}),
+            ...(originalStep?.temperature !== undefined ? { temperature: originalStep.temperature } : {}),
+          };
+        }),
+      }));
+      console.log(
+        `[ingestUniversal] Set cookingMethods from detectedMethods: ${normalizedCookingMethods.length} methods`,
+      );
+    }
+
+    // Extract localized steps if provided by LLM
+    // Note: The prompt should be updated to request sourceStepsLocalized and cookingMethods[].stepsLocalized
+    // For now, we extract them if present but don't require them
+    let normalizedSourceStepsLocalized: {
+      en?: Array<{ stepNumber: number; text: string; timeInMinutes?: number; temperature?: { value: number; unit: "F" | "C" } }>;
+      es?: Array<{ stepNumber: number; text: string; timeInMinutes?: number; temperature?: { value: number; unit: "F" | "C" } }>;
+      zh?: Array<{ stepNumber: number; text: string; timeInMinutes?: number; temperature?: { value: number; unit: "F" | "C" } }>;
+      fr?: Array<{ stepNumber: number; text: string; timeInMinutes?: number; temperature?: { value: number; unit: "F" | "C" } }>;
+      ar?: Array<{ stepNumber: number; text: string; timeInMinutes?: number; temperature?: { value: number; unit: "F" | "C" } }>;
+      ja?: Array<{ stepNumber: number; text: string; timeInMinutes?: number; temperature?: { value: number; unit: "F" | "C" } }>;
+      vi?: Array<{ stepNumber: number; text: string; timeInMinutes?: number; temperature?: { value: number; unit: "F" | "C" } }>;
+      tl?: Array<{ stepNumber: number; text: string; timeInMinutes?: number; temperature?: { value: number; unit: "F" | "C" } }>;
+    } | undefined;
+
+    if (enhanced.sourceStepsLocalized && typeof enhanced.sourceStepsLocalized === "object") {
+      normalizedSourceStepsLocalized = enhanced.sourceStepsLocalized as typeof normalizedSourceStepsLocalized;
+    }
+
+    // Extract localized steps for cooking methods if provided
+    if (normalizedCookingMethods && enhanced.cookingMethods && Array.isArray(enhanced.cookingMethods)) {
+      normalizedCookingMethods = normalizedCookingMethods.map((method, index) => {
+        const enhancedMethod = enhanced.cookingMethods[index];
+        if (enhancedMethod?.stepsLocalized && typeof enhancedMethod.stepsLocalized === "object") {
+          return {
+            ...method,
+            stepsLocalized: enhancedMethod.stepsLocalized as typeof normalizedSourceStepsLocalized,
+          };
+        }
+        return method;
+      });
+    }
 
     // Normalize encodedSteps: if it's an array, convert to JSON string; if string, use as-is; otherwise undefined
     // IMPORTANT: Ensure encodedSteps doesn't accidentally contain sourceSteps data
@@ -2074,6 +3780,8 @@ Captured text: ${sourceSummary}`;
       description: normalizedDescription,
       ingredients: normalizedIngredients,
       sourceSteps: normalizedSourceSteps,
+      ...(normalizedSourceStepsLocalized ? { sourceStepsLocalized: normalizedSourceStepsLocalized } : {}),
+      ...(normalizedCookingMethods ? { cookingMethods: normalizedCookingMethods } : {}),
       encodedSteps: normalizedEncodedSteps ?? "",
       encodingVersion,
       emojiTags: enhanced.emojiTags || [],
@@ -2089,10 +3797,10 @@ Captured text: ${sourceSummary}`;
       authorSocialPinterest: authorSocial?.pinterest?.toLowerCase(),
       authorSocialYoutube: authorSocial?.youtube?.toLowerCase(),
       authorSocialFacebook: authorSocial?.facebook?.toLowerCase(),
-      source: args.sourceType as SourceType,
+      source: detectedSourceType,
       sourceUrl,
       attribution: {
-        source: rawAttribution.source || args.sourceType,
+        source: rawAttribution.source || detectedSourceType,
         sourceUrl,
         author: rawAttribution.author || enhanced.author || undefined,
         authorName: normalizedAuthorName || undefined,
@@ -2134,29 +3842,33 @@ Captured text: ${sourceSummary}`;
       };
     }
 
-    // Calculate nutrition profile if possible
-    const perServing = computeNutritionProfile(
+    // If HTML extraction didn't find nutrition, try LLM extraction now that we have recipe data
+    if (!extractedNutrition && sourceSummary && sourceSummary !== "Provide a universal recipe representation for ingestion.") {
+      console.log(`[ingestUniversal] Attempting LLM nutrition extraction for ${args.sourceUrl}`);
+      extractedNutrition = await extractNutritionWithLLM(
+        sourceSummary,
+        { servings: recipeData.servings, recipeName: normalizedRecipeName },
+        openAiKey,
+      );
+      if (extractedNutrition) {
+        console.log(`[ingestUniversal] Extracted nutrition via LLM for ${args.sourceUrl}`);
+      }
+    }
+
+    // Calculate nutrition profile from ingredients if possible
+    const calculatedNutrition = computeNutritionProfile(
       normalizedIngredients,
       recipeData.servings,
       foodLibrary,
     );
 
-    const nutritionProfile =
-      perServing.calories > 0
-        ? {
-            caloriesPerServing: Math.round(perServing.calories),
-            proteinPerServing: Math.round(perServing.macronutrients.protein),
-            carbsPerServing: Math.round(perServing.macronutrients.carbohydrates),
-            fatPerServing: Math.round(perServing.macronutrients.fat),
-            fiberPerServing: perServing.macronutrients.fiber
-              ? Math.round(perServing.macronutrients.fiber)
-              : undefined,
-            sugarsPerServing: perServing.macronutrients.sugars
-              ? Math.round(perServing.macronutrients.sugars)
-              : undefined,
-            sodiumPerServing: undefined, // Not calculated from food library currently
-          }
-        : undefined;
+    // Merge extracted nutrition (from HTML/LLM) with calculated nutrition
+    // Prefer extracted data but fill gaps with calculated values
+    const nutritionProfile = mergeNutritionData(
+      extractedNutrition,
+      calculatedNutrition,
+      recipeData.servings,
+    );
 
     // Add metadata to recipe data
     const recipeDataWithMetadata = {
@@ -2174,12 +3886,26 @@ Captured text: ${sourceSummary}`;
       recipeData: recipeDataWithMetadata,
     });
 
-    await ctx.runMutation(api.nutritionProfiles.upsertForRecipe, {
-      recipeId,
-      servings: recipeData.servings,
-      perServing,
-      encodingVersion,
-    });
+    // Only upsert nutrition profile if we have valid data
+    if (nutritionProfile) {
+      await ctx.runMutation(api.nutritionProfiles.upsertForRecipe, {
+        recipeId,
+        servings: recipeData.servings,
+        perServing: {
+          calories: nutritionProfile.caloriesPerServing,
+          macronutrients: {
+            protein: nutritionProfile.proteinPerServing,
+            carbohydrates: nutritionProfile.carbsPerServing,
+            fat: nutritionProfile.fatPerServing,
+            fiber: nutritionProfile.fiberPerServing,
+            sugars: nutritionProfile.sugarsPerServing,
+          },
+        },
+        encodingVersion,
+      });
+    } else {
+      console.warn(`[ingestUniversal] No nutrition profile created for recipe ${recipeId} - no extracted or calculated nutrition data available`);
+    }
 
     // Store translation guide overrides when the model provides better phrasing
     for (const guide of translationGuides) {
@@ -2548,6 +4274,7 @@ export const updateMetadata = mutation({
         fiberPerServing: v.optional(v.number()),
         sugarsPerServing: v.optional(v.number()),
         sodiumPerServing: v.optional(v.number()),
+        servingSize: v.optional(v.string()),
       })
     ),
   },
@@ -2586,6 +4313,281 @@ export const updateMetadata = mutation({
   },
 });
 
+type PersonalizedRailType =
+  | "forYou"
+  | "readyToCook"
+  | "quickEasy"
+  | "cuisines"
+  | "dietaryFriendly"
+  | "householdCompatible";
+
+const PRECOMPUTE_RAIL_TYPES: PersonalizedRailType[] = [
+  "forYou",
+  "readyToCook",
+  "quickEasy",
+  "cuisines",
+  "dietaryFriendly",
+  "householdCompatible",
+];
+
+const buildInventoryData = (
+  inventory: UserInventoryEntry[] | undefined,
+  foodLibraryIndex: Map<string, FoodLibraryIndexEntry>,
+  now: number
+) => {
+  const inventoryExpirationData = new Map<string, number>();
+  if (!inventory || inventory.length === 0) {
+    return {
+      userInventory: [] as string[],
+      inventoryExpirationData,
+    };
+  }
+
+  const codes = new Set<string>();
+  for (const item of inventory) {
+    codes.add(item.itemCode);
+    const libraryEntry = foodLibraryIndex.get(item.itemCode);
+    if (item.varietyCode && libraryEntry?.varietyCodes.has(item.varietyCode)) {
+      codes.add(item.varietyCode);
+    }
+    const shelfLifeDays = libraryEntry?.shelfLifeDays ?? 7;
+    const daysSincePurchase = Math.floor(
+      (now - item.purchaseDate) / (1000 * 60 * 60 * 24)
+    );
+    const daysUntilExpiration = shelfLifeDays - daysSincePurchase;
+    inventoryExpirationData.set(item.itemCode, daysUntilExpiration);
+  }
+
+  return {
+    userInventory: Array.from(codes),
+    inventoryExpirationData,
+  };
+};
+
+const buildRailCandidates = ({
+  recipes,
+  userInventory,
+  dietaryRestrictions,
+  allergies,
+  favoriteCuisines,
+  cookingStylePreferences,
+  householdMembers,
+}: {
+  recipes: Doc<"recipes">[];
+  userInventory: string[];
+  dietaryRestrictions: string[];
+  allergies: string[];
+  favoriteCuisines: string[];
+  cookingStylePreferences: string[];
+  householdMembers: HouseholdMember[] | null;
+}): Record<PersonalizedRailType, Doc<"recipes">[]> => {
+  const criticalRestrictions = dietaryRestrictions.filter((r) =>
+    ["Halal", "Kosher"].some((cdr) => r.toLowerCase().includes(cdr.toLowerCase()))
+  );
+
+  const baseRecipes = recipes.filter((recipe) => {
+    if (allergies.length > 0 && !matchesAllergies(recipe, allergies)) {
+      return false;
+    }
+    if (
+      criticalRestrictions.length > 0 &&
+      !matchesDietaryRestrictions(recipe, criticalRestrictions)
+    ) {
+      return false;
+    }
+    return true;
+  });
+
+  const rails: Record<PersonalizedRailType, Doc<"recipes">[]> = {
+    forYou: [],
+    readyToCook: [],
+    quickEasy: [],
+    cuisines: [],
+    dietaryFriendly: [],
+    householdCompatible: [],
+  };
+
+  for (const recipe of baseRecipes) {
+    rails.forYou.push(recipe);
+
+    const recipeIngredientCodes = recipe.ingredients.map((ing) => ing.foodCode);
+    const isReadyToCook = recipeIngredientCodes.every((code) =>
+      userInventory.includes(code)
+    );
+    if (isReadyToCook) {
+      rails.readyToCook.push(recipe);
+    }
+
+    const isQuick =
+      recipe.totalTimeMinutes <= 30 ||
+      recipe.cookingStyleTags?.some((tag) => tag.toLowerCase().includes("quick"));
+    if (isQuick && matchesCookingStyles(recipe, cookingStylePreferences)) {
+      rails.quickEasy.push(recipe);
+    }
+
+    if (matchesCuisines(recipe, favoriteCuisines)) {
+      rails.cuisines.push(recipe);
+    }
+
+    if (matchesDietaryRestrictions(recipe, dietaryRestrictions)) {
+      rails.dietaryFriendly.push(recipe);
+    }
+
+    if (!householdMembers || householdMembers.length === 0) {
+      rails.householdCompatible.push(recipe);
+    } else {
+      const compatibility = getRecipeCompatibility(recipe, householdMembers);
+      if (compatibility.incompatibleMembers.length === 0) {
+        rails.householdCompatible.push(recipe);
+      }
+    }
+  }
+
+  return rails;
+};
+
+const scoreAndSortRecipes = ({
+  recipes,
+  dietaryRestrictions,
+  allergies,
+  favoriteCuisines,
+  cookingStylePreferences,
+  nutritionGoals,
+  userInventory,
+  inventoryExpirationData,
+  limit,
+}: {
+  recipes: Doc<"recipes">[];
+  dietaryRestrictions: string[];
+  allergies: string[];
+  favoriteCuisines: string[];
+  cookingStylePreferences: string[];
+  nutritionGoals?: NutritionGoals;
+  userInventory: string[];
+  inventoryExpirationData: Map<string, number>;
+  limit: number;
+}) => {
+  const filterOptions: RecipeFilterOptions = {
+    dietaryRestrictions,
+    allergies,
+    favoriteCuisines,
+    cookingStylePreferences,
+    nutritionGoals,
+  };
+
+  const scoredRecipes = recipes.map((recipe) => {
+    const score = calculateRecipeScore(
+      recipe,
+      filterOptions,
+      userInventory,
+      inventoryExpirationData
+    );
+    return { recipe, score };
+  });
+
+  scoredRecipes.sort((a, b) => {
+    if (b.score !== a.score) {
+      return b.score - a.score;
+    }
+    return b.recipe.createdAt - a.recipe.createdAt;
+  });
+
+  return scoredRecipes.slice(0, limit).map((entry) => entry.recipe);
+};
+
+/**
+ * List all recipes for precompute runs (shared across users).
+ */
+export const listAllRecipesForPrecompute = query({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db.query("recipes").collect();
+  },
+});
+
+export const getHouseholdContextForPrecompute = query({
+  args: {
+    householdId: v.id("households"),
+  },
+  handler: async (ctx, args) => {
+    const household = await ctx.db.get(args.householdId);
+    if (!household) {
+      return null;
+    }
+
+    const memberDocs = await Promise.all(
+      household.members.map((id: Id<"users">) => ctx.db.get(id))
+    );
+    const householdMembers: HouseholdMember[] = memberDocs
+      .filter((member): member is Doc<"users"> => member !== null)
+      .map((member) => ({
+        memberId: member._id as unknown as string,
+        memberName: member.name ?? "Unknown",
+        allergies: (member.allergies ?? []) as string[],
+        dietaryRestrictions: (member.dietaryRestrictions ?? []) as string[],
+      }));
+
+    return {
+      inventory: (household.inventory ?? []) as UserInventoryEntry[],
+      householdMembers,
+    };
+  },
+});
+
+export const tryAcquirePrecomputeLock = mutation({
+  args: {
+    name: v.string(),
+    lockDurationMs: v.number(),
+    minIntervalMs: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    const existing = await ctx.db
+      .query("precomputeLocks")
+      .withIndex("by_name", (q) => q.eq("name", args.name))
+      .first();
+
+    if (existing) {
+      if (existing.lockedUntil > now) {
+        return { acquired: false, reason: "locked" as const };
+      }
+      if (
+        existing.lastRunAt !== undefined &&
+        now - existing.lastRunAt < args.minIntervalMs
+      ) {
+        return { acquired: false, reason: "throttled" as const };
+      }
+      await ctx.db.patch(existing._id, {
+        lockedUntil: now + args.lockDurationMs,
+        lastRunAt: now,
+      });
+      return { acquired: true, lockId: existing._id };
+    }
+
+    const lockId = await ctx.db.insert("precomputeLocks", {
+      name: args.name,
+      lockedUntil: now + args.lockDurationMs,
+      lastRunAt: now,
+      lastCompletedAt: undefined,
+    });
+
+    return { acquired: true, lockId };
+  },
+});
+
+export const releasePrecomputeLock = mutation({
+  args: {
+    lockId: v.id("precomputeLocks"),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.lockId, {
+      lockedUntil: 0,
+      lastCompletedAt: Date.now(),
+    });
+    return args.lockId;
+  },
+});
+
 /**
  * Pre-compute personalized recipe lists for all users
  * This should be called by a scheduled action periodically
@@ -2593,48 +4595,84 @@ export const updateMetadata = mutation({
 export const precomputePersonalizedRecipes = internalAction({
   args: {
     userId: v.optional(v.id("users")), // If provided, only compute for this user
+    limitUserIds: v.optional(v.array(v.id("users"))),
+    adminToken: v.optional(v.string()),
   },
-  handler: async (ctx, args) => {
-    const now = Date.now();
-    const expiresAt = now + 60 * 60 * 1000; // 1 hour from now
+  handler: async (ctx, args): Promise<{
+    computed: number;
+    errors: number;
+    total: number;
+    skippedReason?: "locked" | "throttled";
+  }> => {
+    const LOCK_NAME = "personalizedRecipes";
+    const LOCK_DURATION_MS = 30 * 60 * 1000; // 30 minutes
+    const MIN_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
+    const MAX_USERS_PER_RUN = 200;
+    const BATCH_SIZE = 20;
+    const PER_RAIL_LIMIT = 20;
 
-    // Get users to process
-    let userIds: Id<"users">[];
-    if (args.userId) {
-      userIds = [args.userId];
-    } else {
-      // Get all user IDs from database
-      const allUsers = await ctx.runQuery(api.recipes.getAllUserIds, {});
-      userIds = allUsers;
+    const lock: { acquired: boolean; reason?: "locked" | "throttled"; lockId?: Id<"precomputeLocks"> } = await ctx.runMutation(api.recipes.tryAcquirePrecomputeLock, {
+      name: LOCK_NAME,
+      lockDurationMs: LOCK_DURATION_MS,
+      minIntervalMs: MIN_INTERVAL_MS,
+    });
+
+    if (!lock.acquired) {
+      return {
+        computed: 0,
+        errors: 0,
+        total: 0,
+        skippedReason: lock.reason,
+      } as {
+        computed: number;
+        errors: number;
+        total: number;
+        skippedReason: "locked" | "throttled";
+      };
     }
 
-    let computed = 0;
-    let errors = 0;
+    try {
+      const now = Date.now();
+      const expiresAt = now + 60 * 60 * 1000; // 1 hour from now
 
-    const railTypes = [
-      "forYou",
-      "readyToCook",
-      "quickEasy",
-      "cuisines",
-      "dietaryFriendly",
-      "householdCompatible",
-    ] as const;
+      // Get users to process
+      let userIds: Id<"users">[];
+      if (args.userId) {
+        userIds = [args.userId];
+      } else if (args.limitUserIds && args.limitUserIds.length > 0) {
+        const adminToken = process.env.ADMIN_PRECOMPUTE_TOKEN;
+        if (!adminToken || args.adminToken !== adminToken) {
+          throw new Error("Admin token required to limit precompute scope.");
+        }
+        userIds = args.limitUserIds;
+      } else {
+        // Get all user IDs from database
+        const allUsers = await ctx.runQuery(api.recipes.getAllUserIds, {});
+        userIds = allUsers;
+      }
 
-    for (const userId of userIds) {
-      try {
-        // Get user data
+      const railTypes = PRECOMPUTE_RAIL_TYPES;
+
+      const totalUsers = Math.min(userIds.length, MAX_USERS_PER_RUN);
+      userIds = userIds.slice(0, totalUsers);
+
+      let computed = 0;
+      let errors = 0;
+
+      const processUser = async (userId: Id<"users">): Promise<{ computed: boolean; error?: boolean }> => {
         const user = await ctx.runQuery(api.users.getUserById, { userId });
-        if (!user) continue;
+        if (!user) {
+          return { computed: false };
+        }
 
         // Compute personalized lists for each rail type
         for (const railType of railTypes) {
-          const recipes = (await ctx.runQuery(api.recipes.listPersonalizedForUser, {
+          const recipes = (await ctx.runQuery(internal.recipes.computePersonalizedForUser, {
             userId,
             railType,
-            limit: 20,
+            limit: PER_RAIL_LIMIT,
           })) as Doc<"recipes">[];
 
-          // Store in cache
           const existing = await ctx.runQuery(api.recipes.getPersonalizedCache, {
             userId,
             railType,
@@ -2643,7 +4681,7 @@ export const precomputePersonalizedRecipes = internalAction({
           const cacheData = {
             userId,
             railType,
-            recipeIds: recipes.map((r: Doc<"recipes">) => r._id),
+            recipeIds: recipes.map((recipe) => recipe._id),
             computedAt: now,
             expiresAt,
           };
@@ -2658,28 +4696,53 @@ export const precomputePersonalizedRecipes = internalAction({
           }
         }
 
-        computed++;
-      } catch (error) {
-        console.error(`Failed to precompute for user ${userId}:`, error);
-        errors++;
+        return { computed: true };
+      };
+
+      for (let i = 0; i < userIds.length; i += BATCH_SIZE) {
+        const batch = userIds.slice(i, i + BATCH_SIZE);
+        const results = await Promise.all(
+          batch.map(async (userId) => {
+            try {
+              return await processUser(userId);
+            } catch (error) {
+              console.error(`Failed to precompute for user ${userId}:`, error);
+              return { computed: false, error: true };
+            }
+          })
+        );
+
+        for (const result of results) {
+          if (result.computed) {
+            computed++;
+          } else if ("error" in result && result.error) {
+            errors++;
+          }
+        }
+      }
+
+      // Clean up expired cache entries
+      const expiredCutoff = now - 24 * 60 * 60 * 1000; // 24 hours ago
+      await ctx.runMutation(api.recipes.cleanupExpiredCache, {
+        expiredBefore: expiredCutoff,
+      });
+
+      return {
+        computed,
+        errors,
+        total: userIds.length,
+      } as {
+        computed: number;
+        errors: number;
+        total: number;
+      };
+    } finally {
+      if (lock.acquired && lock.lockId) {
+        await ctx.runMutation(api.recipes.releasePrecomputeLock, {
+          lockId: lock.lockId,
+        });
       }
     }
-
-    // Clean up expired cache entries
-    const expiredCutoff = now - 24 * 60 * 60 * 1000; // 24 hours ago
-    await ctx.runMutation(api.recipes.cleanupExpiredCache, {
-      expiredBefore: expiredCutoff,
-    });
-
-    return {
-      computed,
-      errors,
-      total: userIds.length,
-    } as {
-      computed: number;
-      errors: number;
-      total: number;
-    };
   },
 });
 
@@ -2840,10 +4903,24 @@ export const listPersonalizedForUser = query({
       .first();
 
     if (cached && cached.expiresAt > now) {
-      const recipes = await Promise.all(
-        cached.recipeIds.map((id) => ctx.db.get(id))
-      );
-      return recipes.filter(Boolean) as Doc<"recipes">[];
+      // Check if there are any recipes newer than the cache timestamp
+      // If so, ignore cache and compute fresh results to include new recipes
+      const newestRecipe = await ctx.db
+        .query("recipes")
+        .withIndex("by_created_at", (q) => q.gt("createdAt", cached.computedAt))
+        .order("desc")
+        .first();
+      
+      const cacheIsStale = newestRecipe !== null;
+      
+      if (!cacheIsStale) {
+        // Return cached results only if no newer recipes exist
+        const recipes = await Promise.all(
+          cached.recipeIds.map((id) => ctx.db.get(id))
+        );
+        return recipes.filter(Boolean) as Doc<"recipes">[];
+      }
+      // If cache is stale (newer recipes exist), fall through to compute fresh results
     }
 
     // Compute fresh (same logic as listPersonalized but for specific user)
@@ -2909,6 +4986,181 @@ export const listPersonalizedForUser = query({
     });
 
     // Apply rail-specific filters (same as listPersonalized)
+    if (args.railType === "readyToCook") {
+      filteredRecipes = filteredRecipes.filter((recipe) => {
+        const recipeIngredientCodes = recipe.ingredients.map(
+          (ing) => ing.foodCode
+        );
+        return recipeIngredientCodes.every((code) =>
+          userInventory.includes(code)
+        );
+      });
+    } else if (args.railType === "quickEasy") {
+      filteredRecipes = filteredRecipes.filter((recipe) => {
+        const isQuick =
+          recipe.totalTimeMinutes <= 30 ||
+          recipe.cookingStyleTags?.some((tag) =>
+            tag.toLowerCase().includes("quick")
+          );
+        return isQuick && matchesCookingStyles(recipe, cookingStylePreferences);
+      });
+    } else if (args.railType === "cuisines") {
+      filteredRecipes = filteredRecipes.filter((recipe) =>
+        matchesCuisines(recipe, favoriteCuisines)
+      );
+    } else if (args.railType === "dietaryFriendly") {
+      filteredRecipes = filteredRecipes.filter((recipe) =>
+        matchesDietaryRestrictions(recipe, dietaryRestrictions)
+      );
+    } else if (args.railType === "householdCompatible") {
+      if (user.householdId) {
+        const household = await ctx.db.get(user.householdId);
+        if (household) {
+          const memberDocs = await Promise.all(
+            household.members.map((id: Id<"users">) => ctx.db.get(id))
+          );
+          const householdMembers = memberDocs
+            .filter((member): member is Doc<"users"> => member !== null)
+            .map((member) => ({
+              memberId: member._id,
+              memberName: member.name ?? "Unknown",
+              allergies: (member.allergies ?? []) as string[],
+              dietaryRestrictions: (member.dietaryRestrictions ??
+                []) as string[],
+            }))
+            .map((m) => ({
+              ...m,
+              memberId: m.memberId as unknown as string,
+            }));
+
+          filteredRecipes = filteredRecipes.filter((recipe) => {
+            const compatibility = getRecipeCompatibility(
+              recipe,
+              householdMembers
+            );
+            return compatibility.incompatibleMembers.length === 0;
+          });
+        }
+      }
+    }
+
+    // Score and sort
+    const scoredRecipes = filteredRecipes.map((recipe) => {
+      const filterOptions: RecipeFilterOptions = {
+        dietaryRestrictions,
+        allergies,
+        favoriteCuisines,
+        cookingStylePreferences,
+        nutritionGoals: nutritionGoals ?? undefined,
+      };
+
+      const score = calculateRecipeScore(
+        recipe,
+        filterOptions,
+        userInventory,
+        inventoryExpirationData
+      );
+
+      return { recipe, score };
+    });
+
+    scoredRecipes.sort((a, b) => {
+      if (b.score !== a.score) {
+        return b.score - a.score;
+      }
+      return b.recipe.createdAt - a.recipe.createdAt;
+    });
+
+    return scoredRecipes
+      .slice(0, limit)
+      .map((entry) => entry.recipe);
+  },
+});
+
+/**
+ * Internal query to compute personalized recipes for a user and rail type.
+ * This is used by the precompute action to generate fresh cache entries.
+ */
+export const computePersonalizedForUser = internalQuery({
+  args: {
+    userId: v.id("users"),
+    railType: v.union(
+      v.literal("forYou"),
+      v.literal("readyToCook"),
+      v.literal("quickEasy"),
+      v.literal("cuisines"),
+      v.literal("dietaryFriendly"),
+      v.literal("householdCompatible")
+    ),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = args.limit ?? 10;
+    const now = Date.now();
+
+    // Compute fresh (same logic as listPersonalizedForUser but without cache check)
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      return [] as Doc<"recipes">[];
+    }
+
+    // Get user preferences and inventory (same as listPersonalizedForUser)
+    const dietaryRestrictions = (user.dietaryRestrictions ?? []) as string[];
+    const allergies = (user.allergies ?? []) as string[];
+    const favoriteCuisines = (user.favoriteCuisines ?? []) as string[];
+    const cookingStylePreferences = (user.cookingStylePreferences ??
+      []) as string[];
+    const nutritionGoals = user.nutritionGoals;
+    const foodLibrary = await ctx.db.query("foodLibrary").collect();
+    const foodLibraryIndex = buildFoodLibraryIndex(foodLibrary);
+
+    let userInventory: string[] = [];
+    let inventoryExpirationData = new Map<string, number>();
+    if (user.householdId) {
+      const household = await ctx.db.get(user.householdId);
+      if (household?.inventory) {
+        const inventory = household.inventory as UserInventoryEntry[];
+        const codes = new Set<string>();
+        for (const item of inventory) {
+          codes.add(item.itemCode);
+          const libraryEntry = foodLibraryIndex.get(item.itemCode);
+          if (item.varietyCode && libraryEntry?.varietyCodes.has(item.varietyCode)) {
+            codes.add(item.varietyCode);
+          }
+          const shelfLifeDays = libraryEntry?.shelfLifeDays ?? 7;
+          const daysSincePurchase = Math.floor(
+            (now - item.purchaseDate) / (1000 * 60 * 60 * 24)
+          );
+          const daysUntilExpiration = shelfLifeDays - daysSincePurchase;
+          inventoryExpirationData.set(item.itemCode, daysUntilExpiration);
+        }
+        userInventory = Array.from(codes);
+      }
+    }
+
+    // Get all recipes
+    let filteredRecipes = await ctx.db.query("recipes").collect();
+
+    // Apply hard filters
+    filteredRecipes = filteredRecipes.filter((recipe) => {
+      if (allergies.length > 0 && !matchesAllergies(recipe, allergies)) {
+        return false;
+      }
+      const criticalRestrictions = dietaryRestrictions.filter((r) =>
+        ["Halal", "Kosher"].some((cdr) =>
+          r.toLowerCase().includes(cdr.toLowerCase())
+        )
+      );
+      if (
+        criticalRestrictions.length > 0 &&
+        !matchesDietaryRestrictions(recipe, criticalRestrictions)
+      ) {
+        return false;
+      }
+      return true;
+    });
+
+    // Apply rail-specific filters (same as listPersonalizedForUser)
     if (args.railType === "readyToCook") {
       filteredRecipes = filteredRecipes.filter((recipe) => {
         const recipeIngredientCodes = recipe.ingredients.map(
@@ -3407,6 +5659,275 @@ export const insertFromIngestion = mutation({
           })
         )
       ),
+      sourceStepsLocalized: v.optional(
+        v.object({
+          en: v.optional(
+            v.array(
+              v.object({
+                stepNumber: v.number(),
+                text: v.string(),
+                timeInMinutes: v.optional(v.number()),
+                temperature: v.optional(
+                  v.object({
+                    unit: v.union(v.literal("F"), v.literal("C")),
+                    value: v.number(),
+                  })
+                ),
+              })
+            )
+          ),
+          es: v.optional(
+            v.array(
+              v.object({
+                stepNumber: v.number(),
+                text: v.string(),
+                timeInMinutes: v.optional(v.number()),
+                temperature: v.optional(
+                  v.object({
+                    unit: v.union(v.literal("F"), v.literal("C")),
+                    value: v.number(),
+                  })
+                ),
+              })
+            )
+          ),
+          zh: v.optional(
+            v.array(
+              v.object({
+                stepNumber: v.number(),
+                text: v.string(),
+                timeInMinutes: v.optional(v.number()),
+                temperature: v.optional(
+                  v.object({
+                    unit: v.union(v.literal("F"), v.literal("C")),
+                    value: v.number(),
+                  })
+                ),
+              })
+            )
+          ),
+          fr: v.optional(
+            v.array(
+              v.object({
+                stepNumber: v.number(),
+                text: v.string(),
+                timeInMinutes: v.optional(v.number()),
+                temperature: v.optional(
+                  v.object({
+                    unit: v.union(v.literal("F"), v.literal("C")),
+                    value: v.number(),
+                  })
+                ),
+              })
+            )
+          ),
+          ar: v.optional(
+            v.array(
+              v.object({
+                stepNumber: v.number(),
+                text: v.string(),
+                timeInMinutes: v.optional(v.number()),
+                temperature: v.optional(
+                  v.object({
+                    unit: v.union(v.literal("F"), v.literal("C")),
+                    value: v.number(),
+                  })
+                ),
+              })
+            )
+          ),
+          ja: v.optional(
+            v.array(
+              v.object({
+                stepNumber: v.number(),
+                text: v.string(),
+                timeInMinutes: v.optional(v.number()),
+                temperature: v.optional(
+                  v.object({
+                    unit: v.union(v.literal("F"), v.literal("C")),
+                    value: v.number(),
+                  })
+                ),
+              })
+            )
+          ),
+          vi: v.optional(
+            v.array(
+              v.object({
+                stepNumber: v.number(),
+                text: v.string(),
+                timeInMinutes: v.optional(v.number()),
+                temperature: v.optional(
+                  v.object({
+                    unit: v.union(v.literal("F"), v.literal("C")),
+                    value: v.number(),
+                  })
+                ),
+              })
+            )
+          ),
+          tl: v.optional(
+            v.array(
+              v.object({
+                stepNumber: v.number(),
+                text: v.string(),
+                timeInMinutes: v.optional(v.number()),
+                temperature: v.optional(
+                  v.object({
+                    unit: v.union(v.literal("F"), v.literal("C")),
+                    value: v.number(),
+                  })
+                ),
+              })
+            )
+          ),
+        })
+      ),
+      cookingMethods: v.optional(
+        v.array(
+          v.object({
+            methodName: v.string(),
+            steps: v.array(
+              v.object({
+                stepNumber: v.number(),
+                text: v.string(),
+                timeInMinutes: v.optional(v.number()),
+                temperature: v.optional(
+                  v.object({
+                    unit: v.union(v.literal("F"), v.literal("C")),
+                    value: v.number(),
+                  }),
+                ),
+              })
+            ),
+            encodedSteps: v.optional(v.string()),
+            stepsLocalized: v.optional(
+              v.object({
+                en: v.optional(
+                  v.array(
+                    v.object({
+                      stepNumber: v.number(),
+                      text: v.string(),
+                      timeInMinutes: v.optional(v.number()),
+                      temperature: v.optional(
+                        v.object({
+                          unit: v.union(v.literal("F"), v.literal("C")),
+                          value: v.number(),
+                        }),
+                      ),
+                    })
+                  )
+                ),
+                es: v.optional(
+                  v.array(
+                    v.object({
+                      stepNumber: v.number(),
+                      text: v.string(),
+                      timeInMinutes: v.optional(v.number()),
+                      temperature: v.optional(
+                        v.object({
+                          unit: v.union(v.literal("F"), v.literal("C")),
+                          value: v.number(),
+                        }),
+                      ),
+                    })
+                  )
+                ),
+                zh: v.optional(
+                  v.array(
+                    v.object({
+                      stepNumber: v.number(),
+                      text: v.string(),
+                      timeInMinutes: v.optional(v.number()),
+                      temperature: v.optional(
+                        v.object({
+                          unit: v.union(v.literal("F"), v.literal("C")),
+                          value: v.number(),
+                        }),
+                      ),
+                    })
+                  )
+                ),
+                fr: v.optional(
+                  v.array(
+                    v.object({
+                      stepNumber: v.number(),
+                      text: v.string(),
+                      timeInMinutes: v.optional(v.number()),
+                      temperature: v.optional(
+                        v.object({
+                          unit: v.union(v.literal("F"), v.literal("C")),
+                          value: v.number(),
+                        }),
+                      ),
+                    })
+                  )
+                ),
+                ar: v.optional(
+                  v.array(
+                    v.object({
+                      stepNumber: v.number(),
+                      text: v.string(),
+                      timeInMinutes: v.optional(v.number()),
+                      temperature: v.optional(
+                        v.object({
+                          unit: v.union(v.literal("F"), v.literal("C")),
+                          value: v.number(),
+                        }),
+                      ),
+                    })
+                  )
+                ),
+                ja: v.optional(
+                  v.array(
+                    v.object({
+                      stepNumber: v.number(),
+                      text: v.string(),
+                      timeInMinutes: v.optional(v.number()),
+                      temperature: v.optional(
+                        v.object({
+                          unit: v.union(v.literal("F"), v.literal("C")),
+                          value: v.number(),
+                        }),
+                      ),
+                    })
+                  )
+                ),
+                vi: v.optional(
+                  v.array(
+                    v.object({
+                      stepNumber: v.number(),
+                      text: v.string(),
+                      timeInMinutes: v.optional(v.number()),
+                      temperature: v.optional(
+                        v.object({
+                          unit: v.union(v.literal("F"), v.literal("C")),
+                          value: v.number(),
+                        }),
+                      ),
+                    })
+                  )
+                ),
+                tl: v.optional(
+                  v.array(
+                    v.object({
+                      stepNumber: v.number(),
+                      text: v.string(),
+                      timeInMinutes: v.optional(v.number()),
+                      temperature: v.optional(
+                        v.object({
+                          unit: v.union(v.literal("F"), v.literal("C")),
+                          value: v.number(),
+                        }),
+                      ),
+                    })
+                  )
+                ),
+              })
+            ),
+          })
+        )
+      ),
       emojiTags: v.array(v.string()),
       prepTimeMinutes: v.number(),
       cookTimeMinutes: v.number(),
@@ -3499,6 +6020,7 @@ export const insertFromIngestion = mutation({
           fiberPerServing: v.optional(v.number()),
           sugarsPerServing: v.optional(v.number()),
           sodiumPerServing: v.optional(v.number()),
+          servingSize: v.optional(v.string()),
         })
       ),
     }),
