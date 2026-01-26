@@ -85,7 +85,7 @@ export const RecipeRail: React.FC<RecipeRailProps> = ({
     <View style={styles.container}>
       <View style={styles.headerContainer}>
         <View style={styles.headerText}>
-          <Text style={styles.header}>{header} - thing</Text>
+          <Text style={styles.header}>{header} - RAIL HEADER</Text>
           {subheader ? <Text style={styles.subheader}>{subheader}</Text> : null}
         </View>
         {onSeeAll ? (

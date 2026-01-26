@@ -93,6 +93,7 @@ export default function HomeScreen() {
   const [isSeedingLists, setIsSeedingLists] = useState(false);
   const [isSeedingFoodLibrary, setIsSeedingFoodLibrary] = useState(false);
   const [isIngestingRecipe, setIsIngestingRecipe] = useState(false);
+  const [showDevSection, setShowDevSection] = useState(false);
   // Client-side function to detect media type from URL
   const detectMediaTypeFromUrl = (url: string): typeof sourceType => {
     if (!url) return "website";
@@ -451,6 +452,17 @@ export default function HomeScreen() {
         ]}
         contentContainerStyle={styles.scrollContent}
       >
+        <Pressable
+          onPress={() => setShowDevSection(!showDevSection)}
+          style={styles.toggleButton}
+          accessibilityRole="button"
+        >
+          <Text style={styles.toggleButtonText}>
+            {showDevSection ? "Hide Developer Section" : "Show Developer Section"}
+          </Text>
+        </Pressable>
+        {showDevSection && (
+          <>
         <View style={styles.swipeSection}>
           <Link href="/swipe" asChild>
             <Pressable style={styles.swipeLink} accessibilityRole="button">
@@ -711,13 +723,15 @@ export default function HomeScreen() {
             </Text>
           </Pressable>
         </View>
-        <LinkPreviewRail
+          </>
+        )}
+        {/* <LinkPreviewRail
           header={t("home.webPreviewHeader")}
           subheader={t("home.webPreviewSubheader")}
           links={linkPreviews}
           isLoading={isLoadingLinkPreviews}
           onLinkPress={handleLinkPreviewPress}
-        />
+        /> */}
         {/* Personalized "For You" Rail */}
         {personalizedRecipes && personalizedRecipes.length > 0 ? (
           <RecipeRail

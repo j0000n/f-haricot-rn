@@ -492,6 +492,24 @@ const createHomeStyles = (tokens: ThemeTokens) =>
       color: tokens.colors.accentOnPrimary,
       fontFamily: tokens.fontFamilies.semiBold,
     },
+    toggleButton: {
+      marginHorizontal: tokens.spacing.lg,
+      marginBottom: tokens.spacing.md,
+      alignSelf: "flex-start",
+      backgroundColor: tokens.colors.surface,
+      borderRadius: tokens.radii.sm,
+      borderWidth: tokens.borderWidths.thin,
+      borderColor: tokens.colors.border,
+      paddingHorizontal: tokens.spacing.md,
+      paddingVertical: tokens.spacing.sm,
+    },
+    toggleButtonText: {
+      fontSize: tokens.typography.small,
+      fontFamily: tokens.fontFamilies.semiBold,
+      color: tokens.colors.accent,
+      textTransform: "uppercase",
+      letterSpacing: tokens.letterSpacing.tight,
+    },
   });
 
 export default createHomeStyles;
