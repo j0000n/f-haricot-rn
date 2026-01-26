@@ -144,6 +144,8 @@ const darkColors = {
   danger: "#ff453a",
   info: "#0a84ff",
   logoFill: "#ffffff",
+  logoPrimaryColor: "#ffd400", // Bright yellow - distinct from surface, matches accent
+  logoSecondaryColor: "#ffffff", // White - complements yellow, distinct from border
   imageBackgroundColor: "#0d0d0d",
 } as const;
 
@@ -167,6 +169,8 @@ const lightColors = {
   danger: "#c10015",
   info: "#002cbb",
   logoFill: "#000000",
+  logoPrimaryColor: "#0057ff", // Bright blue - distinct from surface, matches accent
+  logoSecondaryColor: "#000000", // Black - complements blue, distinct from border
   imageBackgroundColor: "#f5f5f5",
 } as const;
 

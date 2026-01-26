@@ -36,6 +36,8 @@ const colors = {
   danger: "#B85C38",
   info: "#4A7C59",
   logoFill: "#3D2817",
+  logoPrimaryColor: "#5D4037", // Deep brown - distinct from surface, matches primary
+  logoSecondaryColor: "#2D8659", // Lush green - complements brown, distinct from border
   imageBackgroundColor: "#F5F3F0",
 } as const;
 

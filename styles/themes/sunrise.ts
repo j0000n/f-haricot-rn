@@ -35,6 +35,8 @@ const colors = {
   danger: "#ff3b30",
   info: "#007AFF",
   logoFill: "#844660",
+  logoPrimaryColor: "#450404", // Deep cranberry - distinct from surface, matches primary
+  logoSecondaryColor: "#844660", // Cranberry rose - complements primary, distinct from border
   imageBackgroundColor: "#FFF7F7",
 } as const;
 

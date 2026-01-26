@@ -36,6 +36,8 @@ const colors = {
   danger: "#CC480F",
   info: "#8CA1C6",
   logoFill: "#2F2619",
+  logoPrimaryColor: "#CC480F", // Bright orange - distinct from surface, matches accent
+  logoSecondaryColor: "#C78C2C", // Golden yellow - complements orange, distinct from border
   imageBackgroundColor: "#987AA5",
 } as const;
 

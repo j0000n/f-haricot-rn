@@ -43,7 +43,7 @@ const createTabLayoutStyles = (tokens: ThemeTokens) => {
   return StyleSheet.create({
     tabsContainer: {
       flex: 1,
-      backgroundColor: tabBar.containerBackground,
+      backgroundColor: "transparent",
       minHeight: tokens.spacing.none,
     },
     tabSlotWrapper: {

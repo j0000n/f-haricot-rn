@@ -38,7 +38,6 @@ export function BrandLogo({
 
   // Get logo source and path
   const logoSource = assets.logo;
-  console.log("logoSource", logoSource);
 
   // EARLY DETECTION: Check for React components FIRST (before any other logic)
   // SVG transformers can return components in various formats:

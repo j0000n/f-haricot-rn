@@ -72,6 +72,8 @@ export type ThemeTokens = {
     danger: string;
     info: string;
     logoFill: string;
+    logoPrimaryColor: string;
+    logoSecondaryColor: string;
     imageBackgroundColor: string;
   };
   spacing: {

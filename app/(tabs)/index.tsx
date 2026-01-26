@@ -1,4 +1,4 @@
-import { BrandLogo } from "@/components/BrandLogo";
+import { StaticBrandLogo } from "@/components/StaticBrandLogo";
 import { Header } from "@/components/Header";
 import { PageHeader } from "@/components/PageHeader";
 import { Rail } from "@/components/Rail";
@@ -432,8 +432,8 @@ export default function HomeScreen() {
     >
       <PageHeader
         leftElement={
-          <BrandLogo
-            width={150}
+          <StaticBrandLogo
+            width={40}
             height={40}
             accessibilityLabel={t("home.logoAccessibility")}
           />

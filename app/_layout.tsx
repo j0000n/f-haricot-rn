@@ -337,7 +337,13 @@ function AuthenticatedAppShell({ isAuthenticated, isLoading, user }: Authenticat
           },
         }}
       >
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen 
+          name="(tabs)" 
+          options={{ 
+            headerShown: false,
+            contentStyle: { backgroundColor: "transparent" },
+          }} 
+        />
         <Stack.Screen name="add-task" options={{ presentation: "modal" }} />
         <Stack.Screen name="tasks/[id]" />
         <Stack.Screen name="profile" options={{ title: t("profile.title").toUpperCase() }} />

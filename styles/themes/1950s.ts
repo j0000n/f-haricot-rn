@@ -36,6 +36,8 @@ const colors = {
   danger: "#FF6F61",
   info: "#FFE156",
   logoFill: "#2D2D2D",
+  logoPrimaryColor: "#FF6F61", // Coral - distinct from surface, matches theme accent
+  logoSecondaryColor: "#A8E6CF", // Mint green - complements coral, distinct from border
   imageBackgroundColor: "#FFE8E8",
 } as const;
 
