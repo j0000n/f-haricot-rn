@@ -956,6 +956,16 @@ const schema = defineSchema({
   })
     .index("by_user_and_type", ["userId", "railType"])
     .index("by_expires_at", ["expiresAt"]),
+  tooltips: defineTable({
+    userId: v.id("users"),
+    title: v.string(),
+    content: v.string(),
+    isDismissed: v.boolean(),
+    createdAt: v.number(),
+    dismissedAt: v.optional(v.number()),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_and_dismissed", ["userId", "isDismissed"]),
 });
 
 export default schema;

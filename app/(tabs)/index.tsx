@@ -26,6 +26,8 @@ import { Platform, Pressable, ScrollView, Text, TextInput, View } from "react-na
 import { LinkPreviewRail } from "@/components/LinkPreviewRail";
 import { useLinkPreviews, createFallbackImage } from "@/hooks/useLinkPreviews";
 import type { LinkPreviewData } from "@/utils/linkPreview";
+import { TooltipContainer } from "@/components/TooltipContainer";
+import type { Tooltip } from "@/components/Tooltip";
 import { nutrientDishes } from "@/data/nutrientDishes";
 import {
   getFreshProduceItems,
@@ -738,6 +740,22 @@ export default function HomeScreen() {
           onLinkPress={handleLinkPreviewPress}
         /> */}
         {/* Full Image Rail Example */}
+
+        {/* Tooltip Container */}
+        {(() => {
+          // Mock tooltip data for now
+          const mockTooltips: Tooltip[] = [
+            {
+              _id: "mock-tooltip-1" as any,
+              title: "Welcome to Haricot!",
+              content: "This is a sample tooltip to help you get started. You can dismiss it by clicking the X button in the top right corner.",
+              isDismissed: false,
+              createdAt: Date.now(),
+            },
+          ];
+          return <TooltipContainer tooltips={mockTooltips} />;
+        })()}
+        
         {((personalizedRecipes && personalizedRecipes.length > 0) || recipeList.length > 0) && (
           <RecipeRail
             header="Featured Recipes"

@@ -27,6 +27,7 @@ import type * as recipes from "../recipes.js";
 import type * as tasks from "../tasks.js";
 import type * as testFunction from "../testFunction.js";
 import type * as testFunctionNode from "../testFunctionNode.js";
+import type * as tooltips from "../tooltips.js";
 import type * as translationGuides from "../translationGuides.js";
 import type * as users from "../users.js";
 import type * as world from "../world.js";
@@ -65,6 +66,7 @@ declare const fullApi: ApiFromModules<{
   tasks: typeof tasks;
   testFunction: typeof testFunction;
   testFunctionNode: typeof testFunctionNode;
+  tooltips: typeof tooltips;
   translationGuides: typeof translationGuides;
   users: typeof users;
   world: typeof world;
