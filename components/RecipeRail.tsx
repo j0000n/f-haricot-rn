@@ -2,12 +2,13 @@ import React, { useMemo } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { RecipeCard, RECIPE_CARD_WIDTHS } from "@/components/cards/RecipeCard";
+import { FullImageCard, FULL_IMAGE_CARD_WIDTH } from "@/components/cards/FullImageCard";
 import { useTranslation } from "@/i18n/useTranslation";
 import type { Recipe } from "@/types/recipe";
 import type { ThemeTokens } from "@/styles/themes/types";
 import { useThemedStyles, useTokens } from "@/styles/tokens";
 
-type RecipeCardVariant = "compact" | "standard" | "detailed";
+type RecipeCardVariant = "compact" | "standard" | "detailed" | "fullImage";
 
 interface RecipeRailProps {
   header: string;
@@ -76,17 +77,20 @@ export const RecipeRail: React.FC<RecipeRailProps> = ({
   const tokens = useTokens();
   const { t } = useTranslation();
 
-  const snapInterval = useMemo(
-    () => RECIPE_CARD_WIDTHS[variant] + tokens.spacing.xs,
-    [tokens.spacing.xs, variant],
-  );
+  const snapInterval = useMemo(() => {
+    const cardWidth =
+      variant === "fullImage" ? FULL_IMAGE_CARD_WIDTH : RECIPE_CARD_WIDTHS[variant];
+    return cardWidth + tokens.spacing.xs;
+  }, [tokens.spacing.xs, variant]);
 
   return (
     <View style={styles.container}>
       <View style={styles.headerContainer}>
         <View style={styles.headerText}>
-          <Text style={styles.header}>{header} - RAIL HEADER</Text>
-          {subheader ? <Text style={styles.subheader}>{subheader}</Text> : null}
+          <Text style={styles.header}>{header}</Text>
+          {subheader && variant !== "fullImage" ? (
+            <Text style={styles.subheader}>{subheader}</Text>
+          ) : null}
         </View>
         {onSeeAll ? (
           <Pressable onPress={onSeeAll} hitSlop={8}>
@@ -103,16 +107,25 @@ export const RecipeRail: React.FC<RecipeRailProps> = ({
         snapToInterval={snapInterval}
         snapToAlignment="start"
       >
-        {recipes.map((recipe) => (
-          <RecipeCard
-            key={recipe._id}
-            recipe={recipe}
-            variant={variant}
-            onPress={() => onRecipePress?.(recipe)}
-            userInventory={userInventory}
-            showAddToList={showAddToList}
-          />
-        ))}
+        {recipes.map((recipe) =>
+          variant === "fullImage" ? (
+            <FullImageCard
+              key={recipe._id}
+              recipe={recipe}
+              onPress={() => onRecipePress?.(recipe)}
+              userInventory={userInventory}
+            />
+          ) : (
+            <RecipeCard
+              key={recipe._id}
+              recipe={recipe}
+              variant={variant}
+              onPress={() => onRecipePress?.(recipe)}
+              userInventory={userInventory}
+              showAddToList={showAddToList}
+            />
+          ),
+        )}
       </ScrollView>
     </View>
   );

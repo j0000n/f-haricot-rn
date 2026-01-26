@@ -25,12 +25,21 @@ import { useFonts } from "expo-font";
 import { StatusBar } from "expo-status-bar";
 import { Stack, useRouter, useSegments } from "expo-router";
 import * as SecureStore from "expo-secure-store";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useMemo } from "react";
 import { ActivityIndicator, Platform, View } from "react-native";
 
-const convex = new ConvexReactClient(process.env.EXPO_PUBLIC_CONVEX_URL!, {
-  unsavedChangesWarning: false,
-});
+// Lazy-initialize ConvexReactClient to avoid creating React context before React Native is ready
+// This prevents the "App react context shouldn't be created before" error with Expo Dev Launcher
+let convexClient: ConvexReactClient | null = null;
+
+function getConvexClient(): ConvexReactClient {
+  if (!convexClient) {
+    convexClient = new ConvexReactClient(process.env.EXPO_PUBLIC_CONVEX_URL!, {
+      unsavedChangesWarning: false,
+    });
+  }
+  return convexClient;
+}
 
 const secureStorage = {
   getItem: SecureStore.getItemAsync,
@@ -357,6 +366,9 @@ function AuthenticatedAppShell({ isAuthenticated, isLoading, user }: Authenticat
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts(FONT_SOURCES);
+  
+  // Initialize Convex client only after React Native is ready (inside component)
+  const convex = useMemo(() => getConvexClient(), []);
 
   useEffect(() => {
     if (fontError) {

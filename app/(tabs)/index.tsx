@@ -283,9 +283,14 @@ export default function HomeScreen() {
     router.push(`/search/${encodeURIComponent(trimmedSearchTerm)}`);
   };
 
-  const handleRecipeSeeAll = () => {
-    // Navigate to search screen to browse all recipes
-    router.push("/search/");
+  const handleRecipeSeeAll = (railType?: string) => {
+    // Navigate to view all recipes page for the specific rail type
+    if (railType) {
+      router.push(`/recipes/${railType}`);
+    } else {
+      // Fallback to search screen if no rail type provided
+      router.push("/search/");
+    }
   };
 
   const handleLinkPreviewPress = (url: string) => {
@@ -732,6 +737,23 @@ export default function HomeScreen() {
           isLoading={isLoadingLinkPreviews}
           onLinkPress={handleLinkPreviewPress}
         /> */}
+        {/* Full Image Rail Example */}
+        {((personalizedRecipes && personalizedRecipes.length > 0) || recipeList.length > 0) && (
+          <RecipeRail
+            header="Featured Recipes"
+            recipes={
+              (personalizedRecipes && personalizedRecipes.length > 0
+                ? [...personalizedRecipes]
+                : recipeList
+              ).slice(0, 5) as Recipe[]
+            }
+            variant="fullImage"
+            onSeeAll={() => handleRecipeSeeAll("forYou")}
+            onRecipePress={handleRecipePress}
+            userInventory={userInventoryCodes}
+          />
+        )}
+
         {/* Personalized "For You" Rail */}
         {personalizedRecipes && personalizedRecipes.length > 0 ? (
           <RecipeRail
@@ -739,7 +761,7 @@ export default function HomeScreen() {
             subheader={t("home.featuredRecipesDesc")}
             recipes={[...personalizedRecipes] as Recipe[]}
             variant="detailed"
-            onSeeAll={handleRecipeSeeAll}
+            onSeeAll={() => handleRecipeSeeAll("forYou")}
             onRecipePress={handleRecipePress}
             userInventory={userInventoryCodes}
           />
@@ -749,7 +771,7 @@ export default function HomeScreen() {
             subheader={t("home.featuredRecipesDesc")}
             recipes={recipeList}
             variant="detailed"
-            onSeeAll={handleRecipeSeeAll}
+            onSeeAll={() => handleRecipeSeeAll("forYou")}
             onRecipePress={handleRecipePress}
             userInventory={userInventoryCodes}
           />
@@ -762,7 +784,7 @@ export default function HomeScreen() {
             subheader="Recipes you can make with ingredients you have"
             recipes={readyToCook as Recipe[]}
             variant="detailed"
-            onSeeAll={handleRecipeSeeAll}
+            onSeeAll={() => handleRecipeSeeAll("readyToCook")}
             onRecipePress={handleRecipePress}
             userInventory={userInventoryCodes}
           />
@@ -775,7 +797,7 @@ export default function HomeScreen() {
             subheader="Fast recipes that match your preferences"
             recipes={quickMeals as Recipe[]}
             variant="detailed"
-            onSeeAll={handleRecipeSeeAll}
+            onSeeAll={() => handleRecipeSeeAll("quickEasy")}
             onRecipePress={handleRecipePress}
             userInventory={userInventoryCodes}
           />
@@ -788,7 +810,7 @@ export default function HomeScreen() {
             subheader="Recipes from cuisines you love"
             recipes={cuisineRecipes as Recipe[]}
             variant="detailed"
-            onSeeAll={handleRecipeSeeAll}
+            onSeeAll={() => handleRecipeSeeAll("cuisines")}
             onRecipePress={handleRecipePress}
             userInventory={userInventoryCodes}
           />
@@ -801,7 +823,7 @@ export default function HomeScreen() {
             subheader="Recipes compatible with all household members"
             recipes={householdCompatible as Recipe[]}
             variant="detailed"
-            onSeeAll={handleRecipeSeeAll}
+            onSeeAll={() => handleRecipeSeeAll("householdCompatible")}
             onRecipePress={handleRecipePress}
             userInventory={userInventoryCodes}
           />
