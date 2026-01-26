@@ -1,4 +1,4 @@
-import { BrandLogo } from "@/components/BrandLogo";
+import { AnimatedBrandLogo } from "@/components/AnimatedBrandLogo";
 import { useTranslation } from "@/i18n/useTranslation";
 import createSignInStyles from "@/styles/signInStyles";
 import { useTheme, useThemedStyles } from "@/styles/tokens";
@@ -180,7 +180,7 @@ export default function SignIn() {
         keyboardVerticalOffset={tokens.spacing.xl}
       >
         <View style={styles.container}>
-          <BrandLogo size={96} />
+          <AnimatedBrandLogo size={50} />
           {step === "signIn" ? (
             <>
               <Text style={styles.title}>

@@ -16,26 +16,26 @@ import {
 } from "./types";
 
 const colors = {
-  background: "#056366",
-  surface: "#6B2C58",
-  overlay: "#A8A8A8",
-  surfaceVariant: "#8a5a78",
-  surfaceSubdued: "#7a4868",
-  surfaceMuted: "#5d2f4f",
-  primary: "#6B2C58",
-  onPrimary: "#FFFFFF",
-  muted: "#7b7b7b",
-  textPrimary: "#fff",
-  textSecondary: "#d8d8d8",
-  textMuted: "#808080",
-  border: "#056366",
-  accent: "#6B2C58",
-  accentOnPrimary: "#FFFFFF",
+  background: "#056366", // Dark teal - main app background
+  surface: "#6B2C58", // Dark magenta - card/surface background
+  overlay: "#A8A8A8", // Gray - modal/overlay background
+  surfaceVariant: "#8a5a78", // Lighter magenta variant
+  surfaceSubdued: "#7a4868", // Medium magenta
+  surfaceMuted: "#5d2f4f", // Darker magenta
+  primary: "#8B4C78", // Brighter magenta - primary buttons/actions (lighter than surface for contrast)
+  onPrimary: "#FFFFFF", // White text on primary
+  muted: "#7b7b7b", // Medium gray
+  textPrimary: "#fff", // White - primary text
+  textSecondary: "#d8d8d8", // Light gray - secondary text
+  textMuted: "#5A5A5A", // Darker gray - muted text (improved contrast on overlay)
+  border: "#0A7A7D", // Lighter teal - borders (lighter than background for visibility)
+  accent: "#0D8B8F", // Bright teal - accent elements (complements magenta, distinct from primary)
+  accentOnPrimary: "#FFFFFF", // White text on accent
   success: "#00AA00",
   danger: "#FF0000",
   info: "#0000FF",
   logoFill: "#fff",
-  imageBackgroundColor: "#6B2C58",
+  imageBackgroundColor: "#5d2f4f", // Darker magenta - image placeholders (distinct from surface)
 } as const;
 
 export const ninetiesTheme: ThemeDefinition = {
