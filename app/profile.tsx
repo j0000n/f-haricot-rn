@@ -62,6 +62,7 @@ type ProfileAccordionProps = {
   onToggle: () => void;
   styles: ReturnType<typeof createProfileStyles>;
   children: ReactNode;
+  accessibilityHint: string;
 };
 
 const ProfileAccordion = ({
@@ -71,13 +72,14 @@ const ProfileAccordion = ({
   onToggle,
   styles,
   children,
+  accessibilityHint,
 }: ProfileAccordionProps) => (
   <View style={styles.accordion}>
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ expanded }}
       accessibilityLabel={title}
-      accessibilityHint={expanded ? "Collapse section" : "Expand section"}
+      accessibilityHint={accessibilityHint}
       onPress={onToggle}
     >
       <View style={styles.accordionHeader}>
@@ -482,7 +484,7 @@ export default function ProfileScreen() {
       setCopyFeedback("copied");
       setHouseholdMessage({
         tone: "success",
-        text: "Household code copied to your clipboard.",
+        text: t("profile.householdCodeCopied"),
       });
     } catch (error) {
       console.error("Failed to copy household code", error);
@@ -523,8 +525,8 @@ export default function ProfileScreen() {
       setHouseholdMessage({
         tone: nextCode ? "success" : "info",
         text: nextCode
-          ? "Your household code has been updated."
-          : "We generated a fresh code for your household.",
+          ? t("profile.householdCodeUpdated")
+          : t("profile.householdCodeGenerated"),
       });
     } catch (error) {
       console.error("Failed to update household code", error);
@@ -549,9 +551,9 @@ export default function ProfileScreen() {
       "Leave household",
       "We’ll move you into a brand-new household with a fresh code. Are you sure you want to leave?",
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "Leave",
+          text: t("profile.householdLeaveButton"),
           style: "destructive",
           onPress: () => {
             setManageBusy(true);
@@ -590,7 +592,7 @@ export default function ProfileScreen() {
       .then(() => {
         setHouseholdMessage({
           tone: "success",
-          text: "Household member confirmed.",
+          text: t("profile.householdMemberConfirmed"),
         });
       })
       .catch((error) => {
@@ -636,7 +638,7 @@ export default function ProfileScreen() {
       await updateProfile({ allergies });
       setAllergyMessage({
         tone: "success",
-        text: "Allergy list updated for your profile.",
+        text: t("profile.allergiesUpdated"),
       });
     } catch (error) {
       console.error("Failed to update allergies", error);
@@ -771,7 +773,7 @@ export default function ProfileScreen() {
     if (!name) {
       setChildMessage({
         tone: "error",
-        text: "Enter a name before adding a child.",
+        text: t("profile.childErrorNameRequired"),
       });
       return;
     }
@@ -781,7 +783,7 @@ export default function ProfileScreen() {
       await addHouseholdChild({ name, allergies: newChildAllergies });
       setChildMessage({
         tone: "success",
-        text: `${name} has been added to your household.`,
+        text: t("profile.childAddedSuccess", { name }),
       });
       setNewChildName("");
       setNewChildAllergyInput("");
@@ -858,7 +860,7 @@ export default function ProfileScreen() {
     if (!trimmedName) {
       setChildMessage({
         tone: "error",
-        text: "Enter a name before saving changes.",
+        text: t("profile.childErrorNameRequiredSave"),
       });
       return;
     }
@@ -872,7 +874,7 @@ export default function ProfileScreen() {
       });
       setChildMessage({
         tone: "success",
-        text: `${trimmedName}'s details have been updated.`,
+        text: t("profile.childUpdatedSuccess", { name: trimmedName }),
       });
       setEditingChildId(null);
       setEditingChildName("");
@@ -895,12 +897,12 @@ export default function ProfileScreen() {
     }
 
     Alert.alert(
-      "Remove child",
-      `Remove ${childName} from your household?`,
+      t("profile.childRemoveTitle"),
+      t("profile.childRemoveMessage", { name: childName }),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "Remove",
+          text: t("profile.childRemoveButton"),
           style: "destructive",
           onPress: () => {
             setChildActionBusy(true);
@@ -908,7 +910,7 @@ export default function ProfileScreen() {
               .then(() => {
                 setChildMessage({
                   tone: "info",
-                  text: `${childName} has been removed from your household.`,
+                  text: t("profile.childRemovedSuccess", { name: childName }),
                 });
                 if (editingChildId === childId) {
                   setEditingChildId(null);
@@ -1110,11 +1112,12 @@ export default function ProfileScreen() {
 
       <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent}>
         <ProfileAccordion
-          title="My household"
-          description="Manage household members, children, and allergy details."
+          title={t("profile.householdSectionTitle")}
+          description={t("profile.householdSectionDesc")}
           expanded={expandedSections.includes("household")}
           onToggle={() => handleToggleSection("household")}
           styles={styles}
+          accessibilityHint={expandedSections.includes("household") ? t("profile.accordionCollapseHint") : t("profile.accordionExpandHint")}
         >
           <HouseholdCard
             isHouseholdLoading={isHouseholdLoading}
@@ -1170,11 +1173,12 @@ export default function ProfileScreen() {
         </ProfileAccordion>
 
         <ProfileAccordion
-          title="Dietary requirements"
-          description="Adjust nutrition goals and tracking preferences."
+          title={t("profile.dietarySectionTitle")}
+          description={t("profile.dietarySectionDesc")}
           expanded={expandedSections.includes("dietary")}
           onToggle={() => handleToggleSection("dietary")}
           styles={styles}
+          accessibilityHint={expandedSections.includes("dietary") ? t("profile.accordionCollapseHint") : t("profile.accordionExpandHint")}
         >
           <NutritionGoalsCard
             normalizedNutritionGoals={normalizedNutritionGoals}
@@ -1193,11 +1197,12 @@ export default function ProfileScreen() {
         </ProfileAccordion>
 
         <ProfileAccordion
-          title="App appearance"
-          description="Customize the look, language, and accessibility preferences."
+          title={t("profile.appearanceSectionTitle")}
+          description={t("profile.appearanceSectionDesc")}
           expanded={expandedSections.includes("appearance")}
           onToggle={() => handleToggleSection("appearance")}
           styles={styles}
+          accessibilityHint={expandedSections.includes("appearance") ? t("profile.accordionCollapseHint") : t("profile.accordionExpandHint")}
         >
           <AppearanceCard />
           <LanguageCard />
@@ -1212,11 +1217,12 @@ export default function ProfileScreen() {
         </ProfileAccordion>
 
         <ProfileAccordion
-          title="Privacy & security"
-          description="Control analytics, legal docs, and your data rights."
+          title={t("profile.privacySectionTitle")}
+          description={t("profile.privacySectionDesc")}
           expanded={expandedSections.includes("privacy")}
           onToggle={() => handleToggleSection("privacy")}
           styles={styles}
+          accessibilityHint={expandedSections.includes("privacy") ? t("profile.accordionCollapseHint") : t("profile.accordionExpandHint")}
         >
           <PrivacyCard
             analyticsOptIn={analyticsOptIn}
@@ -1235,11 +1241,12 @@ export default function ProfileScreen() {
         </ProfileAccordion>
 
         <ProfileAccordion
-          title="Account information"
-          description="Review account details or sign out."
+          title={t("profile.accountSectionTitle")}
+          description={t("profile.accountSectionDesc")}
           expanded={expandedSections.includes("account")}
           onToggle={() => handleToggleSection("account")}
           styles={styles}
+          accessibilityHint={expandedSections.includes("account") ? t("profile.accordionCollapseHint") : t("profile.accordionExpandHint")}
         >
           <ProfileInfoCard entries={entries} hasUser={Boolean(user)} />
 
