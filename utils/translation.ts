@@ -56,7 +56,7 @@ export function resolveTranslation(
 export function getRecipeLanguage(i18nLanguage: string): SupportedRecipeLanguage {
   // Extract base language code (e.g., "fr" from "fr-FR")
   const code = i18nLanguage.split('-')[0].toLowerCase();
-  
+
   const map: Record<string, SupportedRecipeLanguage> = {
     en: 'en',
     es: 'es',
@@ -67,6 +67,6 @@ export function getRecipeLanguage(i18nLanguage: string): SupportedRecipeLanguage
     ar: 'ar',
     ja: 'ja',
   };
-  
+
   return map[code] || 'en';
 }

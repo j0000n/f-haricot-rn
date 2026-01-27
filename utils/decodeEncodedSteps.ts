@@ -125,7 +125,7 @@ const describeParameters = (
  */
 const isDecodingValid = (decodedSteps: DecodedStepCard[]): boolean => {
   if (decodedSteps.length === 0) return false;
-  
+
   // Check if most steps have readable titles (not just codes)
   const readableCount = decodedSteps.filter(step => {
     const titleIsCode = /^(T|A|KT)\.\d+\.\d+/.test(step.title);
@@ -133,7 +133,7 @@ const isDecodingValid = (decodedSteps: DecodedStepCard[]): boolean => {
     const hasReadableText = step.title.length > 3 && !titleIsCode && !detailIsJustParams;
     return hasReadableText;
   }).length;
-  
+
   // If less than 50% are readable, consider decoding failed
   return readableCount >= decodedSteps.length * 0.5;
 };
@@ -157,11 +157,11 @@ export const decodeEncodedSteps = (
 ): DecodedStepCard[] => {
   if (!encodedSteps || !encodedSteps.trim()) {
     warnMissingEncodedSteps();
-    
+
     // Try to use translated steps first
     const translatedSteps = sourceStepsLocalized?.[language as keyof typeof sourceStepsLocalized];
     const stepsToUse = translatedSteps || fallbackSteps;
-    
+
     return (
       stepsToUse?.map((step, index) => ({
         stepNumber: step.stepNumber ?? index + 1,

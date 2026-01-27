@@ -126,6 +126,14 @@ const createSignInStyles = (tokens: ThemeTokens) =>
       alignItems: "center",
       gap: tokens.spacing.sm,
     },
+    errorText: {
+      color: tokens.colors.danger,
+      fontSize: tokens.typography.body,
+      fontFamily: tokens.fontFamilies.regular,
+      textAlign: "center",
+      marginTop: tokens.spacing.sm,
+      marginBottom: -tokens.spacing.sm,
+    },
   });
 
 export default createSignInStyles;

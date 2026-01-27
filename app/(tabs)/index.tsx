@@ -102,7 +102,7 @@ export default function HomeScreen() {
     try {
       const urlObj = new URL(url);
       const hostname = urlObj.hostname.toLowerCase();
-      
+
       if (hostname.includes('tiktok.com')) return 'tiktok';
       if (hostname.includes('youtube.com') || hostname.includes('youtu.be')) return 'youtube';
       if (hostname.includes('instagram.com')) return 'instagram';
@@ -110,7 +110,7 @@ export default function HomeScreen() {
       if (hostname.includes('facebook.com') || hostname.includes('fb.com')) return 'facebook';
       if (hostname.includes('twitter.com') || hostname.includes('x.com')) return 'twitter';
       if (hostname.includes('reddit.com')) return 'reddit';
-      if (hostname.includes('blogspot.com') || hostname.includes('wordpress.com') || 
+      if (hostname.includes('blogspot.com') || hostname.includes('wordpress.com') ||
           hostname.includes('medium.com') || hostname.includes('substack.com')) return 'blog';
       return 'website';
     } catch {
@@ -755,7 +755,7 @@ export default function HomeScreen() {
           ];
           return <TooltipContainer tooltips={mockTooltips} />;
         })()}
-        
+
         {((personalizedRecipes && personalizedRecipes.length > 0) || recipeList.length > 0) && (
           <RecipeRail
             header="Featured Recipes"

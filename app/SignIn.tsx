@@ -27,6 +27,7 @@ export default function SignIn() {
   const [codeDigits, setCodeDigits] = useState<string[]>(Array(CODE_LENGTH).fill(""));
   const codeInputRefs = useRef<Array<TextInput | null>>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [verificationError, setVerificationError] = useState<string | null>(null);
   const [userTypeSelection, setUserTypeSelection] = useState<UserTypeSelection | null>(
     null
   );
@@ -75,6 +76,7 @@ export default function SignIn() {
 
   const handleSendCode = async () => {
     setSubmitting(true);
+    setVerificationError(null);
     resetCodeInputs();
     const formData = new FormData();
     const cleanEmail = email.trim().toLowerCase();
@@ -123,11 +125,7 @@ export default function SignIn() {
       console.error("Verification error:", error);
       setSubmitting(false);
       resetCodeInputs();
-      Alert.alert(
-        t("auth.invalidCodeTitle"),
-        t("auth.invalidCodeMessage"),
-        [{ text: t("common.ok") }]
-      );
+      setVerificationError(t("auth.invalidCodeMessage"));
     }
   };
 
@@ -138,6 +136,11 @@ export default function SignIn() {
 
   const handleCodeChange = (value: string, index: number) => {
     const sanitized = value.replace(/\D/g, "");
+
+    // Clear error when user starts typing
+    if (verificationError) {
+      setVerificationError(null);
+    }
 
     setCodeDigits((prev) => {
       const next = [...prev];
@@ -249,6 +252,9 @@ export default function SignIn() {
                   />
                 ))}
               </View>
+              {verificationError && (
+                <Text style={styles.errorText}>{verificationError}</Text>
+              )}
               <Pressable
                 style={[styles.button, submitting && styles.buttonDisabled]}
                 onPress={handleVerifyCode}
@@ -267,6 +273,7 @@ export default function SignIn() {
                   onPress={() => {
                     setStep("signIn");
                     resetCodeInputs();
+                    setVerificationError(null);
                   }}
                   disabled={submitting}
                 >

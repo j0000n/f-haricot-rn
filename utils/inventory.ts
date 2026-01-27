@@ -121,8 +121,8 @@ export function formatIngredientQuantity(
   }
 ): string {
   // Use displayQuantity if available (for fractions like "1/2")
-  const quantity = ingredient.displayQuantity 
-    ? ingredient.displayQuantity 
+  const quantity = ingredient.displayQuantity
+    ? ingredient.displayQuantity
     : (Number.isInteger(ingredient.quantity)
         ? ingredient.quantity.toString()
         : ingredient.quantity.toFixed(2).replace(/\.00$/, ""));
@@ -134,7 +134,7 @@ export function formatIngredientQuantity(
   if (options?.language && options?.t) {
     const normalizedUnit = unit.toLowerCase().replace(/s$/, ""); // Remove plural 's' for lookup
     const isPlural = ingredient.quantity !== 1 && !ingredient.displayQuantity; // Check if plural needed
-    
+
     // Map common unit variations to translation keys
     const unitKeyMap: Record<string, { singular: string; plural: string }> = {
       "cup": { singular: "recipe.units.cup", plural: "recipe.units.cups" },

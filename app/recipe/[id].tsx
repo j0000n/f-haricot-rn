@@ -300,7 +300,7 @@ export default function RecipeDetailScreen() {
   // Determine which steps to display (must be called before conditional returns)
   const stepsToDisplay = useMemo(() => {
     if (!recipe) return [];
-    
+
     if (hasMultipleMethods && selectedCookingMethod && recipe.cookingMethods) {
       // Find selected method's steps
       const method = recipe.cookingMethods.find((m) => m.methodName === selectedCookingMethod);
@@ -372,7 +372,7 @@ export default function RecipeDetailScreen() {
         fallbackSource: undefined,
       };
     }
-    
+
     const authorName =
       recipe.attribution.authorName ||
       recipe.attribution.author ||
@@ -436,7 +436,7 @@ export default function RecipeDetailScreen() {
         },
       };
     }
-    
+
     const profile = recipe.nutritionProfile;
 
     // Determine serving size: use stored value if available, otherwise estimate

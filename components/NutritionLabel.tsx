@@ -204,7 +204,7 @@ export const NutritionLabel: React.FC<NutritionLabelProps> = ({
 
       <View style={styles.labelRow}>
         <Text style={styles.labelText}>
-          {facts.servingPerContainer 
+          {facts.servingPerContainer
             ? t("recipe.nutrition.servingsPerContainer", { count: facts.servingPerContainer })
             : t("recipe.nutrition.servingsPerContainerOne")}
         </Text>

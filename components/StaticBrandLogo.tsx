@@ -32,18 +32,18 @@ export function StaticBrandLogo({
   secondaryColor,
 }: StaticBrandLogoProps) {
   const { tokens } = useTheme();
-  
+
   // Use provided colors or fall back to theme colors
   const resolvedPrimaryColor = primaryColor ?? tokens.colors.logoPrimaryColor ?? tokens.colors.textPrimary;
   const resolvedSecondaryColor = secondaryColor ?? tokens.colors.logoSecondaryColor ?? tokens.colors.textSecondary;
-  
+
   // Calculate dimensions based on provided props
   // The SVG viewBox is 148.9 x 297.8, so natural aspect ratio is ~2:1 (height:width)
   const SVG_ASPECT_RATIO = 297.8 / 148.9; // ~2.0
-  
+
   let svgWidth: number;
   let svgHeight: number;
-  
+
   if (width !== undefined && height !== undefined) {
     // Both width and height provided - use them directly
     svgWidth = width;
@@ -61,7 +61,7 @@ export function StaticBrandLogo({
     svgWidth = size;
     svgHeight = size * SVG_ASPECT_RATIO;
   }
-  
+
   // Container width for two SVGs side by side
   const containerWidth = svgWidth * 2;
   const combinedViewBox = `0 0 ${148.9 * 2} ${297.8}`;

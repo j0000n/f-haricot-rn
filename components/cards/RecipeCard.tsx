@@ -228,7 +228,7 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
 
       <View style={styles.content}>
         <Text style={styles.title} numberOfLines={variant === "compact" ? 1 : 2}>
-          {recipe.recipeName[currentLanguage] || recipe.recipeName.en} 
+          {recipe.recipeName[currentLanguage] || recipe.recipeName.en}
         </Text>
 
         <View style={styles.emojiRow}>

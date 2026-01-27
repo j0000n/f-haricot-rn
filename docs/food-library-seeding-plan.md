@@ -65,4 +65,3 @@ Leverage the FDC API guide endpoints to maximize completeness:
 1. Pilot with 100–200 high-use ingredients using USDA only.
 2. Validate in staging with existing UI flows and translation guide coverage.
 3. Expand to full USDA ingestion once pilot is accepted.
-

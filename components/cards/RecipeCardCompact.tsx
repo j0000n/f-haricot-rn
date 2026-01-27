@@ -27,7 +27,7 @@ const createStyles = (tokens: ThemeTokens) =>
     StyleSheet.create({
         container: {
             borderRadius: tokens.radii.md,
-            marginRight: tokens.spacing.sm,
+            marginRight: tokens.spacing.xs,
             backgroundColor: tokens.colors.surface,
             width: COMPACT_CARD_WIDTH,
             overflow: "hidden", // Ensure content respects border radius

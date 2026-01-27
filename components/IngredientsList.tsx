@@ -136,7 +136,7 @@ export const IngredientsList: React.FC<IngredientsListProps> = ({
 
   const getDisplayName = (ingredient: RecipeIngredient) => {
     const entry = libraryByCode.get(ingredient.foodCode);
-    
+
     if (entry) {
       // Handle database translation format (can be {singular, plural} object or string)
       const baseTranslation = entry.translations[language as keyof typeof entry.translations] || entry.translations.en;

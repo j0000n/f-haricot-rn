@@ -47,7 +47,7 @@ const SVG_2_SECONDARY_PATH = "M37.23 260.57h74.45v37.22H37.23zM111.67 0v74.45c0 
 function getColorForValue(value: number, colors: string[]): string {
   // Clamp value between 0 and 1
   const clampedValue = Math.max(0, Math.min(1, value));
-  
+
   // Calculate the segment index
   const segmentCount = colors.length - 1;
   const segmentSize = 1 / segmentCount;
@@ -55,13 +55,13 @@ function getColorForValue(value: number, colors: string[]): string {
     Math.floor(clampedValue / segmentSize),
     segmentCount - 1
   );
-  
+
   const startColor = colors[segmentIndex];
   const endColor = colors[segmentIndex + 1];
   const segmentStart = segmentIndex * segmentSize;
   const segmentEnd = (segmentIndex + 1) * segmentSize;
   const ratio = (clampedValue - segmentStart) / (segmentEnd - segmentStart);
-  
+
   // Simple linear interpolation between hex colors
   return interpolateHexColor(startColor, endColor, ratio);
 }
@@ -71,15 +71,15 @@ function interpolateHexColor(color1: string, color2: string, ratio: number): str
   const r1 = parseInt(color1.slice(1, 3), 16);
   const g1 = parseInt(color1.slice(3, 5), 16);
   const b1 = parseInt(color1.slice(5, 7), 16);
-  
+
   const r2 = parseInt(color2.slice(1, 3), 16);
   const g2 = parseInt(color2.slice(3, 5), 16);
   const b2 = parseInt(color2.slice(5, 7), 16);
-  
+
   const r = Math.round(r1 + (r2 - r1) * ratio);
   const g = Math.round(g1 + (g2 - g1) * ratio);
   const b = Math.round(b1 + (b2 - b1) * ratio);
-  
+
   return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
 }
 
@@ -92,12 +92,12 @@ export function AnimatedBrandLogo({
 }: AnimatedBrandLogoProps) {
   const resolvedWidth = width ?? size;
   const resolvedHeight = height ?? size;
-  
+
   // Calculate SVG dimensions maintaining aspect ratio
   // The SVG viewBox is 148.9 x 297.8, so height is approximately 2x width
   const svgWidth = resolvedWidth;
   const svgHeight = (resolvedWidth / 148.9) * 297.8;
-  
+
   // Container width for two SVGs side by side
   const containerWidth = svgWidth * 2;
 

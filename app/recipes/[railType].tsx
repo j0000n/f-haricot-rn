@@ -34,15 +34,15 @@ const createStyles = (tokens: ThemeTokens, windowWidth: number) => {
   // Responsive breakpoints
   const isTablet = windowWidth > 768;
   const isDesktop = windowWidth > 1024;
-  
+
   // Use consistent horizontal spacing for gaps between cards
   const horizontalGap = tokens.spacing.sm; // Gap between cards horizontally (12px)
   // Use smaller vertical spacing, especially on mobile
   const verticalGap = isDesktop ? tokens.spacing.sm : tokens.spacing.xs; // Tighter vertical spacing on mobile
-  
+
   // Calculate column count
   const columns = isDesktop ? 4 : isTablet ? 3 : 2;
-  
+
   // Calculate precise item width percentage accounting for gaps
   // Formula: (100% - (columns - 1) * gap%) / columns
   // Convert gap from pixels to percentage of container width
@@ -51,7 +51,7 @@ const createStyles = (tokens: ThemeTokens, windowWidth: number) => {
   const gapPercent = (horizontalGap / estimatedContainerWidth) * 100;
   const totalGapSpace = (columns - 1) * gapPercent;
   const itemWidthPercent = (100 - totalGapSpace) / columns;
-  
+
   return StyleSheet.create({
     container: {
       flex: 1,
@@ -180,7 +180,7 @@ export default function ViewAllRecipesScreen() {
                 // Calculate if this is the last item in a row
                 const columns = isDesktop ? 4 : isTablet ? 3 : 2;
                 const isLastInRow = (index + 1) % columns === 0;
-                
+
                 return (
                   <View
                     key={recipe._id}

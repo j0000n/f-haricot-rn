@@ -13,27 +13,27 @@ const Replicate = require("replicate");
  */
 function determineVessel(recipeName: string, description: string): string {
   const text = `${recipeName} ${description}`.toLowerCase();
-  
+
   // Keywords that indicate bowl usage
   const bowlKeywords = ["soup", "stew", "broth", "chili", "curry", "salad", "cereal", "porridge", "risotto", "pasta", "noodles"];
-  
+
   // Keywords that indicate plate usage
   const plateKeywords = ["grilled", "roasted", "baked", "fried", "steak", "chicken breast", "fish fillet"];
-  
+
   // Check for bowl keywords first
   for (const keyword of bowlKeywords) {
     if (text.includes(keyword)) {
       return "bowl";
     }
   }
-  
+
   // Check for plate keywords
   for (const keyword of plateKeywords) {
     if (text.includes(keyword)) {
       return "serving plate";
     }
   }
-  
+
   // Default to serving plate
   return "serving plate";
 }
@@ -403,19 +403,19 @@ export const generateAndSaveRecipeImages = internalAction({
 
       // Step 2: Generate enhanced subject that captures substitutions and key characteristics
       console.log(`[generateAndSaveRecipeImages] Generating enhanced subject for recipe ${args.recipeId}`);
-      
+
       // Map ingredients to only the fields needed by generateEnhancedRecipeSubject
       const ingredientsForPrompt = recipe.ingredients.map((ing: { foodCode: string; originalText?: string; preparation?: string }) => ({
         foodCode: ing.foodCode,
         originalText: ing.originalText,
         preparation: ing.preparation,
       }));
-      
+
       // Map sourceSteps to only the text field if they exist
       const stepsForPrompt = recipe.sourceSteps?.map((step: { text: string }) => ({
         text: step.text,
       }));
-      
+
       const enhancedSubject = await ctx.runAction(
         internal.images.generateEnhancedRecipeSubject,
         {
@@ -430,7 +430,7 @@ export const generateAndSaveRecipeImages = internalAction({
       // Step 3: Determine vessel based on recipe characteristics
       const vessel = determineVessel(args.recipeName, args.description);
       console.log(`[generateAndSaveRecipeImages] Determined vessel: "${vessel}" for recipe ${args.recipeId}`);
-      
+
       // Step 4: Generate recipe images using enhanced subject
       console.log(`[generateAndSaveRecipeImages] Calling generateRecipeImages for recipe ${args.recipeId}`);
       const storageIds = await ctx.runAction(internal.images.generateRecipeImages, {
@@ -438,22 +438,22 @@ export const generateAndSaveRecipeImages = internalAction({
         vessel,
         aspectRatio: "1:1",
       });
-      
+
       console.log(`[generateAndSaveRecipeImages] Generated ${storageIds.length} images for recipe ${args.recipeId}`);
-      
+
       if (storageIds.length === 0) {
         console.error(`[generateAndSaveRecipeImages] No images generated for recipe ${args.recipeId}`);
         return;
       }
-      
+
       // Step 5: Use only the first generated image
       const originalImageStorageId = storageIds[0];
       console.log(`[generateAndSaveRecipeImages] Using first image with storage ID: ${originalImageStorageId} for recipe ${args.recipeId}`);
-      
+
       // Step 6: Save the raw generated image directly (no external processing)
       // Use the same image for all sizes since we're not processing variants
       console.log(`[generateAndSaveRecipeImages] Saving raw image to recipe ${args.recipeId}`);
-      
+
       await ctx.runMutation(api.recipes.updateRecipeImages, {
         recipeId: args.recipeId,
         originalImageLargeStorageId: originalImageStorageId,
@@ -461,7 +461,7 @@ export const generateAndSaveRecipeImages = internalAction({
         transparentImageLargeStorageId: originalImageStorageId,
         transparentImageSmallStorageId: originalImageStorageId,
       });
-      
+
       console.log(`[generateAndSaveRecipeImages] Successfully generated and saved images for recipe ${args.recipeId}`);
     } catch (error) {
       // Log error but don't throw - recipe creation should succeed even if image generation fails

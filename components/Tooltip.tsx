@@ -76,7 +76,7 @@ const createTooltipStyles = (tokens: any) =>
     title: {
       flex: 1,
       fontSize: tokens.typography.subheading,
-      fontFamily: tokens.fontFamilies.semiBold,
+      fontFamily: tokens.fontFamilies.display,
       color: tokens.colors.textPrimary,
       marginRight: tokens.spacing.sm,
     },

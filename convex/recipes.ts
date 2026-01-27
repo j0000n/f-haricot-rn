@@ -314,9 +314,9 @@ const getPersonalizedFromCacheOrFallback = async (
       .withIndex("by_created_at", (q: any) => q.gt("createdAt", cached.computedAt))
       .order("desc")
       .first();
-    
+
     const cacheIsStale = newestRecipe !== null;
-    
+
     if (!cacheIsStale) {
       // Return cached results only if no newer recipes exist
       return await loadRecipesByIds(ctx, cached.recipeIds);
@@ -930,7 +930,7 @@ If nutrition information is not found, return all null values.`;
     }
 
     const nutrition = JSON.parse(jsonText);
-    
+
     // Validate and convert to proper format
     const result: any = {};
     if (nutrition.calories && typeof nutrition.calories === "number") {
@@ -1063,50 +1063,50 @@ function detectMediaTypeFromUrl(url: string): SourceType {
   try {
     const urlObj = new URL(url);
     const hostname = urlObj.hostname.toLowerCase();
-    
+
     // TikTok detection
     if (hostname.includes('tiktok.com')) {
       return 'tiktok';
     }
-    
+
     // YouTube detection
     if (hostname.includes('youtube.com') || hostname.includes('youtu.be')) {
       return 'youtube';
     }
-    
+
     // Instagram detection
     if (hostname.includes('instagram.com')) {
       return 'instagram';
     }
-    
+
     // Pinterest detection
     if (hostname.includes('pinterest.com') || hostname.includes('pin.it')) {
       return 'pinterest';
     }
-    
+
     // Facebook detection
     if (hostname.includes('facebook.com') || hostname.includes('fb.com')) {
       return 'facebook';
     }
-    
+
     // Twitter/X detection
     if (hostname.includes('twitter.com') || hostname.includes('x.com')) {
       return 'twitter';
     }
-    
+
     // Reddit detection
     if (hostname.includes('reddit.com')) {
       return 'reddit';
     }
-    
+
     // Blog detection (common blog platforms)
-    if (hostname.includes('blogspot.com') || 
+    if (hostname.includes('blogspot.com') ||
         hostname.includes('wordpress.com') ||
         hostname.includes('medium.com') ||
         hostname.includes('substack.com')) {
       return 'blog';
     }
-    
+
     // Default to website for other URLs
     return 'website';
   } catch {
@@ -1121,16 +1121,16 @@ function extractTextFromHtml(html: string): string {
   // Remove script and style tags
   let text = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
   text = text.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
-  
+
   // Extract text content from common tags
   text = text.replace(/<[^>]+>/g, ' ');
-  
+
   // Decode HTML entities
   text = decodeHtmlEntities(text);
-  
+
   // Clean up whitespace
   text = text.replace(/\s+/g, ' ').trim();
-  
+
   return text;
 }
 
@@ -1140,7 +1140,7 @@ function extractTextFromHtml(html: string): string {
 async function fetchOEmbedData(url: string, platform: 'tiktok' | 'youtube' | 'instagram'): Promise<any> {
   try {
     let oembedUrl: string;
-    
+
     if (platform === 'tiktok') {
       // TikTok oEmbed endpoint
       oembedUrl = `https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`;
@@ -1153,18 +1153,18 @@ async function fetchOEmbedData(url: string, platform: 'tiktok' | 'youtube' | 'in
     } else {
       return null;
     }
-    
+
     const response = await fetch(oembedUrl, {
       headers: {
         'User-Agent': 'HaricotRecipeIngest/1.0',
       },
     });
-    
+
     if (!response.ok) {
       console.warn(`[fetchOEmbedData] Failed to fetch oEmbed for ${platform}: ${response.status}`);
       return null;
     }
-    
+
     return await response.json();
   } catch (error) {
     console.warn(`[fetchOEmbedData] Error fetching oEmbed for ${platform}:`, error);
@@ -1760,9 +1760,9 @@ export const listPersonalized = query({
         .withIndex("by_created_at", (q) => q.gt("createdAt", cached.computedAt))
         .order("desc")
         .first();
-      
+
       const cacheIsStale = newestRecipe !== null;
-      
+
       if (!cacheIsStale) {
         // Return cached results only if no newer recipes exist
         const recipes = await Promise.all(
@@ -2006,7 +2006,7 @@ export const listPersonalizedRails = query({
             .withIndex("by_created_at", (q: any) => q.gt("createdAt", entry.computedAt))
             .order("desc")
             .first();
-          
+
           const cacheIsStale = newestRecipe !== null;
           return { railType, entry, cacheIsStale };
         }
@@ -2884,7 +2884,7 @@ export const ingestUniversal = action({
       const oembedTitle = oembedData.title || '';
       const oembedDescription = oembedData.description || oembedData.author_name || '';
       const oembedHtml = oembedData.html || ''; // May contain video embed with captions
-      
+
       // Combine oEmbed metadata with existing source summary
       enhancedSourceSummary = [
         oembedTitle,
@@ -2956,11 +2956,11 @@ STEP EXTRACTION RULES:
 - Extract ALL steps in order - do not combine or skip steps
 - Include sub-steps and detailed instructions
 - For recipes with multiple cooking methods (e.g., "Instant Pot" vs "Crock-Pot", "Stovetop" vs "Oven"):
-  * CRITICAL: When you see a method header like "INSTANT POT INSTRUCTIONS" or "CROCK-POT SLOW COOKER INSTRUCTIONS", 
+  * CRITICAL: When you see a method header like "INSTANT POT INSTRUCTIONS" or "CROCK-POT SLOW COOKER INSTRUCTIONS",
     you MUST extract ALL the detailed steps that follow that header, not just the header itself
-  * Method headers are NOT steps - they are section labels. The actual steps are the numbered or bulleted 
+  * Method headers are NOT steps - they are section labels. The actual steps are the numbered or bulleted
     instructions that appear AFTER each header
-  * Example: If you see "INSTANT POT INSTRUCTIONS" followed by "Peel and dice onion...", "Add 6 cups broth...", 
+  * Example: If you see "INSTANT POT INSTRUCTIONS" followed by "Peel and dice onion...", "Add 6 cups broth...",
     etc., extract each of those as separate steps under the "Instant Pot" method
   * Detect method headers (e.g., "INSTANT POT INSTRUCTIONS", "CROCK-POT SLOW COOKER INSTRUCTIONS")
   * Extract ALL detailed steps under each method header
@@ -3020,7 +3020,7 @@ Return JSON with fields:
   * Each step should represent a complete instruction from the source recipe, not break down into individual ingredient operations
   * Include ingredient codes WITHIN action/technique codes, not as separate steps
   * Parameters like @quantity and @unit should be attached to ingredient codes within actions, not standalone
-  * DO NOT return JSON format like {"steps":[...]} 
+  * DO NOT return JSON format like {"steps":[...]}
   * If URES encoding is not possible, return empty string "" and ensure sourceSteps contains complete detailed steps
   * Reference plan/encoding-guide.md for URES format details
 - encodingVersion - default "URES-4.6"
@@ -3084,17 +3084,17 @@ Captured text: ${sourceSummary}`;
         const pos = parseInt(errorPos, 10);
         console.error(`[ingestUniversal] JSON around error position (${pos}): ${jsonText.substring(Math.max(0, pos - 100), Math.min(jsonText.length, pos + 100))}`);
       }
-      
+
       // Attempt JSON repair for common issues
       let repairedJson = jsonText;
-      
+
       // Fix trailing commas before closing braces/brackets
       repairedJson = repairedJson.replace(/,(\s*[}\]])/g, '$1');
-      
+
       // Fix missing commas between object properties (look for } followed by " or number)
       repairedJson = repairedJson.replace(/}\s*"/g, '}, "');
       repairedJson = repairedJson.replace(/}\s*(\d)/g, '}, $1');
-      
+
       try {
         enhanced = JSON.parse(repairedJson);
         console.log(`[ingestUniversal] Successfully parsed JSON after automatic repair`);
@@ -3293,27 +3293,27 @@ Captured text: ${sourceSummary}`;
           origText = origText.replace(/\b\d+\s+\w+\s+(\d+[½¼¾]?\s*\w+)/gi, "$1");
           // Remove patterns like "1 tablespoon 2 tablespoons" -> "2 tablespoons"
           origText = origText.replace(/\b\d+\s+(\w+)\s+(\d+)\s+\1s?\b/gi, "$2 $1$3");
-          
+
           // More aggressive: Remove leading quantity/unit patterns (e.g., "2 lbs", "1/2 cup", "2½ tablespoons")
           // This handles cases where quantity/unit appears at the start
           origText = origText.replace(
             /^\s*\d+[½¼¾]?\s*(cup|cups|tablespoon|tablespoons|teaspoon|teaspoons|pound|pounds|lb|lbs|ounce|ounces|oz|gram|grams|g|milliliter|milliliters|ml|tbsp|tsp|count|clove|cloves|piece|pieces|item|items)\s+/gi,
             ""
           );
-          
+
           // Remove fraction patterns at the start (e.g., "1/2 cup", "¾ cup")
           origText = origText.replace(/^\s*\d+\/\d+\s+(cup|cups|tablespoon|tablespoons|teaspoon|teaspoons|pound|pounds|lb|lbs|ounce|ounces|oz|gram|grams|g|milliliter|milliliters|ml|tbsp|tsp)\s+/gi, "");
-          
+
           // Remove Unicode fraction patterns (e.g., "½ cup", "¼ cup")
           origText = origText.replace(/^\s*[½¼¾]\s+(cup|cups|tablespoon|tablespoons|teaspoon|teaspoons|pound|pounds|lb|lbs|ounce|ounces|oz|gram|grams|g|milliliter|milliliters|ml|tbsp|tsp)\s+/gi, "");
-          
+
           // Remove duplicated words (e.g., "lean ground lean" -> "lean ground")
           origText = origText.replace(/\b(\w+)\s+\1\b/gi, "$1");
-          
+
           // Remove parenthetical notes that contain instructions or notes (e.g., "(or other non-dairy milk) *see note")
           origText = origText.replace(/\s*\([^)]*\)/g, "");
           origText = origText.replace(/\s*\*[^*]*\*/g, "");
-          
+
           // Remove extra whitespace
           origText = origText.replace(/\s+/g, " ").trim();
         }
@@ -4910,9 +4910,9 @@ export const listPersonalizedForUser = query({
         .withIndex("by_created_at", (q) => q.gt("createdAt", cached.computedAt))
         .order("desc")
         .first();
-      
+
       const cacheIsStale = newestRecipe !== null;
-      
+
       if (!cacheIsStale) {
         // Return cached results only if no newer recipes exist
         const recipes = await Promise.all(
@@ -5566,7 +5566,7 @@ export const updateRecipeImages = mutation({
       transparentImageLargeStorageId: args.transparentImageLargeStorageId,
       transparentImageSmallStorageId: args.transparentImageSmallStorageId,
     });
-    
+
     const updateData: {
       originalImageLargeStorageId?: Id<"_storage">;
       originalImageSmallStorageId?: Id<"_storage">;
@@ -5576,7 +5576,7 @@ export const updateRecipeImages = mutation({
     } = {
       updatedAt: Date.now(),
     };
-    
+
     if (args.originalImageLargeStorageId) {
       updateData.originalImageLargeStorageId = args.originalImageLargeStorageId;
     }
@@ -5589,7 +5589,7 @@ export const updateRecipeImages = mutation({
     if (args.transparentImageSmallStorageId) {
       updateData.transparentImageSmallStorageId = args.transparentImageSmallStorageId;
     }
-    
+
     await ctx.db.patch(args.recipeId, updateData);
     console.log(`[updateRecipeImages] Successfully updated recipe ${args.recipeId}`);
   },

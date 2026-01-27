@@ -262,7 +262,7 @@ function validateNutrition(
   const normalizedName = ingredientName.toLowerCase().trim();
   const knownValues = KNOWN_GOOD_VALUES[normalizedName];
   let hasSignificantDeviation = false;
-  
+
   if (knownValues) {
     const tolerance = 0.2; // 20% tolerance
     if (knownValues.calories) {
@@ -314,19 +314,19 @@ function validateImageUrl(url: string): boolean {
 
 function validateCompleteness(item: FoodLibrarySeedItem): string[] {
   const missing: string[] = [];
-  
+
   if (!item.code) missing.push("code");
   if (!item.name) missing.push("name");
   if (!item.translations?.en) missing.push("translations.en");
   if (!item.category) missing.push("category");
   if (!item.categoryTranslations?.en) missing.push("categoryTranslations.en");
   if (!item.defaultImageUrl) missing.push("defaultImageUrl");
-  if (item.nutritionPer100g.calories === 0 && 
+  if (item.nutritionPer100g.calories === 0 &&
       item.nutritionPer100g.macronutrients.protein === 0 &&
       item.nutritionPer100g.macronutrients.carbohydrates === 0) {
     missing.push("nutritionPer100g (all zeros)");
   }
-  
+
   return missing;
 }
 
@@ -334,7 +334,7 @@ function mapUsdaNutrition(food?: UsdaFood, debug = false): NutritionFacts {
   const nutrients = food?.foodNutrients ?? [];
   const byId = new Map<number, UsdaFoodNutrient>();
   const byName = new Map<string, UsdaFoodNutrient>();
-  
+
   for (const nutrient of nutrients) {
     if (nutrient.nutrientId) {
       byId.set(nutrient.nutrientId, nutrient);
@@ -354,7 +354,7 @@ function mapUsdaNutrition(food?: UsdaFood, debug = false): NutritionFacts {
   if (debug && food) {
     console.log(`\n[DEBUG] USDA Food: ${food.description} (FDC ID: ${food.fdcId}, Type: ${food.dataType || "unknown"})`);
     console.log(`[DEBUG] Total nutrients: ${nutrients.length}`);
-    
+
     // Find all energy-related nutrients
     const energyNutrients: Array<{ id?: number; name: string; value: number; unit: string }> = [];
     for (const nutrient of nutrients) {
@@ -368,14 +368,14 @@ function mapUsdaNutrition(food?: UsdaFood, debug = false): NutritionFacts {
         });
       }
     }
-    
+
     if (energyNutrients.length > 0) {
       console.log(`[DEBUG] Energy-related nutrients found:`);
       for (const en of energyNutrients) {
         console.log(`  - ${en.name} (ID ${en.id || "N/A"}): ${en.value} ${en.unit}`);
       }
     }
-    
+
     console.log(`[DEBUG] Key macronutrients:`);
     const keyNutrients = [
       { id: 1003, name: "Protein" },
@@ -395,7 +395,7 @@ function mapUsdaNutrition(food?: UsdaFood, debug = false): NutritionFacts {
   // Try to get energy - handle multiple formats and units
   let calories = 0;
   let caloriesSource = "";
-  
+
   // Priority order for energy extraction:
   // 1. "Energy (Atwater General Factors)" in kcal
   const energyAtwater = getValueByName("Energy (Atwater General Factors)");
@@ -411,7 +411,7 @@ function mapUsdaNutrition(food?: UsdaFood, debug = false): NutritionFacts {
       caloriesSource = "Energy (Atwater General Factors) [converted from kJ]";
     }
   }
-  
+
   // 2. Nutrient ID 1008 (Energy in kcal)
   if (calories === 0) {
     const nutrient1008 = byId.get(1008);
@@ -426,7 +426,7 @@ function mapUsdaNutrition(food?: UsdaFood, debug = false): NutritionFacts {
       }
     }
   }
-  
+
   // 3. "Energy (kcal)" by name
   if (calories === 0) {
     const energyKcal = getValueByName("Energy (kcal)");
@@ -435,7 +435,7 @@ function mapUsdaNutrition(food?: UsdaFood, debug = false): NutritionFacts {
       caloriesSource = "Energy (kcal)";
     }
   }
-  
+
   // 4. "Energy" by name (check unit)
   if (calories === 0) {
     const energyNutrient = byName.get("Energy".toLowerCase());
@@ -450,7 +450,7 @@ function mapUsdaNutrition(food?: UsdaFood, debug = false): NutritionFacts {
       }
     }
   }
-  
+
   // 5. Try nutrient ID 1062 (Energy in kJ) as last resort
   if (calories === 0) {
     const nutrient1062 = byId.get(1062);
@@ -459,7 +459,7 @@ function mapUsdaNutrition(food?: UsdaFood, debug = false): NutritionFacts {
       caloriesSource = "Energy (ID 1062) [converted from kJ]";
     }
   }
-  
+
   if (debug && calories > 0) {
     console.log(`[DEBUG] Selected calories: ${calories.toFixed(1)} kcal from ${caloriesSource}`);
   }
@@ -496,24 +496,24 @@ function mapUsdaNutrition(food?: UsdaFood, debug = false): NutritionFacts {
 function calculateFoodMatchScore(query: string, foodDescription: string): number {
   const queryLower = query.toLowerCase().trim();
   const descLower = foodDescription.toLowerCase();
-  
+
   // Exact match gets highest score
   if (descLower === queryLower || descLower === `${queryLower}, raw`) {
     return 1.0;
   }
-  
+
   // Check if description contains query
   if (!descLower.includes(queryLower)) {
     return 0.0;
   }
-  
+
   let score = 0.5; // Base score for containing query
-  
+
   // Prefer "raw" in description
   if (descLower.includes("raw") && !descLower.includes("dried") && !descLower.includes("juice")) {
     score += 0.3;
   }
-  
+
   // Penalize processed foods
   const processedKeywords = ["dried", "juice", "concentrate", "canned", "frozen", "powder", "dehydrated"];
   for (const keyword of processedKeywords) {
@@ -521,22 +521,22 @@ function calculateFoodMatchScore(query: string, foodDescription: string): number
       score -= 0.2;
     }
   }
-  
+
   // Prefer Foundation dataType
   // (This will be checked separately)
-  
+
   return Math.max(0, Math.min(1, score));
 }
 
 function isProcessedFood(description: string, query: string): boolean {
   const descLower = description.toLowerCase();
   const queryLower = query.toLowerCase();
-  
+
   // If query specifically asks for processed, allow it
   if (queryLower.includes("dried") || queryLower.includes("juice") || queryLower.includes("canned")) {
     return false;
   }
-  
+
   // Check for processed keywords
   const processedKeywords = ["dried", "juice", "concentrate", "canned", "frozen", "powder", "dehydrated", "cooked"];
   return processedKeywords.some(keyword => descLower.includes(keyword));
@@ -562,9 +562,9 @@ async function fetchUsdaFood(query: string, debug = false): Promise<UsdaFood | u
 
     const response = await fetchJson<{ foods?: UsdaFood[] }>(url.toString());
     const foods = response.foods || [];
-    
+
     if (foods.length === 0) continue;
-    
+
     // Score and filter foods
     const scoredFoods = foods
       .map(food => ({
@@ -590,7 +590,7 @@ async function fetchUsdaFood(query: string, debug = false): Promise<UsdaFood | u
         }
         return a.isProcessed ? 1 : -1;
       });
-    
+
     if (scoredFoods.length > 0) {
       const selected = scoredFoods[0].food;
       if (debug) {
@@ -605,21 +605,21 @@ async function fetchUsdaFood(query: string, debug = false): Promise<UsdaFood | u
       return selected;
     }
   }
-  
+
   // Fallback: return first result if no good match found
   const fallbackUrl = new URL("https://api.nal.usda.gov/fdc/v1/foods/search");
   fallbackUrl.searchParams.set("api_key", apiKey);
   fallbackUrl.searchParams.set("query", query);
   fallbackUrl.searchParams.set("pageSize", "1");
   fallbackUrl.searchParams.set("dataType", "Foundation,SR Legacy");
-  
+
   const fallbackResponse = await fetchJson<{ foods?: UsdaFood[] }>(fallbackUrl.toString());
   const fallbackFood = fallbackResponse.foods?.[0];
-  
+
   if (debug && fallbackFood) {
     console.warn(`[WARN] Using fallback food for "${query}": "${fallbackFood.description}"`);
   }
-  
+
   return fallbackFood;
 }
 
@@ -791,7 +791,7 @@ async function uploadImageToConvex(
   debug = false,
 ): Promise<import("../../convex/_generated/dataModel").Id<"_storage"> | undefined> {
   const convexUrl = process.env.EXPO_PUBLIC_CONVEX_URL || process.env.CONVEX_URL;
-  
+
   if (!convexUrl) {
     if (debug) {
       console.warn("[WARN] CONVEX_URL not set, skipping image upload to Convex storage");
@@ -803,7 +803,7 @@ async function uploadImageToConvex(
     if (debug) {
       console.log(`[DEBUG] Uploading image to Convex: ${imageUrl.substring(0, 60)}...`);
     }
-    
+
     // Call Convex HTTP API to invoke the storeFromUrl action
     // Format: POST https://<deployment>.convex.cloud/api/action
     const apiUrl = `${convexUrl}/api/action`;
@@ -812,7 +812,7 @@ async function uploadImageToConvex(
       args: { imageUrl },
       format: "json" as const,
     };
-    
+
     const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
@@ -820,19 +820,19 @@ async function uploadImageToConvex(
       },
       body: JSON.stringify(requestBody),
     });
-    
+
     if (!response.ok) {
       const errorText = await response.text();
       throw new Error(`Convex API error: ${response.status} ${errorText}`);
     }
-    
+
     const result = await response.json();
     const storageId = result.value as import("../../convex/_generated/dataModel").Id<"_storage">;
-    
+
     if (debug) {
       console.log(`[DEBUG] Successfully uploaded image, storage ID: ${storageId}`);
     }
-    
+
     return storageId;
   } catch (error) {
     console.warn(`[WARN] Failed to upload image to Convex: ${imageUrl.substring(0, 50)}...`, error);
@@ -879,12 +879,12 @@ async function generateReplicateImage(
     if (Array.isArray(output) && output.length > 0) {
       const url = output[0]?.url?.() ?? output[0];
       const imageUrl = typeof url === "string" ? url : url?.href;
-      
+
       if (imageUrl) {
         if (debug) {
           console.log(`[DEBUG] Replicate generated image URL: ${imageUrl.substring(0, 60)}...`);
         }
-        
+
         // Upload to Convex storage
         const storageId = await uploadImageToConvex(imageUrl, debug);
         return { url: imageUrl, storageId };
@@ -902,7 +902,7 @@ async function normalizeIngredient(
   debug = false,
 ): Promise<FoodLibrarySeedItem> {
   const query = input.query.trim();
-  
+
   // Fetch data from all sources with error handling
   let usdaFood: UsdaFood | undefined;
   let openFood: OpenFoodFactsProduct | undefined;
@@ -916,7 +916,7 @@ async function normalizeIngredient(
       fetchSpoonacularIngredient(query),
       enrichWithOpenAi(query),
     ]);
-    
+
     const sources = ["USDA", "OpenFoodFacts", "Spoonacular", "OpenAI"];
     const values = results.map((result, index) => {
       if (result.status === "rejected") {
@@ -925,12 +925,12 @@ async function normalizeIngredient(
       }
       return result.value;
     });
-    
+
     usdaFood = (values[0] ?? undefined) as UsdaFood | undefined;
     openFood = (values[1] ?? undefined) as OpenFoodFactsProduct | undefined;
     spoonacularIngredient = (values[2] ?? undefined) as SpoonacularIngredient | undefined;
     openAiEnrichment = (values[3] ?? null) as Awaited<ReturnType<typeof enrichWithOpenAi>>;
-    
+
     // Verify USDA food matches query
     if (usdaFood && debug) {
       const matchScore = calculateFoodMatchScore(query, usdaFood.description);
@@ -978,13 +978,13 @@ async function normalizeIngredient(
   } catch (error) {
     console.warn(`[WARN] Failed to generate image for "${name}":`, error);
   }
-  
+
   const nutrition = mapUsdaNutrition(usdaFood, debug);
-  
+
   // Try to upload images to Convex
   let imageStorageId: import("../../convex/_generated/dataModel").Id<"_storage"> | undefined = undefined;
   let imageUrl = generatedImageResult.url;
-  
+
   if (!imageUrl) {
     const spoonacularUrl = spoonacularIngredient?.image
       ? `https://spoonacular.com/cdn/ingredients_500x500/${spoonacularIngredient.image}`
@@ -992,7 +992,7 @@ async function normalizeIngredient(
     const openFoodUrl = isOpenFoodMatch ? openFood?.image_url : undefined;
     imageUrl = buildImageUrl(spoonacularIngredient?.image, openFoodUrl);
   }
-  
+
   // Upload to Convex if we have a valid URL (not default placeholder)
   if (imageUrl && imageUrl !== DEFAULT_IMAGE) {
     try {
@@ -1022,7 +1022,7 @@ async function normalizeIngredient(
       console.warn(`[WARN] ${name}: Nutrition validation warnings:`, nutritionValidation.warnings);
     } else {
       // Always log significant deviations even without debug
-      const significantWarnings = nutritionValidation.warnings.filter(w => 
+      const significantWarnings = nutritionValidation.warnings.filter(w =>
         w.includes("differs significantly") || w.includes("out of expected range")
       );
       if (significantWarnings.length > 0) {
@@ -1034,10 +1034,10 @@ async function normalizeIngredient(
   // Use known good values as fallback if validation fails OR has significant deviation
   const normalizedName = name.toLowerCase().trim();
   const knownValues = KNOWN_GOOD_VALUES[normalizedName];
-  const shouldUseFallback = 
-    (!nutritionValidation.isValid || nutritionValidation.hasSignificantDeviation) && 
+  const shouldUseFallback =
+    (!nutritionValidation.isValid || nutritionValidation.hasSignificantDeviation) &&
     knownValues;
-  
+
   const finalNutrition = shouldUseFallback
     ? (() => {
         console.warn(`[INFO] ${name}: Using known-good nutrition values due to ${nutritionValidation.hasSignificantDeviation ? "significant deviation" : "validation errors"}`);
@@ -1143,7 +1143,7 @@ async function main() {
       // Continue processing other ingredients
     }
   }
-  
+
   if (results.length === 0) {
     console.error("[ERROR] No ingredients were successfully processed");
     process.exit(1);
@@ -1187,7 +1187,7 @@ export const foodLibrarySeedGeneratedMeta = ${JSON.stringify(metadata, null, 2)}
   await fs.mkdir(path.dirname(latestOutputPath), { recursive: true });
   await fs.writeFile(latestOutputPath, fileContents, "utf8");
   console.log(`Wrote latest version: ${latestOutputPath}`);
-  
+
   console.log(`\nGenerated ${results.length} ingredients`);
   console.log(`Version: ${timestamp}`);
 

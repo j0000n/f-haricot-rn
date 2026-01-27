@@ -182,7 +182,7 @@ export const ensureProvisional = mutation({
     const baseCategory = args.category || "Provisional";
     const storageLocation = inferStorageLocation(baseCategory);
     const languages = ["en", "es", "zh", "fr", "ar", "ja", "vi", "tl"] as const;
-    
+
     // Use provided translations if available, otherwise create fallback translations
     const translations = args.translations || languages.reduce(
       (acc, lang) => {

@@ -1,6 +1,0 @@
-2026-01-27 11:36:22.333 xcodebuild[33789:5666571] Writing error result bundle to /var/folders/5b/ry2g20ss15g1hhzqbkyxv72h0000gn/T/ResultBundle_2026-27-01_11-36-0022.xcresult
-xcodebuild: error: Timed out waiting for all destinations matching the provided destination specifier to become available
-
-
-	Ineligible destinations for the "haricot" scheme:
-		{ platform:iOS, arch:arm64, id:00008130-001A09641A10001C, name:Jonathan Werber’s iPhone, error:Device is busy (Connecting to Jonathan Werber’s iPhone) }

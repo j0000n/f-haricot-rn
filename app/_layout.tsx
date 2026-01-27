@@ -346,12 +346,12 @@ function AuthenticatedAppShell({ isAuthenticated, isLoading, user }: Authenticat
           },
         }}
       >
-        <Stack.Screen 
-          name="(tabs)" 
-          options={{ 
+        <Stack.Screen
+          name="(tabs)"
+          options={{
             headerShown: false,
             contentStyle: { backgroundColor: "transparent" },
-          }} 
+          }}
         />
         <Stack.Screen name="add-task" options={{ presentation: "modal" }} />
         <Stack.Screen name="tasks/[id]" />
@@ -366,7 +366,7 @@ function AuthenticatedAppShell({ isAuthenticated, isLoading, user }: Authenticat
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts(FONT_SOURCES);
-  
+
   // Initialize Convex client only after React Native is ready (inside component)
   const convex = useMemo(() => getConvexClient(), []);
 

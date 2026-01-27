@@ -42,7 +42,7 @@ const createStyles = (tokens: ThemeTokens) =>
       width: FULL_IMAGE_CARD_WIDTH,
       height: FULL_IMAGE_CARD_HEIGHT,
       borderRadius: tokens.radii.md,
-      marginRight: tokens.spacing.md,
+      marginRight: tokens.spacing.xxs,
       overflow: "hidden",
       backgroundColor: tokens.colors.surface,
     },
@@ -61,8 +61,8 @@ const createStyles = (tokens: ThemeTokens) =>
     },
     pillsContainer: {
       position: "absolute",
-      top: tokens.spacing.md,
-      right: tokens.spacing.md,
+      top: tokens.spacing.xs,
+      right: tokens.spacing.xs,
       flexDirection: "column",
       alignItems: "flex-end",
       gap: tokens.spacing.xs,
@@ -100,7 +100,7 @@ const createStyles = (tokens: ThemeTokens) =>
       borderBottomRightRadius: tokens.radii.md,
     },
     title: {
-      fontFamily: tokens.fontFamilies.bold,
+      fontFamily: tokens.fontFamilies.display,
       fontSize: tokens.typography.subheading ,
       color: tokens.colors.textPrimary,
     },

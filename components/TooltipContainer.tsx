@@ -13,11 +13,11 @@ interface TooltipContainerProps {
 export function TooltipContainer({ tooltips: mockTooltips }: TooltipContainerProps) {
   const styles = useThemedStyles(createTooltipContainerStyles);
   const [dismissedMockIds, setDismissedMockIds] = useState<Set<string>>(new Set());
-  
+
   // Use Convex query for real tooltips, fallback to mock data for now
   const activeTooltips = useQuery(api.tooltips.getActive) ?? [];
   const dismissTooltip = useMutation(api.tooltips.dismiss);
-  
+
   // Use mock data if provided, otherwise use Convex data
   const isUsingMockData = mockTooltips && mockTooltips.length > 0;
   const tooltipsToDisplay = useMemo(() => {
@@ -58,7 +58,7 @@ export function TooltipContainer({ tooltips: mockTooltips }: TooltipContainerPro
 const createTooltipContainerStyles = (tokens: any) =>
   StyleSheet.create({
     container: {
-      marginHorizontal: tokens.spacing.lg,
-      marginBottom: tokens.spacing.lg,
+      marginHorizontal: tokens.spacing.xxs,
+      marginBottom: tokens.spacing.sm,
     },
   });

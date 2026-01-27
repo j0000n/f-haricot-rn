@@ -50,7 +50,7 @@ const translationMap: Record<string, Record<string, string>> = {
   "T.01.010": { en: "grate", es: "rallar", zh: "磨碎", fr: "râper", ar: "يبشر", ja: "おろす", vi: "nạo", tl: "kudkuran" },
   "T.01.011": { en: "shred", es: "desmenuzar", zh: "撕碎", fr: "râper", ar: "يقطع شرائح", ja: "千切り", vi: "xé", tl: "gupitin" },
   "T.01.012": { en: "score", es: "marcar", zh: "划痕", fr: "entailler", ar: "يشق", ja: "切れ目を入れる", vi: "rạch", tl: "gupitin ng bahagya" },
-  
+
   // Technique codes - Mixing (T.02)
   "T.02.001": { en: "stir", es: "revolver", zh: "搅拌", fr: "remuer", ar: "يحرك", ja: "かき混ぜる", vi: "khuấy", tl: "haluin" },
   "T.02.002": { en: "whisk", es: "batir", zh: "搅打", fr: "fouetter", ar: "يخفق", ja: "泡立てる", vi: "đánh", tl: "batihin" },
@@ -64,7 +64,7 @@ const translationMap: Record<string, Record<string, string>> = {
   "T.02.010": { en: "emulsify", es: "emulsionar", zh: "乳化", fr: "émulsionner", ar: "يستحلب", ja: "乳化する", vi: "nhũ hóa", tl: "emulsify" },
   "T.02.011": { en: "blend", es: "licuar", zh: "混合", fr: "mélanger", ar: "يمزج", ja: "ブレンドする", vi: "xay", tl: "blend" },
   "T.02.012": { en: "puree", es: "hacer puré", zh: "打成泥", fr: "réduire en purée", ar: "يهرس", ja: "ピューレにする", vi: "nghiền", tl: "puree" },
-  
+
   // Technique codes - Heating (T.03)
   "T.03.001": { en: "boil", es: "hervir", zh: "煮", fr: "bouillir", ar: "يغلي", ja: "沸騰させる", vi: "đun sôi", tl: "pakuluan" },
   "T.03.002": { en: "simmer", es: "hervir a fuego lento", zh: "炖", fr: "mijoter", ar: "يغلي على نار هادئة", ja: "弱火で煮る", vi: "đun nhỏ lửa", tl: "pakuluan ng mabagal" },
@@ -86,7 +86,7 @@ const translationMap: Record<string, Record<string, string>> = {
   "T.03.018": { en: "smoke", es: "ahumar", zh: "熏", fr: "fumer", ar: "يدخن", ja: "スモークする", vi: "hun khói", tl: "smoke" },
   "T.03.019": { en: "sous vide", es: "sous vide", zh: "真空低温", fr: "sous vide", ar: "سوس فيدي", ja: "スービィ", vi: "sous vide", tl: "sous vide" },
   "T.03.020": { en: "confit", es: "confit", zh: "油封", fr: "confit", ar: "كونفيت", ja: "コンフィ", vi: "confit", tl: "confit" },
-  
+
   // Technique codes - Specialized (T.05)
   "T.05.001": { en: "deglaze", es: "desglasar", zh: "去釉", fr: "déglacer", ar: "يزيل القشرة", ja: "デグラゼする", vi: "deglaze", tl: "deglaze" },
   "T.05.002": { en: "reduce", es: "reducir", zh: "收汁", fr: "réduire", ar: "يقلل", ja: "煮詰める", vi: "cô đặc", tl: "bawasan" },
@@ -108,7 +108,7 @@ const translationMap: Record<string, Record<string, string>> = {
   "T.05.018": { en: "ferment", es: "fermentar", zh: "发酵", fr: "fermenter", ar: "يخمر", ja: "発酵させる", vi: "lên men", tl: "ferment" },
   "T.05.019": { en: "caramelize", es: "caramelizar", zh: "焦糖化", fr: "caraméliser", ar: "يكرمل", ja: "キャラメル化する", vi: "caramen hóa", tl: "caramelize" },
   "T.05.020": { en: "candy", es: "confitar", zh: "糖渍", fr: "confire", ar: "يحلى", ja: "キャンディーにする", vi: "tẩm đường", tl: "candy" },
-  
+
   // Action codes - Basic (A.01)
   "A.01.001": { en: "add", es: "añadir", zh: "添加", fr: "ajouter", ar: "يضيف", ja: "加える", vi: "thêm", tl: "idagdag" },
   "A.01.002": { en: "remove", es: "quitar", zh: "移除", fr: "retirer", ar: "يزيل", ja: "取り除く", vi: "bỏ", tl: "alisin" },
@@ -130,7 +130,7 @@ const translationMap: Record<string, Record<string, string>> = {
   "A.01.018": { en: "wrap", es: "envolver", zh: "包裹", fr: "envelopper", ar: "يلف", ja: "包む", vi: "gói", tl: "balutin" },
   "A.01.019": { en: "cover", es: "cubrir", zh: "覆盖", fr: "couvrir", ar: "يغطي", ja: "覆う", vi: "đậy", tl: "takpan" },
   "A.01.020": { en: "uncover", es: "destapar", zh: "揭开", fr: "découvrir", ar: "يكشف", ja: "覆いを取る", vi: "mở", tl: "alisin ang takip" },
-  
+
   // Action codes - Mixing (A.02)
   "A.02.001": { en: "stir", es: "revolver", zh: "搅拌", fr: "remuer", ar: "يحرك", ja: "かき混ぜる", vi: "khuấy", tl: "haluin" },
   "A.02.002": { en: "whisk", es: "batir", zh: "搅打", fr: "fouetter", ar: "يخفق", ja: "泡立てる", vi: "đánh", tl: "batihin" },
@@ -142,7 +142,7 @@ const translationMap: Record<string, Record<string, string>> = {
   "A.02.008": { en: "dissolve", es: "disolver", zh: "溶解", fr: "dissoudre", ar: "يذوب", ja: "溶かす", vi: "hòa tan", tl: "tunawin" },
   "A.02.009": { en: "suspend", es: "suspender", zh: "悬浮", fr: "suspendre", ar: "يعلق", ja: "懸濁する", vi: "treo", tl: "suspend" },
   "A.02.010": { en: "homogenize", es: "homogeneizar", zh: "均质化", fr: "homogénéiser", ar: "يوحد", ja: "均質化する", vi: "đồng nhất", tl: "homogenize" },
-  
+
   // Action codes - Heat Control (A.03)
   "A.03.001": { en: "preheat", es: "precalentar", zh: "预热", fr: "préchauffer", ar: "يسخن مسبقاً", ja: "予熱する", vi: "làm nóng trước", tl: "preheat" },
   "A.03.002": { en: "heat", es: "calentar", zh: "加热", fr: "chauffer", ar: "يسخن", ja: "加熱する", vi: "đun nóng", tl: "painitin" },
@@ -152,7 +152,7 @@ const translationMap: Record<string, Record<string, string>> = {
   "A.03.006": { en: "turn off", es: "apagar", zh: "关闭", fr: "éteindre", ar: "يطفئ", ja: "消す", vi: "tắt", tl: "patayin" },
   "A.03.007": { en: "ignite", es: "encender", zh: "点燃", fr: "allumer", ar: "يشعل", ja: "点火する", vi: "đốt", tl: "sindihan" },
   "A.03.008": { en: "extinguish", es: "apagar", zh: "熄灭", fr: "éteindre", ar: "يطفئ", ja: "消火する", vi: "dập tắt", tl: "patayin" },
-  
+
   // Action codes - Temperature (A.04)
   "A.04.001": { en: "cool", es: "enfriar", zh: "冷却", fr: "refroidir", ar: "يبرد", ja: "冷やす", vi: "làm mát", tl: "palamigin" },
   "A.04.002": { en: "chill", es: "refrigerar", zh: "冷藏", fr: "refroidir", ar: "يبرد", ja: "冷やす", vi: "làm lạnh", tl: "palamigin" },
@@ -166,7 +166,7 @@ const translationMap: Record<string, Record<string, string>> = {
   "A.04.010": { en: "rest", es: "reposar", zh: "静置", fr: "reposer", ar: "يرتاح", ja: "休ませる", vi: "để nghỉ", tl: "pahinga" },
   "A.04.011": { en: "hold", es: "mantener", zh: "保持", fr: "maintenir", ar: "يحافظ", ja: "保つ", vi: "giữ", tl: "panatilihin" },
   "A.04.012": { en: "refrigerate", es: "refrigerar", zh: "冷藏", fr: "réfrigérer", ar: "يبرد", ja: "冷蔵する", vi: "làm lạnh", tl: "refrigerate" },
-  
+
   // Action codes - Special (A.05)
   "A.05.001": { en: "deglaze", es: "desglasar", zh: "去釉", fr: "déglacer", ar: "يزيل القشرة", ja: "デグラゼする", vi: "deglaze", tl: "deglaze" },
   "A.05.002": { en: "flambé", es: "flamear", zh: "火焰", fr: "flamber", ar: "يشعل", ja: "フランベする", vi: "đốt", tl: "flambe" },
@@ -188,7 +188,7 @@ const translationMap: Record<string, Record<string, string>> = {
   "A.05.018": { en: "weigh", es: "pesar", zh: "称重", fr: "peser", ar: "يزن", ja: "重さを量る", vi: "cân", tl: "timbangin" },
   "A.05.019": { en: "taste", es: "probar", zh: "品尝", fr: "goûter", ar: "يتذوق", ja: "味見する", vi: "nếm", tl: "tikman" },
   "A.05.020": { en: "adjust", es: "ajustar", zh: "调整", fr: "ajuster", ar: "يعدل", ja: "調整する", vi: "điều chỉnh", tl: "ayusin" },
-  
+
   // Action codes - Conditional (A.06)
   "A.06.001": { en: "check", es: "verificar", zh: "检查", fr: "vérifier", ar: "يتحقق", ja: "確認する", vi: "kiểm tra", tl: "suriin" },
   "A.06.002": { en: "test", es: "probar", zh: "测试", fr: "tester", ar: "يختبر", ja: "テストする", vi: "thử", tl: "subukan" },
@@ -228,7 +228,7 @@ export const translationGuideSeed: TranslationGuideRow[] = [
   ...localized("5.70.001", "olive oil", "ingredient", "Primary fat for bloom and emulsions."),
   ...localized("4.60.003", "long-grain rice", "ingredient", "Baseline grain for pilafs."),
   ...localized("2.20.001", "chicken thigh", "protein", "Default poultry cut for tests."),
-  
+
   // Existing action/technique translations (keeping for backward compatibility)
   ...localized("A.01.combine", "combine and simmer", "action", "Blend hydrated ingredients together."),
   ...localized("A.02.emulsify", "emulsify", "action", "Force fat and liquid into a glossy suspension."),
@@ -236,7 +236,7 @@ export const translationGuideSeed: TranslationGuideRow[] = [
   ...localized("T.04.002", "sear", "technique", "High-heat browning of surfaces."),
   ...localized("cue.golden", "until golden", "cue", "Stop when onions reach golden edges."),
   ...localized("cue.deep_brown", "until deep brown", "cue", "Stop when surface browns deeply."),
-  
+
   // Technique codes - Cutting (T.01)
   ...generateLocalizedFromMap("T.01.001", translationMap["T.01.001"], "technique", "Basic cutting action"),
   ...generateLocalizedFromMap("T.01.002", translationMap["T.01.002"], "technique", "Cut into flat pieces"),
@@ -250,7 +250,7 @@ export const translationGuideSeed: TranslationGuideRow[] = [
   ...generateLocalizedFromMap("T.01.010", translationMap["T.01.010"], "technique", "Shred on grater"),
   ...generateLocalizedFromMap("T.01.011", translationMap["T.01.011"], "technique", "Tear or cut into strips"),
   ...generateLocalizedFromMap("T.01.012", translationMap["T.01.012"], "technique", "Make shallow cuts"),
-  
+
   // Technique codes - Mixing (T.02)
   ...generateLocalizedFromMap("T.02.001", translationMap["T.02.001"], "technique", "Mix with circular motion"),
   ...generateLocalizedFromMap("T.02.002", translationMap["T.02.002"], "technique", "Beat with whisk"),
@@ -264,7 +264,7 @@ export const translationGuideSeed: TranslationGuideRow[] = [
   ...generateLocalizedFromMap("T.02.010", translationMap["T.02.010"], "technique", "Combine oil and water"),
   ...generateLocalizedFromMap("T.02.011", translationMap["T.02.011"], "technique", "Mix until smooth"),
   ...generateLocalizedFromMap("T.02.012", translationMap["T.02.012"], "technique", "Blend until smooth liquid"),
-  
+
   // Technique codes - Heating (T.03)
   ...generateLocalizedFromMap("T.03.001", translationMap["T.03.001"], "technique", "Cook in boiling water"),
   ...generateLocalizedFromMap("T.03.002", translationMap["T.03.002"], "technique", "Cook below boiling"),
@@ -286,7 +286,7 @@ export const translationGuideSeed: TranslationGuideRow[] = [
   ...generateLocalizedFromMap("T.03.018", translationMap["T.03.018"], "technique", "Cook with smoke"),
   ...generateLocalizedFromMap("T.03.019", translationMap["T.03.019"], "technique", "Vacuum sealed water bath"),
   ...generateLocalizedFromMap("T.03.020", translationMap["T.03.020"], "technique", "Slow cook in fat"),
-  
+
   // Technique codes - Specialized (T.05)
   ...generateLocalizedFromMap("T.05.001", translationMap["T.05.001"], "technique", "Loosen fond with liquid"),
   ...generateLocalizedFromMap("T.05.002", translationMap["T.05.002"], "technique", "Concentrate by evaporation"),
@@ -308,7 +308,7 @@ export const translationGuideSeed: TranslationGuideRow[] = [
   ...generateLocalizedFromMap("T.05.018", translationMap["T.05.018"], "technique", "Convert sugars via bacteria"),
   ...generateLocalizedFromMap("T.05.019", translationMap["T.05.019"], "technique", "Brown sugars"),
   ...generateLocalizedFromMap("T.05.020", translationMap["T.05.020"], "technique", "Cook in sugar syrup"),
-  
+
   // Action codes - Basic (A.01)
   ...generateLocalizedFromMap("A.01.001", translationMap["A.01.001"], "action", "Add ingredient"),
   ...generateLocalizedFromMap("A.01.002", translationMap["A.01.002"], "action", "Remove from heat/container"),
@@ -330,7 +330,7 @@ export const translationGuideSeed: TranslationGuideRow[] = [
   ...generateLocalizedFromMap("A.01.018", translationMap["A.01.018"], "action", "Cover with material"),
   ...generateLocalizedFromMap("A.01.019", translationMap["A.01.019"], "action", "Place lid or covering"),
   ...generateLocalizedFromMap("A.01.020", translationMap["A.01.020"], "action", "Remove covering"),
-  
+
   // Action codes - Mixing (A.02)
   ...generateLocalizedFromMap("A.02.001", translationMap["A.02.001"], "action", "Mix with implement"),
   ...generateLocalizedFromMap("A.02.002", translationMap["A.02.002"], "action", "Beat with whisk"),
@@ -342,7 +342,7 @@ export const translationGuideSeed: TranslationGuideRow[] = [
   ...generateLocalizedFromMap("A.02.008", translationMap["A.02.008"], "action", "Mix until dissolved"),
   ...generateLocalizedFromMap("A.02.009", translationMap["A.02.009"], "action", "Mix into suspension"),
   ...generateLocalizedFromMap("A.02.010", translationMap["A.02.010"], "action", "Mix until uniform"),
-  
+
   // Action codes - Heat Control (A.03)
   ...generateLocalizedFromMap("A.03.001", translationMap["A.03.001"], "action", "Heat before use"),
   ...generateLocalizedFromMap("A.03.002", translationMap["A.03.002"], "action", "Apply heat"),
@@ -352,7 +352,7 @@ export const translationGuideSeed: TranslationGuideRow[] = [
   ...generateLocalizedFromMap("A.03.006", translationMap["A.03.006"], "action", "Stop heating"),
   ...generateLocalizedFromMap("A.03.007", translationMap["A.03.007"], "action", "Set on fire"),
   ...generateLocalizedFromMap("A.03.008", translationMap["A.03.008"], "action", "Put out fire"),
-  
+
   // Action codes - Temperature (A.04)
   ...generateLocalizedFromMap("A.04.001", translationMap["A.04.001"], "action", "Allow to cool"),
   ...generateLocalizedFromMap("A.04.002", translationMap["A.04.002"], "action", "Refrigerate"),
@@ -366,7 +366,7 @@ export const translationGuideSeed: TranslationGuideRow[] = [
   ...generateLocalizedFromMap("A.04.010", translationMap["A.04.010"], "action", "Let sit after cooking"),
   ...generateLocalizedFromMap("A.04.011", translationMap["A.04.011"], "action", "Keep at temperature"),
   ...generateLocalizedFromMap("A.04.012", translationMap["A.04.012"], "action", "Store in refrigerator"),
-  
+
   // Action codes - Special (A.05)
   ...generateLocalizedFromMap("A.05.001", translationMap["A.05.001"], "action", "Loosen fond"),
   ...generateLocalizedFromMap("A.05.002", translationMap["A.05.002"], "action", "Ignite alcohol"),
@@ -388,7 +388,7 @@ export const translationGuideSeed: TranslationGuideRow[] = [
   ...generateLocalizedFromMap("A.05.018", translationMap["A.05.018"], "action", "Determine weight"),
   ...generateLocalizedFromMap("A.05.019", translationMap["A.05.019"], "action", "Sample for flavor"),
   ...generateLocalizedFromMap("A.05.020", translationMap["A.05.020"], "action", "Modify to taste"),
-  
+
   // Action codes - Conditional (A.06)
   ...generateLocalizedFromMap("A.06.001", translationMap["A.06.001"], "action", "Verify condition"),
   ...generateLocalizedFromMap("A.06.002", translationMap["A.06.002"], "action", "Perform test"),
