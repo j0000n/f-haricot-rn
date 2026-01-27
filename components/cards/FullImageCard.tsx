@@ -23,6 +23,19 @@ const SCREEN_WIDTH = Dimensions.get("window").width;
 export const FULL_IMAGE_CARD_WIDTH = SCREEN_WIDTH * 0.8; // 4/5 of screen width
 const FULL_IMAGE_CARD_HEIGHT = FULL_IMAGE_CARD_WIDTH * 1.2; // Slightly taller for better aspect ratio
 
+// Helper function to convert hex color to rgba with opacity
+const hexToRgba = (hex: string, opacity: number): string => {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  if (!result) {
+    // Fallback to white if hex parsing fails
+    return `rgba(255, 255, 255, ${opacity})`;
+  }
+  const r = parseInt(result[1], 16);
+  const g = parseInt(result[2], 16);
+  const b = parseInt(result[3], 16);
+  return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+};
+
 const createStyles = (tokens: ThemeTokens) =>
   StyleSheet.create({
     container: {
@@ -57,7 +70,7 @@ const createStyles = (tokens: ThemeTokens) =>
     pill: {
       paddingHorizontal: tokens.spacing.sm,
       paddingVertical: tokens.spacing.xxs,
-      borderRadius: tokens.radii.full,
+      borderRadius: tokens.radii.round,
       backgroundColor: tokens.colors.overlay,
       borderWidth: tokens.borderWidths.thin,
       borderColor: tokens.colors.accent,
@@ -81,7 +94,7 @@ const createStyles = (tokens: ThemeTokens) =>
       right: 0,
       paddingVertical: tokens.padding.card * 1.5,
       paddingHorizontal: tokens.padding.card,
-      backgroundColor: "rgba(255 255 255 / 0.75)",
+      backgroundColor: hexToRgba(tokens.colors.surface, 0.75),
       alignItems: "start",
       borderBottomLeftRadius: tokens.radii.md,
       borderBottomRightRadius: tokens.radii.md,

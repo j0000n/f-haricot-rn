@@ -36,7 +36,7 @@ const colors = {
   info: "#4D9FFF",
   logoFill: "#FBEFEF",
   logoPrimaryColor: "#f9d79f", // Amber - distinct from surface, matches accent
-  logoSecondaryColor: "#D7C3C2", // Light plum - complements amber, distinct from border
+  logoSecondaryColor: "#AC8E8C", // Light plum - complements amber, distinct from border
   imageBackgroundColor: "#1D1010",
 } as const;
 
