@@ -21,8 +21,9 @@ import type { Id } from "@/convex/_generated/dataModel";
 import { decodeEncodedSteps } from "@/utils/decodeEncodedSteps";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { Link, useRouter } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
-import { Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Animated, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Feather } from "@expo/vector-icons";
 import { LinkPreviewRail } from "@/components/LinkPreviewRail";
 import { useLinkPreviews, createFallbackImage } from "@/hooks/useLinkPreviews";
 import type { LinkPreviewData } from "@/utils/linkPreview";
@@ -188,6 +189,12 @@ export default function HomeScreen() {
     personalizedRecipes.length > 0 ? personalizedRecipes : featuredRecipes ?? [];
   const [searchTerm, setSearchTerm] = useState("");
   const trimmedSearchTerm = searchTerm.trim();
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const searchSectionRef = useRef<View>(null);
+  const headerRef = useRef<View>(null);
+  const [searchSectionY, setSearchSectionY] = useState(0);
+  const [headerHeight, setHeaderHeight] = useState(0);
+  const [isSearchSticky, setIsSearchSticky] = useState(false);
   const { previews: linkPreviews, isLoading: isLoadingLinkPreviews } = useLinkPreviews(
     LINK_PREVIEW_URLS,
     LINK_PREVIEW_FALLBACKS,
@@ -283,6 +290,10 @@ export default function HomeScreen() {
     }
 
     router.push(`/search/${encodeURIComponent(trimmedSearchTerm)}`);
+  };
+
+  const handleClearSearch = () => {
+    setSearchTerm("");
   };
 
   const handleRecipeSeeAll = (railType?: string) => {
@@ -384,6 +395,7 @@ export default function HomeScreen() {
     [searchPreview],
   );
   const isSearching = searchPreview === undefined && trimmedSearchTerm.length > 0;
+  const hasSearchResults = trimmedSearchTerm.length > 0 && previewRecipes.length > 0;
   // Map i18n language code (e.g., "fr-FR") to recipe language code (e.g., "fr")
   const language = getRecipeLanguage(i18n.language || "en") as keyof Recipe["recipeName"];
   const createdRecipe = useQuery(
@@ -428,6 +440,30 @@ export default function HomeScreen() {
     enabled: !isInventoryLoading && recipes !== undefined,
   });
 
+  // Handle scroll to track when search section should be sticky
+  const handleScroll = Animated.event(
+    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+    {
+      useNativeDriver: false,
+      listener: (event: any) => {
+        const offsetY = event.nativeEvent.contentOffset.y;
+        // Check if we've scrolled past the search section position
+        const shouldBeSticky = offsetY + headerHeight >= searchSectionY && searchSectionY > 0 && headerHeight > 0;
+        setIsSearchSticky(shouldBeSticky);
+      },
+    },
+  );
+
+  const handleSearchSectionLayout = (event: any) => {
+    const { y } = event.nativeEvent.layout;
+    setSearchSectionY(y);
+  };
+
+  const handleHeaderLayout = (event: any) => {
+    const { height } = event.nativeEvent.layout;
+    setHeaderHeight(height);
+  };
+
 
   return (
     <View
@@ -438,18 +474,93 @@ export default function HomeScreen() {
         },
       ]}
     >
-      <PageHeader
-        leftElement={
-          <StaticBrandLogo
-            width={40}
-            height={40}
-            accessibilityLabel={t("home.logoAccessibility")}
-          />
-        }
-        showProfileButton={true}
-      />
+      <View ref={headerRef} onLayout={handleHeaderLayout}>
+        <PageHeader
+          leftElement={
+            <StaticBrandLogo
+              width={40}
+              height={40}
+              accessibilityLabel={t("home.logoAccessibility")}
+            />
+          }
+          showProfileButton={true}
+        />
+      </View>
 
-      <ScrollView
+      {/* Sticky search section - appears when scrolled */}
+      {isSearchSticky && (
+        <View style={[styles.stickySearchContainer, { top: headerHeight }]}>
+          <View style={styles.stickySearchInputWrapper}>
+            <Feather
+              name="search"
+              size={18}
+              color={tokens.colors.textSecondary}
+              style={styles.searchIcon}
+            />
+            <TextInput
+              value={searchTerm}
+              onChangeText={setSearchTerm}
+              placeholder={t("home.searchPlaceholder")}
+              placeholderTextColor={tokens.colors.textMuted}
+              style={styles.stickySearchInput}
+              returnKeyType="search"
+              autoCapitalize="none"
+              autoCorrect={false}
+              accessibilityLabel={t("home.searchAllRecipes")}
+            />
+            {hasSearchResults && (
+              <Pressable
+                onPress={handleClearSearch}
+                style={styles.clearButton}
+                accessibilityRole="button"
+                accessibilityLabel="Clear search"
+              >
+                <Feather
+                  name="x"
+                  size={18}
+                  color={tokens.colors.textSecondary}
+                />
+              </Pressable>
+            )}
+          </View>
+          {trimmedSearchTerm.length > 0 ? (
+            <View style={styles.searchResultsContainer}>
+              {isSearching ? (
+                <Text style={styles.searchStatusText}>{t("home.searchLoading")}</Text>
+              ) : previewRecipes.length > 0 ? (
+                <>
+                  {previewRecipes.map((recipe) => (
+                    <Pressable
+                      key={recipe._id}
+                      onPress={() => handleSearchResultPress(recipe._id)}
+                      style={styles.searchResultItem}
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.searchResultTitle}>
+                        {recipe.recipeName[language] || recipe.recipeName.en}
+                      </Text>
+                      <Text style={styles.searchResultDescription} numberOfLines={2}>
+                        {recipe.description[language] || recipe.description.en}
+                      </Text>
+                    </Pressable>
+                  ))}
+                  <Pressable
+                    onPress={handleViewAllResults}
+                    style={styles.searchViewAllButton}
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.searchViewAllText}>{t("home.searchViewAll")}</Text>
+                  </Pressable>
+                </>
+              ) : (
+                <Text style={styles.searchStatusText}>{t("home.searchNoResults")}</Text>
+              )}
+            </View>
+          ) : null}
+        </View>
+      )}
+
+      <Animated.ScrollView
         style={[
           styles.tasksContainer,
           Platform.OS === "web" && {
@@ -458,7 +569,10 @@ export default function HomeScreen() {
           },
         ]}
         contentContainerStyle={styles.scrollContent}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
       >
+
         <Pressable
           onPress={() => setShowDevSection(!showDevSection)}
           style={styles.toggleButton}
@@ -649,52 +763,7 @@ export default function HomeScreen() {
               <Text>Show doSomething result</Text>
             </Pressable>
           )}
-          <Text style={styles.searchLabel}>{t("home.searchAllRecipes")}</Text>
-          <TextInput
-            value={searchTerm}
-            onChangeText={setSearchTerm}
-            placeholder={t("home.searchPlaceholder")}
-            placeholderTextColor={tokens.colors.textMuted}
-            style={styles.searchInput}
-            returnKeyType="search"
-            autoCapitalize="none"
-            autoCorrect={false}
-            accessibilityLabel={t("home.searchAllRecipes")}
-          />
-          {trimmedSearchTerm.length > 0 ? (
-            <View style={styles.searchResultsContainer}>
-              {isSearching ? (
-                <Text style={styles.searchStatusText}>{t("home.searchLoading")}</Text>
-              ) : previewRecipes.length > 0 ? (
-                <>
-                  {previewRecipes.map((recipe) => (
-                    <Pressable
-                      key={recipe._id}
-                      onPress={() => handleSearchResultPress(recipe._id)}
-                      style={styles.searchResultItem}
-                      accessibilityRole="button"
-                    >
-                      <Text style={styles.searchResultTitle}>
-                        {recipe.recipeName[language] || recipe.recipeName.en}
-                      </Text>
-                      <Text style={styles.searchResultDescription} numberOfLines={2}>
-                        {recipe.description[language] || recipe.description.en}
-                      </Text>
-                    </Pressable>
-                  ))}
-                  <Pressable
-                    onPress={handleViewAllResults}
-                    style={styles.searchViewAllButton}
-                    accessibilityRole="button"
-                  >
-                    <Text style={styles.searchViewAllText}>{t("home.searchViewAll")}</Text>
-                  </Pressable>
-                </>
-              ) : (
-                <Text style={styles.searchStatusText}>{t("home.searchNoResults")}</Text>
-              )}
-            </View>
-          ) : null}
+
         </View>
 
         <View style={styles.seedButtonsRow}>
@@ -755,6 +824,78 @@ export default function HomeScreen() {
           ];
           return <TooltipContainer tooltips={mockTooltips} />;
         })()}
+
+        {/* Original search section - measured for sticky positioning */}
+        <View ref={searchSectionRef} onLayout={handleSearchSectionLayout}>
+          <Text style={styles.searchLabel}>{t("home.searchAllRecipes")}</Text>
+          <View style={styles.searchInputWrapper}>
+            <Feather
+              name="search"
+              size={18}
+              color={tokens.colors.textSecondary}
+              style={styles.searchIcon}
+            />
+            <TextInput
+              value={searchTerm}
+              onChangeText={setSearchTerm}
+              placeholder={t("home.searchPlaceholder")}
+              placeholderTextColor={tokens.colors.textMuted}
+              style={styles.searchInput}
+              returnKeyType="search"
+              autoCapitalize="none"
+              autoCorrect={false}
+              accessibilityLabel={t("home.searchAllRecipes")}
+            />
+            {hasSearchResults && (
+              <Pressable
+                onPress={handleClearSearch}
+                style={styles.clearButton}
+                accessibilityRole="button"
+                accessibilityLabel="Clear search"
+              >
+                <Feather
+                  name="x"
+                  size={18}
+                  color={tokens.colors.textSecondary}
+                />
+              </Pressable>
+            )}
+          </View>
+          {trimmedSearchTerm.length > 0 ? (
+            <View style={styles.searchResultsContainer}>
+              {isSearching ? (
+                <Text style={styles.searchStatusText}>{t("home.searchLoading")}</Text>
+              ) : previewRecipes.length > 0 ? (
+                <>
+                  {previewRecipes.map((recipe) => (
+                    <Pressable
+                      key={recipe._id}
+                      onPress={() => handleSearchResultPress(recipe._id)}
+                      style={styles.searchResultItem}
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.searchResultTitle}>
+                        {recipe.recipeName[language] || recipe.recipeName.en}
+                      </Text>
+                      <Text style={styles.searchResultDescription} numberOfLines={2}>
+                        {recipe.description[language] || recipe.description.en}
+                      </Text>
+                    </Pressable>
+                  ))}
+                  <Pressable
+                    onPress={handleViewAllResults}
+                    style={styles.searchViewAllButton}
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.searchViewAllText}>{t("home.searchViewAll")}</Text>
+                  </Pressable>
+                </>
+              ) : (
+                <Text style={styles.searchStatusText}>{t("home.searchNoResults")}</Text>
+              )}
+            </View>
+          ) : null}
+        </View>
 
         {((personalizedRecipes && personalizedRecipes.length > 0) || recipeList.length > 0) && (
           <RecipeRail
@@ -928,7 +1069,7 @@ export default function HomeScreen() {
             ))
           )}
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
 
       <Link href="/add-task" asChild>
         <Pressable style={styles.fab}>
