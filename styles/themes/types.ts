@@ -122,7 +122,8 @@ export type ThemeTokens = {
     headerTopPadding: number;
     maxFormWidth: number;
     fabSize: number;
-    fabOffset: number;
+    fabOffsetBottom: number;
+    fabOffsetLeft: number;
   };
   shadows: Record<ShadowName, {
     shadowColor: string;
@@ -274,7 +275,8 @@ export const baseLayout = {
   headerTopPadding: 50,
   maxFormWidth: 384,
   fabSize: 56,
-  fabOffset: 20,
+  fabOffsetBottom: 110,
+  fabOffsetLeft: 5,
 } as const;
 
 export const baseSpacing = {

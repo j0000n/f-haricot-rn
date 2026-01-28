@@ -51,7 +51,7 @@ const createIndexStyles = (tokens: ThemeTokens) =>
     scrollContent: {
       paddingHorizontal: tokens.spacing.lg,
       paddingTop: tokens.spacing.lg,
-      paddingBottom: tokens.layout.fabOffset + tokens.spacing.lg,
+      paddingBottom: tokens.layout.fabOffsetBottom + tokens.spacing.lg,
     },
     section: {
       marginBottom: tokens.spacing.xxl,
@@ -117,8 +117,8 @@ const createIndexStyles = (tokens: ThemeTokens) =>
     },
     fab: {
       position: "absolute",
-      right: tokens.layout.fabOffset,
-      bottom: tokens.layout.fabOffset,
+      right: tokens.layout.fabOffsetLeft,
+      bottom: tokens.layout.fabOffsetBottom,
       width: tokens.layout.fabSize,
       height: tokens.layout.fabSize,
       borderRadius: tokens.layout.fabSize / 2,

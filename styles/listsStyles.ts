@@ -13,7 +13,7 @@ const createListsStyles = (tokens: ThemeTokens) =>
       minHeight: tokens.spacing.none,
     },
     scrollContent: {
-      paddingHorizontal: tokens.spacing.lg,
+      paddingHorizontal: tokens.spacing.xxs,
       paddingTop: tokens.spacing.lg,
       paddingBottom: tokens.spacing.xxl,
       gap: tokens.spacing.lg,

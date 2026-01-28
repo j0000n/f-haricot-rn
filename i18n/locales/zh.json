@@ -170,6 +170,30 @@
     "nineties": {
       "name": "1990 年代",
       "description": "霓虹电光和灰阶搭配，带来复古 vaporwave 风格。"
+    },
+    "highContrastDark": {
+      "name": "高对比度深色",
+      "description": "深色表面配明亮强调色，专为低光环境下的清晰度而设计。"
+    },
+    "highContrastLight": {
+      "name": "高对比度浅色",
+      "description": "明亮背景配粗体轮廓，实现最大分离度。"
+    },
+    "typewriter": {
+      "name": "打字机",
+      "description": "极简等宽美学，采用反转奶油色和深灰色调。"
+    },
+    "forrest": {
+      "name": "森林",
+      "description": "受深林和自然生长启发的土质浓郁绿色。"
+    },
+    "motown": {
+      "name": "摩城",
+      "description": "1960年代的乐观主义和摩城之声，充满活力的珊瑚色、深蓝色和充满灵魂的能量。"
+    },
+    "lazySundayMorning": {
+      "name": "慵懒的周日早晨",
+      "description": "蛋黄黄、橙汁、煎饼和咖啡——轻松周日早晨的感觉。"
     }
   },
   "tabs": {
@@ -228,7 +252,7 @@
     "logoAccessibility": "Haricot 标志",
     "onboardingButtonPlaceholder": "在此放置引导启动按钮",
     "searchAllRecipes": "搜索所有食谱",
-    "searchPlaceholder": "按名称或食材搜索",
+    "searchPlaceholder": "按名称或食材搜索食谱",
     "searchLoading": "正在加载结果…",
     "searchNoResults": "未找到食谱",
     "searchViewAll": "查看全部结果",

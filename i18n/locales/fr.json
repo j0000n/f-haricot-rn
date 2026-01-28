@@ -286,6 +286,22 @@
     "highContrastLight": {
       "name": "Contraste élevé clair",
       "description": "Fonds lumineux et contours marqués pour une séparation maximale."
+    },
+    "typewriter": {
+      "name": "Machine à écrire",
+      "description": "Esthétique monospace minimale avec des tons crème inversés et gris foncé."
+    },
+    "forrest": {
+      "name": "Forêt",
+      "description": "Verts luxuriants et terreux inspirés des forêts profondes et de la croissance naturelle."
+    },
+    "motown": {
+      "name": "Motown",
+      "description": "Optimisme des années 1960 et son Motown avec des coraux vibrants, des bleus profonds et une énergie pleine d'âme."
+    },
+    "lazySundayMorning": {
+      "name": "Dimanche matin paresseux",
+      "description": "Jaune de jaune d'œuf, jus d'orange, pancakes et café - le sentiment d'un dimanche matin détendu."
     }
   },
   "tabs": {
@@ -344,7 +360,7 @@
     "logoAccessibility": "Logo Haricot",
     "onboardingButtonPlaceholder": "BOUTON DE LANCEMENT DE L'INTÉGRATION ICI",
     "searchAllRecipes": "RECHERCHER TOUTES LES RECETTES",
-    "searchPlaceholder": "Rechercher par nom ou ingrédient",
+    "searchPlaceholder": "Rechercher des recettes par nom ou ingrédient",
     "searchLoading": "Chargement des résultats…",
     "searchNoResults": "Aucune recette trouvée",
     "searchViewAll": "Voir tous les résultats",

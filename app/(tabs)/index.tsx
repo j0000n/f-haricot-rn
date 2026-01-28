@@ -36,7 +36,7 @@ import {
   getProteinItems,
 } from "@/utils/inventoryCategories";
 
-const SEARCH_PREVIEW_LIMIT = 5;
+const SEARCH_PREVIEW_LIMIT = 3;
 const LINK_PREVIEW_URLS = [
   "https://intentionalhospitality.com/cranberry-chutney/",
   "https://wellnesstrickle.com/chocolate-chip-baked-oats/",
@@ -524,7 +524,11 @@ export default function HomeScreen() {
             )}
           </View>
           {trimmedSearchTerm.length > 0 ? (
-            <View style={styles.searchResultsContainer}>
+            <ScrollView
+              style={[styles.searchResultsContainer, { maxHeight: 300 }]}
+              nestedScrollEnabled={true}
+              keyboardShouldPersistTaps="handled"
+            >
               {isSearching ? (
                 <Text style={styles.searchStatusText}>{t("home.searchLoading")}</Text>
               ) : previewRecipes.length > 0 ? (
@@ -555,7 +559,7 @@ export default function HomeScreen() {
               ) : (
                 <Text style={styles.searchStatusText}>{t("home.searchNoResults")}</Text>
               )}
-            </View>
+            </ScrollView>
           ) : null}
         </View>
       )}
@@ -899,8 +903,8 @@ export default function HomeScreen() {
 
         {((personalizedRecipes && personalizedRecipes.length > 0) || recipeList.length > 0) && (
           <RecipeRail
-            header="Featured Recipes"
-            recipes={
+          header={t("home.featuredRecipes")}
+          recipes={
               (personalizedRecipes && personalizedRecipes.length > 0
                 ? [...personalizedRecipes]
                 : recipeList

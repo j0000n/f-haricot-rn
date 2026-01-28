@@ -96,7 +96,7 @@ export const ninetiesTheme: ThemeDefinition = {
           paddingHorizontal: baseSpacing.xxs,
           paddingVertical: baseSpacing.xxs,
           marginHorizontal: baseSpacing.xs,
-          marginBottom: baseSpacing.md,
+          marginBottom: baseSpacing.xxl,
           borderRadius: 2,
           backgroundColor: colors.surface,
           borderWidth: 2,

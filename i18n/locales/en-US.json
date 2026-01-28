@@ -286,6 +286,22 @@
     "highContrastLight": {
       "name": "High contrast light",
       "description": "Bright backgrounds with bold outlines for maximum separation."
+    },
+    "typewriter": {
+      "name": "typewriter",
+      "description": "Minimal monospace aesthetic with inverted cream and dark gray tones."
+    },
+    "forrest": {
+      "name": "Forrest",
+      "description": "Earthy lush greens inspired by deep forests and natural growth."
+    },
+    "motown": {
+      "name": "Motown",
+      "description": "1960s optimism and Motown sound with vibrant corals, deep blues, and soulful energy."
+    },
+    "lazySundayMorning": {
+      "name": "Lazy Sunday Morning",
+      "description": "Yolk yellow, orange juice, pancakes, and coffee - the feeling of a relaxed Sunday morning."
     }
   },
   "tabs": {
@@ -344,7 +360,7 @@
     "logoAccessibility": "Haricot wordmark",
     "onboardingButtonPlaceholder": "LAUNCH ONBOARDING BUTTON GOES HERE",
     "searchAllRecipes": "SEARCH ALL RECIPES",
-    "searchPlaceholder": "Search by name or ingredient",
+    "searchPlaceholder": "Search recipes by name or ingredient",
     "searchLoading": "Loading results…",
     "searchNoResults": "No recipes found",
     "searchViewAll": "View all results",

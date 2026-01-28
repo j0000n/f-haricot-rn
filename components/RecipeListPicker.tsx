@@ -554,6 +554,7 @@ export const RecipeListPicker: React.FC<RecipeListPickerProps> = ({
           <Feather
             name={isOpen ? "chevron-up" : "chevron-down"}
             size={tokens.iconSizes.md}
+            color={tokens.colors.accent}
             style={styles.triggerIcon}
           />
         </Pressable>

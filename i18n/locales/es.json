@@ -249,6 +249,22 @@
     "highContrastLight": {
       "name": "Alto contraste claro",
       "description": "Fondos luminosos y contornos marcados para la máxima separación."
+    },
+    "typewriter": {
+      "name": "Máquina de escribir",
+      "description": "Estética monocromática minimalista con tonos crema invertidos y gris oscuro."
+    },
+    "forrest": {
+      "name": "Bosque",
+      "description": "Verdes exuberantes y terrosos inspirados en bosques profundos y crecimiento natural."
+    },
+    "motown": {
+      "name": "Motown",
+      "description": "Optimismo de los años 60 y sonido Motown con corales vibrantes, azules profundos y energía llena de alma."
+    },
+    "lazySundayMorning": {
+      "name": "Domingo perezoso por la mañana",
+      "description": "Amarillo yema, jugo de naranja, panqueques y café - la sensación de un domingo por la mañana relajado."
     }
   },
   "tabs": {
@@ -307,7 +323,7 @@
     "logoAccessibility": "Logotipo de Haricot",
     "onboardingButtonPlaceholder": "BOTÓN PARA INICIAR LA INTRODUCCIÓN AQUÍ",
     "searchAllRecipes": "BUSCAR TODAS LAS RECETAS",
-    "searchPlaceholder": "Busca por nombre o ingrediente",
+    "searchPlaceholder": "Busca recetas por nombre o ingrediente",
     "searchLoading": "Cargando resultados…",
     "searchNoResults": "No se encontraron recetas",
     "searchViewAll": "Ver todos los resultados",

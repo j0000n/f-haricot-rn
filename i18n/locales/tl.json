@@ -170,6 +170,30 @@
     "nineties": {
       "name": "Dekada '90",
       "description": "Matitingkad na neon at grayscale pairing para sa vaporwave throwback."
+    },
+    "highContrastDark": {
+      "name": "Mataas na kaibahan dark",
+      "description": "Madilim na ibabaw na may maliwanag na accent na idinisenyo para sa kalinawan sa mababang ilaw."
+    },
+    "highContrastLight": {
+      "name": "Mataas na kaibahan light",
+      "description": "Maliwanag na background na may matapang na outline para sa maximum na paghihiwalay."
+    },
+    "typewriter": {
+      "name": "typewriter",
+      "description": "Minimal na monospace aesthetic na may baligtad na cream at dark gray tones."
+    },
+    "forrest": {
+      "name": "Forrest",
+      "description": "Makalupang malusog na berde na inspirasyon ng malalim na kagubatan at natural na paglago."
+    },
+    "motown": {
+      "name": "Motown",
+      "description": "1960s optimism at Motown sound na may vibrant corals, malalim na asul, at masiglang enerhiya."
+    },
+    "lazySundayMorning": {
+      "name": "Lazy Sunday Morning",
+      "description": "Yolk yellow, orange juice, pancakes, at kape - ang pakiramdam ng isang nakakarelaks na Linggo ng umaga."
     }
   },
   "tabs": {
@@ -228,7 +252,7 @@
     "logoAccessibility": "Haricot wordmark",
     "onboardingButtonPlaceholder": "DITO ILALAGAY ANG LAUNCH BUTTON NG ONBOARDING",
     "searchAllRecipes": "HANAPIN ANG LAHAT NG RESIPE",
-    "searchPlaceholder": "Maghanap ayon sa pangalan o sangkap",
+    "searchPlaceholder": "Maghanap ng mga recipe ayon sa pangalan o sangkap",
     "searchLoading": "Naglo-load ng mga resulta…",
     "searchNoResults": "Walang nakitang mga resipe",
     "searchViewAll": "Tingnan lahat ng resulta",

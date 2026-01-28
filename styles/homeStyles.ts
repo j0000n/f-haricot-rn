@@ -63,7 +63,7 @@ const createHomeStyles = (tokens: ThemeTokens) =>
     scrollContent: {
       paddingHorizontal: tokens.spacing.none,
       paddingTop: tokens.spacing.lg,
-      paddingBottom: tokens.layout.fabOffset + tokens.spacing.lg,
+      paddingBottom: tokens.layout.fabOffsetBottom + tokens.spacing.lg,
     },
     swipeSection: {
       marginHorizontal: tokens.spacing.lg,
@@ -107,8 +107,8 @@ const createHomeStyles = (tokens: ThemeTokens) =>
       color: tokens.colors.textPrimary,
     },
     searchSection: {
-      marginHorizontal: tokens.spacing.lg,
-      marginBottom: tokens.spacing.lg,
+      marginHorizontal: tokens.spacing.sm,
+      marginBottom: tokens.spacing.sm,
       gap: tokens.spacing.xs,
     },
     worldEntry: {
@@ -316,7 +316,7 @@ const createHomeStyles = (tokens: ThemeTokens) =>
       backgroundColor: tokens.colors.surface,
       marginHorizontal: tokens.spacing.xxs,
       marginVertical: tokens.spacing.xxs,
-      marginBottom: tokens.spacing.lg,
+      marginBottom: tokens.spacing.sm,
       ...(Platform.OS === "web" && {
         position: "sticky",
         top: tokens.spacing.xs,
@@ -368,7 +368,7 @@ const createHomeStyles = (tokens: ThemeTokens) =>
       flex: 1,
       paddingVertical: tokens.spacing.xxs,
       paddingLeft: tokens.spacing.xxs,
-      paddingRight: tokens.spacing.sm,
+      paddingRight: tokens.spacing.xxs,
       fontSize: tokens.typography.body,
       fontFamily: tokens.fontFamilies.regular,
       color: tokens.colors.textPrimary,
@@ -378,19 +378,19 @@ const createHomeStyles = (tokens: ThemeTokens) =>
       marginTop: tokens.spacing.xs,
       borderWidth: tokens.borderWidths.thin,
       borderColor: tokens.colors.border,
-      borderRadius: tokens.radii.md,
+      borderRadius: tokens.radii.sm,
       backgroundColor: tokens.colors.surface,
       overflow: "hidden",
     },
     searchStatusText: {
-      paddingHorizontal: tokens.spacing.md,
+      paddingHorizontal: tokens.spacing.sm,
       paddingVertical: tokens.spacing.sm,
       fontFamily: tokens.fontFamilies.regular,
       fontSize: tokens.typography.small,
       color: tokens.colors.textSecondary,
     },
     searchResultItem: {
-      paddingHorizontal: tokens.spacing.md,
+      paddingHorizontal: tokens.spacing.sm,
       paddingVertical: tokens.spacing.sm,
       borderBottomWidth: tokens.borderWidths.thin,
       borderBottomColor: tokens.colors.border,
@@ -529,8 +529,8 @@ const createHomeStyles = (tokens: ThemeTokens) =>
     },
     fab: {
       position: "absolute",
-      right: tokens.layout.fabOffset,
-      bottom: tokens.layout.fabOffset,
+      right: tokens.layout.fabOffsetLeft,
+      bottom: tokens.layout.fabOffsetBottom,
       width: tokens.layout.fabSize,
       height: tokens.layout.fabSize,
       borderRadius: tokens.layout.fabSize / 2,

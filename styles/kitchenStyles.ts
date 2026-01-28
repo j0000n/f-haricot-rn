@@ -11,7 +11,7 @@ const createKitchenStyles = (tokens: ThemeTokens) =>
     header: {
       backgroundColor: tokens.colors.surface,
       paddingTop: tokens.layout.headerTopPadding,
-      paddingHorizontal: tokens.spacing.lg,
+      paddingHorizontal: tokens.spacing.xxs,
       paddingBottom: tokens.spacing.sm,
       borderBottomWidth: tokens.borderWidths.thin,
       borderBottomColor: tokens.colors.border,
@@ -62,8 +62,8 @@ const createKitchenStyles = (tokens: ThemeTokens) =>
       minHeight: tokens.spacing.none,
     },
     scrollContent: {
-      paddingHorizontal: tokens.spacing.lg,
-      paddingTop: tokens.spacing.lg,
+      paddingHorizontal: tokens.spacing.xxs,
+      paddingTop: tokens.spacing.sm,
       paddingBottom: tokens.spacing.xxl,
     },
     sectionDescription: {

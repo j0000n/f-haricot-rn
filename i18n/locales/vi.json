@@ -170,6 +170,30 @@
     "nineties": {
       "name": "Thập niên 90",
       "description": "Neon rực rỡ và tông xám phối hợp cho phong cách vaporwave hoài cổ."
+    },
+    "highContrastDark": {
+      "name": "Tương phản cao tối",
+      "description": "Bề mặt tối với điểm nhấn sáng được thiết kế cho độ rõ ràng trong ánh sáng yếu."
+    },
+    "highContrastLight": {
+      "name": "Tương phản cao sáng",
+      "description": "Nền sáng với đường viền đậm để tách biệt tối đa."
+    },
+    "typewriter": {
+      "name": "Máy đánh chữ",
+      "description": "Thẩm mỹ đơn không gian tối giản với tông kem đảo ngược và xám đen."
+    },
+    "forrest": {
+      "name": "Rừng",
+      "description": "Xanh lá đất tươi tốt lấy cảm hứng từ rừng sâu và sự phát triển tự nhiên."
+    },
+    "motown": {
+      "name": "Motown",
+      "description": "Chủ nghĩa lạc quan thập niên 1960 và âm thanh Motown với san hô rực rỡ, xanh dương sâu và năng lượng đầy tâm hồn."
+    },
+    "lazySundayMorning": {
+      "name": "Sáng Chủ nhật lười biếng",
+      "description": "Vàng lòng đỏ trứng, nước cam, bánh kếp và cà phê - cảm giác của một buổi sáng Chủ nhật thư giãn."
     }
   },
   "tabs": {
@@ -228,7 +252,7 @@
     "logoAccessibility": "Logo Haricot",
     "onboardingButtonPlaceholder": "NÚT KHỞI CHẠY ONBOARDING Ở ĐÂY",
     "searchAllRecipes": "TÌM TẤT CẢ CÔNG THỨC",
-    "searchPlaceholder": "Tìm theo tên hoặc nguyên liệu",
+    "searchPlaceholder": "Tìm công thức nấu ăn theo tên hoặc nguyên liệu",
     "searchLoading": "Đang tải kết quả…",
     "searchNoResults": "Không tìm thấy công thức",
     "searchViewAll": "Xem tất cả kết quả",
