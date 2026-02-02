@@ -18,10 +18,10 @@ import {
 const colors = {
   background: "#f5f5e6", // Cream/yellowish white - main app background
   surface: "#f5f5e6", // Cream/yellowish white - card/surface background
-  overlay: "#f5f5e6", // Cream/yellowish white - modal/overlay background
-  surfaceVariant: "#f5f5e6", // Cream/yellowish white variant
+  overlay: "#d4d4c5", // Darker grayish cream - selected items/overlay background (distinct from surface)
+  surfaceVariant: "#e0e0d1", // Medium grayish cream - variant for selected states
   surfaceSubdued: "#f5f5e6", // Cream/yellowish white
-  surfaceMuted: "#f5f5e6", // Cream/yellowish white
+  surfaceMuted: "#e8e8d9", // Slightly muted cream
   primary: "#1a1a1a", // Slightly lighter black - primary buttons/actions
   onPrimary: "#f5f5e6", // Cream/yellowish white text on primary
   muted: "#1a1a1a", // Slightly lighter black
@@ -60,13 +60,13 @@ export const simpleComputerTheme: ThemeDefinition = {
     },
     typography: baseTypography,
     fontFamilies: {
-      display: "CutiveMono-Regular",
-      regular: "CutiveMono-Regular",
-      light: "CutiveMono-Regular",
-      lightItalic: "CutiveMono-Regular",
-      medium: "CutiveMono-Regular",
-      semiBold: "CutiveMono-Regular",
-      bold: "CutiveMono-Regular",
+      display: "LTSuperiorMono-Medium",
+      regular: "LTSuperiorMono-Regular",
+      light: "LTSuperiorMono-Regular",
+      lightItalic: "LTSuperiorMono-Regular",
+      medium: "LTSuperiorMono-Medium",
+      semiBold: "LTSuperiorMono-Semibold",
+      bold: "LTSuperiorMono-Bold",
     },
     layout: baseLayout,
     shadows: {
@@ -121,7 +121,7 @@ export const simpleComputerTheme: ThemeDefinition = {
           show: true,
           color: colors.textPrimary,
           activeColor: colors.accentOnPrimary,
-          uppercase: true,
+          uppercase: false,
           letterSpacing: baseLetterSpacing.tight,
           marginLeftWithIcon: baseSpacing.xxs,
         },

@@ -26,7 +26,7 @@ const createStyles = (tokens: ThemeTokens) =>
     headerTop: {
       flexDirection: "row",
       justifyContent: "space-between",
-      alignItems: "flex-start",
+      alignItems: "center",
     },
     headerLeft: {
       flex: 1,
@@ -35,7 +35,6 @@ const createStyles = (tokens: ThemeTokens) =>
       fontSize: tokens.typography.title,
       fontFamily: tokens.fontFamilies.display,
       textTransform: "uppercase",
-      marginBottom: tokens.spacing.xs,
       color: tokens.colors.textPrimary,
     },
     profileButton: {

@@ -291,4 +291,9 @@ export const FONT_SOURCES = {
   "UncutSans-Bold": require("../assets/fonts/uncut_sans-main/Static/UncutSans-Bold.otf"),
   "UncutSans-BoldItalic": require("../assets/fonts/uncut_sans-main/Static/UncutSans-BoldItalic.otf"),
   "UncutSans-Variable": require("../assets/fonts/uncut_sans-main/Variable/UncutSans-Variable.ttf"),
+  // LTSuperiorMono
+  "LTSuperiorMono-Regular": require("../assets/fonts/LTSuperiorMono/LTSuperiorMono-Regular.otf"),
+  "LTSuperiorMono-Medium": require("../assets/fonts/LTSuperiorMono/LTSuperiorMono-Medium.otf"),
+  "LTSuperiorMono-Semibold": require("../assets/fonts/LTSuperiorMono/LTSuperiorMono-Semibold.otf"),
+  "LTSuperiorMono-Bold": require("../assets/fonts/LTSuperiorMono/LTSuperiorMono-Bold.otf"),
 } as const;

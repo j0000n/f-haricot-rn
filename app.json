@@ -324,7 +324,11 @@
             "./assets/fonts/uncut_sans-main/Static/UncutSans-SemiboldItalic.otf",
             "./assets/fonts/uncut_sans-main/Static/UncutSans-Bold.otf",
             "./assets/fonts/uncut_sans-main/Static/UncutSans-BoldItalic.otf",
-            "./assets/fonts/uncut_sans-main/Variable/UncutSans-Variable.ttf"
+            "./assets/fonts/uncut_sans-main/Variable/UncutSans-Variable.ttf",
+            "./assets/fonts/LTSuperiorMono/LTSuperiorMono-Regular.otf",
+            "./assets/fonts/LTSuperiorMono/LTSuperiorMono-Medium.otf",
+            "./assets/fonts/LTSuperiorMono/LTSuperiorMono-Semibold.otf",
+            "./assets/fonts/LTSuperiorMono/LTSuperiorMono-Bold.otf"
           ],
           "ios": [
             "./assets/fonts/Peignot.ttf",
@@ -591,7 +595,11 @@
             "./assets/fonts/uncut_sans-main/Static/UncutSans-SemiboldItalic.otf",
             "./assets/fonts/uncut_sans-main/Static/UncutSans-Bold.otf",
             "./assets/fonts/uncut_sans-main/Static/UncutSans-BoldItalic.otf",
-            "./assets/fonts/uncut_sans-main/Variable/UncutSans-Variable.ttf"
+            "./assets/fonts/uncut_sans-main/Variable/UncutSans-Variable.ttf",
+            "./assets/fonts/LTSuperiorMono/LTSuperiorMono-Regular.otf",
+            "./assets/fonts/LTSuperiorMono/LTSuperiorMono-Medium.otf",
+            "./assets/fonts/LTSuperiorMono/LTSuperiorMono-Semibold.otf",
+            "./assets/fonts/LTSuperiorMono/LTSuperiorMono-Bold.otf"
           ]
         }
       ],
