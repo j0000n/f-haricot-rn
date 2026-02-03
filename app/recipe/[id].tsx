@@ -5,7 +5,7 @@ import { Stack, useLocalSearchParams } from "expo-router";
 import { useQuery } from "convex/react";
 import * as WebBrowser from "expo-web-browser";
 
-import { api } from "@/convex/_generated/api";
+import { api } from "@haricot/convex-client";
 import { IngredientsList } from "@/components/IngredientsList";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { NutritionLabel } from "@/components/NutritionLabel";
@@ -13,7 +13,7 @@ import { RecipeHeader } from "@/components/RecipeHeader";
 import { RecipeRunner } from "@/components/RecipeRunner";
 import { TabSwitcher } from "@/components/TabSwitcher";
 import { useTranslation } from "@/i18n/useTranslation";
-import type { Recipe } from "@/types/recipe";
+import type { Recipe } from "@haricot/convex-client";
 import type { ThemeTokens } from "@/styles/themes/types";
 import { useThemedStyles, useTokens } from "@/styles/tokens";
 import { decodeEncodedSteps } from "@/utils/decodeEncodedSteps";

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { api } from "@/convex/_generated/api";
-import type { Id } from "@/convex/_generated/dataModel";
+import { api } from "@haricot/convex-client";
+import type { Id } from "@haricot/convex-client";
 import createProfileStyles from "@/styles/profileStyles";
 import type { AccessibilityPreferences, BaseTextSize } from "@/styles/tokens";
 import { useTheme, useThemedStyles } from "@/styles/tokens";
@@ -18,7 +18,7 @@ import {
   sanitizeNumber,
   type NutritionGoals,
   type NutritionMetric,
-} from "@/utils/nutritionGoals";
+} from "@haricot/convex-client";
 import { AccessibilityCard } from "@/components/profile/AccessibilityCard";
 import { AppearanceCard } from "@/components/profile/AppearanceCard";
 import { HouseholdCard } from "@/components/profile/HouseholdCard";

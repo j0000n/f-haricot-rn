@@ -2,7 +2,7 @@
  * Inventory categorization utilities
  */
 
-import type { InventoryDisplayItem } from "@/types/food";
+import type { InventoryDisplayItem } from "@haricot/convex-client";
 
 /**
  * Categories for fresh produce items

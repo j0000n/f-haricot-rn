@@ -1,4 +1,4 @@
-import { RecipeIngredient } from "@/types/recipe";
+import { RecipeIngredient } from "@haricot/convex-client";
 
 export interface IngredientMatchSummary {
   matchPercentage: number;

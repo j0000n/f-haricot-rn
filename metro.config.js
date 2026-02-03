@@ -1,8 +1,19 @@
 const { getDefaultConfig } = require("expo/metro-config");
+const path = require("path");
 
 const config = getDefaultConfig(__dirname);
 
 config.resolver.unstable_enablePackageExports = true;
+
+// Watch the linked @haricot/convex-client package
+config.watchFolders = [
+  path.resolve(__dirname, "../haricot-convex/packages/convex-client"),
+];
+
+// Ensure Metro can resolve the symlinked package
+config.resolver.nodeModulesPaths = [
+  path.resolve(__dirname, "node_modules"),
+];
 
 // Only configure SVG transformer if the package is installed
 try {

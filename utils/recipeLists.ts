@@ -3,7 +3,7 @@
  */
 
 import type { RecipeList } from "@/hooks/useRecipeLists";
-import type { Recipe } from "@/types/recipe";
+import type { Recipe } from "@haricot/convex-client";
 import { calculateIngredientMatch } from "./inventory";
 
 /**

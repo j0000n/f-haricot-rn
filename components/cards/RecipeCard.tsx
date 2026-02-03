@@ -2,11 +2,11 @@ import React, { useRef } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { RecipeListPicker } from "@/components/RecipeListPicker";
-import { api } from "@/convex/_generated/api";
+import { api } from "@haricot/convex-client";
 import { useTranslation } from "@/i18n/useTranslation";
 import type { ThemeTokens } from "@/styles/themes/types";
 import { useThemedStyles, useTokens } from "@/styles/tokens";
-import type { Recipe } from "@/types/recipe";
+import type { Recipe } from "@haricot/convex-client";
 import { calculateIngredientMatch } from "@/utils/inventory";
 import { formatRecipeTime } from "@/utils/recipes";
 import { getRecipeLanguage } from "@/utils/translation";

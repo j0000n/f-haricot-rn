@@ -13,8 +13,8 @@ import {
 import { Image } from "expo-image";
 import { Feather } from "@expo/vector-icons";
 
-import { api } from "@/convex/_generated/api";
-import type { Doc } from "@/convex/_generated/dataModel";
+import { api } from "@haricot/convex-client";
+import type { Doc } from "@haricot/convex-client";
 import { useTranslation } from "@/i18n/useTranslation";
 import createAddTaskStyles from "@/styles/addTaskStyles";
 import { useThemedStyles, useTokens } from "@/styles/tokens";

@@ -3,7 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { RecipeCardCompact, COMPACT_CARD_WIDTH } from "@/components/cards/RecipeCardCompact";
 import { useTranslation } from "@/i18n/useTranslation";
-import type { Recipe } from "@/types/recipe";
+import type { Recipe } from "@haricot/convex-client";
 import type { ThemeTokens } from "@/styles/themes/types";
 import { useThemedStyles, useTokens } from "@/styles/tokens";
 

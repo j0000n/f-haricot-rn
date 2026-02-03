@@ -24,7 +24,7 @@ import {
   themeOptions,
 } from "./themes";
 import { useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
+import { api } from "@haricot/convex-client";
 import { AVAILABLE_LOGOS } from "@/components/logoAssets";
 
 export type ThemeOption = (typeof themeOptions)[number];

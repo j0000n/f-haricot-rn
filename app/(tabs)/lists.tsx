@@ -1,11 +1,11 @@
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { PageHeader } from "@/components/PageHeader";
-import { api } from "@/convex/_generated/api";
+import { api } from "@haricot/convex-client";
 import { useRecipeLists, type RecipeList } from "@/hooks/useRecipeLists";
 import { useTranslation } from "@/i18n/useTranslation";
 import createListsStyles from "@/styles/listsStyles";
 import { useThemedStyles, useTokens } from "@/styles/tokens";
-import type { Recipe } from "@/types/recipe";
+import type { Recipe } from "@haricot/convex-client";
 import {
   buildRecipeIds,
   decorateRecipesWithMatches,

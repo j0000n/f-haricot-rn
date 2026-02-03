@@ -1,5 +1,5 @@
-import { api } from "@/convex/_generated/api";
-import { Id } from "@/convex/_generated/dataModel";
+import { api } from "@haricot/convex-client";
+import { Id } from "@haricot/convex-client";
 import { useTheme, useThemedStyles } from "@/styles/tokens";
 import type { ThemeTokens } from "@/styles/tokens";
 import { useAction, useQuery } from "convex/react";

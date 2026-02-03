@@ -4,7 +4,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { NutrientCard, NUTRIENT_CARD_WIDTH } from "@/components/cards/NutrientCard";
 import type { ThemeTokens } from "@/styles/themes/types";
 import { useThemedStyles, useTokens } from "@/styles/tokens";
-import type { NutrientDish } from "@/types/nutrition";
+import type { NutrientDish } from "@haricot/convex-client";
 
 interface NutrientRailProps {
   header: string;

@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 
-import type { NutrientDish } from "@/types/nutrition";
+import type { NutrientDish } from "@haricot/convex-client";
 import type { ThemeTokens } from "@/styles/themes/types";
 import { useThemedStyles, useTokens } from "@/styles/tokens";
 

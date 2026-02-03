@@ -4,12 +4,12 @@ import { Pressable, SafeAreaView, ScrollView, Text, TextInput, View } from "reac
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useQuery } from "convex/react";
 
-import { api } from "@/convex/_generated/api";
+import { api } from "@haricot/convex-client";
 import { decodeUrl } from "@/utils/url";
 import createSearchStyles, { type SearchStyles } from "@/styles/searchStyles";
 import { useThemedStyles, useTokens } from "@/styles/tokens";
 import { useTranslation } from "@/i18n/useTranslation";
-import type { Recipe } from "@/types/recipe";
+import type { Recipe } from "@haricot/convex-client";
 import { getRecipeLanguage } from "@/utils/translation";
 
 const SEARCH_RESULTS_LIMIT = 50;

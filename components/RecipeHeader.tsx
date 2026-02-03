@@ -4,12 +4,12 @@ import { useQuery } from "convex/react";
 
 import { RecipeListPicker } from "@/components/RecipeListPicker";
 import { useTranslation } from "@/i18n/useTranslation";
-import type { Recipe } from "@/types/recipe";
+import type { Recipe } from "@haricot/convex-client";
 import { EMOJI_TAGS } from "@/types/emojiTags";
 import { formatRecipeTime, getRecipeDifficulty } from "@/utils/recipes";
 import type { ThemeTokens } from "@/styles/themes/types";
 import { useThemedStyles } from "@/styles/tokens";
-import { api } from "@/convex/_generated/api";
+import { api } from "@haricot/convex-client";
 
 interface RecipeHeaderProps {
   recipe: Recipe;

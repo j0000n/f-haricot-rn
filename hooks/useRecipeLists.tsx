@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useMemo, useState } from "react";
 
-import type { Id } from "@/convex/_generated/dataModel";
+import type { Id } from "@haricot/convex-client";
 
 export const COOK_ASAP_LIST_ID = "cook-asap";
 

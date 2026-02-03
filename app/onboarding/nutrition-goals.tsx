@@ -1,5 +1,5 @@
 import createOnboardingStyles from "@/styles/onboardingStyles";
-import { api } from "@/convex/_generated/api";
+import { api } from "@haricot/convex-client";
 import { useMutation, useQuery } from "convex/react";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -26,7 +26,7 @@ import {
   sanitizeNumber,
   type NutritionGoals,
   type NutritionMetric,
-} from "@/utils/nutritionGoals";
+} from "@haricot/convex-client";
 
 const SECONDARY_FIELDS: Record<
   NutritionMetric,

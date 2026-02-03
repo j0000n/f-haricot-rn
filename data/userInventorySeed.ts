@@ -1,4 +1,4 @@
-import { UserInventorySeedItem } from "../types/food";
+import type { UserInventorySeedItem } from "@haricot/convex-client";
 
 export const userInventorySeed: UserInventorySeedItem[] = [
   {

@@ -1,4 +1,4 @@
-import { api } from "@/convex/_generated/api";
+import { api } from "@haricot/convex-client";
 import Constants from "expo-constants";
 import * as Device from "expo-device";
 import { useMutation } from "convex/react";

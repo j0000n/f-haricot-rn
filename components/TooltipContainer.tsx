@@ -1,10 +1,10 @@
 import React, { useState, useMemo } from "react";
 import { View, StyleSheet } from "react-native";
 import { useQuery, useMutation } from "convex/react";
-import { api } from "@/convex/_generated/api";
+import { api } from "@haricot/convex-client";
 import { useThemedStyles } from "@/styles/tokens";
 import { Tooltip, type Tooltip as TooltipType } from "./Tooltip";
-import type { Id } from "@/convex/_generated/dataModel";
+import type { Id } from "@haricot/convex-client";
 
 interface TooltipContainerProps {
   tooltips?: TooltipType[];

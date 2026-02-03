@@ -112,27 +112,8 @@ This document describes the current structure of the React Native app after refa
   themeContext.tsx           # Theme context provider
   tokens.ts                  # Design tokens
 
-/convex                        # Convex backend functions
-  /_generated                 # Generated Convex types
-  /app                        # App-specific Convex functions
-  allergies.ts                # Allergies functions
-  auth.config.ts              # Auth configuration
-  auth.ts                     # Authentication functions
-  customThemes.ts            # Custom themes functions
-  dietary.ts                  # Dietary functions
-  fileUrls.ts                # File URL functions
-  foodLibrary.ts             # Food library functions
-  households.ts              # Household functions
-  http.ts                    # HTTP functions
-  images.ts                  # Image functions
-  inventory.ts               # Inventory functions
-  promptGenerators.ts        # Prompt generator functions
-  recipes.ts                 # Recipe functions
-  schema.ts                  # Database schema
-  tasks.ts                   # Task functions
-  testFunction.ts            # Test functions
-  testFunctionNode.ts        # Node test functions
-  users.ts                   # User functions
+/convex (moved)               # Convex backend now lives in the haricot-convex repo
+  @haricot/convex-client      # Published package with generated API + shared types
 
 /i18n                          # Internationalization
   config.ts                  # i18n configuration

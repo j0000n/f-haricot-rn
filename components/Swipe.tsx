@@ -11,7 +11,7 @@ import {
   View,
 } from "react-native";
 
-import type { Recipe } from "@/types/recipe";
+import type { Recipe } from "@haricot/convex-client";
 import { useTranslation } from "@/i18n/useTranslation";
 import { getRecipeLanguage } from "@/utils/translation";
 

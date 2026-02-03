@@ -3,7 +3,7 @@ import type {
   LocalizedRecipeText,
   RecipeIngredient,
   RecipeSourceStep,
-} from "../types/recipe";
+} from "@haricot/convex-client";
 
 const SUPPORTED_LANGUAGES: Array<keyof LocalizedRecipeText> = [
   "en",

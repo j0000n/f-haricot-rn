@@ -2,6 +2,10 @@
 
 This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
 
+## Backend
+
+The Convex backend lives in the `haricot-convex` repo. This app consumes the shared client package `@haricot/convex-client`.
+
 ## Get started
 
 1. Install dependencies

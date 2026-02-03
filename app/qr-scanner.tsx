@@ -1,4 +1,4 @@
-import { api } from "@/convex/_generated/api";
+import { api } from "@haricot/convex-client";
 import createQrScannerStyles from "@/styles/qrScannerStyles";
 import { useThemedStyles, useTokens } from "@/styles/tokens";
 import { useMutation } from "convex/react";

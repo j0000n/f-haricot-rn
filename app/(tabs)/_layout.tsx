@@ -1,4 +1,4 @@
-import { api } from "@/convex/_generated/api";
+import { api } from "@haricot/convex-client";
 import TabButton from "@/components/TabButton";
 import { useTranslation } from "@/i18n/useTranslation";
 import createTabLayoutStyles from "@/styles/tabLayoutStyles";

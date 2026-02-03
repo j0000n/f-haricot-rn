@@ -5,7 +5,7 @@ import { useMutation } from "convex/react";
 
 import createOnboardingStyles from "@/styles/onboardingStyles";
 import { useTheme, useThemedStyles } from "@/styles/tokens";
-import { api } from "@/convex/_generated/api";
+import { api } from "@haricot/convex-client";
 import { BrandLogo } from "@/components/BrandLogo";
 import { OnboardingNavigation } from "@/components/OnboardingNavigation";
 import { useTranslation } from "@/i18n/useTranslation";

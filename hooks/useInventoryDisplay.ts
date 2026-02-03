@@ -1,15 +1,15 @@
 import { useMemo } from "react";
 
-import { api } from "@/convex/_generated/api";
+import { api } from "@haricot/convex-client";
 import { useQuery } from "convex/react";
-import type { Doc } from "@/convex/_generated/dataModel";
+import type { Doc } from "@haricot/convex-client";
 
 import {
   SUPPORTED_LANGUAGES,
   type InventoryDisplayItem,
   type SupportedLanguage,
   type UserInventoryEntry,
-} from "@/types/food";
+} from "@haricot/convex-client";
 
 const DEFAULT_LANGUAGE: SupportedLanguage = "en";
 

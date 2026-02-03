@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Alert, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import * as Clipboard from "expo-clipboard";
 
-import { api } from "@/convex/_generated/api";
+import { api } from "@haricot/convex-client";
 import { useTranslation } from "@/i18n/useTranslation";
 import { defaultThemeName, getThemeDefinition } from "@/styles/themes";
 import type { ThemeName, ThemeTokens } from "@/styles/tokens";

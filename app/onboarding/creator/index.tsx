@@ -1,4 +1,4 @@
-import { api } from "@/convex/_generated/api";
+import { api } from "@haricot/convex-client";
 import { useTranslation } from "@/i18n/useTranslation";
 import createPartnerOnboardingStyles from "@/styles/partnerOnboardingStyles";
 import { useThemedStyles } from "@/styles/tokens";

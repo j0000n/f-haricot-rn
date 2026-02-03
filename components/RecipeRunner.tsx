@@ -3,7 +3,7 @@ import { Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
 
 import type { TranslationGuideRow } from "@/data/translationGuideSeed";
 import { useTranslation } from "@/i18n/useTranslation";
-import type { Recipe } from "@/types/recipe";
+import type { Recipe } from "@haricot/convex-client";
 import type { ThemeTokens } from "@/styles/themes/types";
 import { useThemedStyles, useTokens } from "@/styles/tokens";
 import { decodeEncodedSteps } from "@/utils/decodeEncodedSteps";

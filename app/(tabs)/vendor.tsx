@@ -1,5 +1,5 @@
 import { PageHeader } from "@/components/PageHeader";
-import { api } from "@/convex/_generated/api";
+import { api } from "@haricot/convex-client";
 import { useTranslation } from "@/i18n/useTranslation";
 import createRoleDashboardStyles from "@/styles/roleDashboardStyles";
 import { useThemedStyles } from "@/styles/tokens";

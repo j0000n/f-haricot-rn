@@ -1,5 +1,5 @@
-import type { InventoryDisplayItem } from "@/types/food";
-import type { Recipe } from "@/types/recipe";
+import type { InventoryDisplayItem } from "@haricot/convex-client";
+import type { Recipe } from "@haricot/convex-client";
 import { calculateIngredientMatch } from "@/utils/inventory";
 import type { WidgetPayload, WidgetInventoryItem, WidgetRecipe } from "./types";
 

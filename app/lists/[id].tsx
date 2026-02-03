@@ -3,15 +3,15 @@ import { Alert, Image, Modal, Pressable, ScrollView, Text, TextInput, View } fro
 
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useQuery } from "convex/react";
-import type { Doc } from "@/convex/_generated/dataModel";
+import type { Doc } from "@haricot/convex-client";
 
 import { RecipeCard } from "@/components/cards/RecipeCard";
 import { LoadingScreen } from "@/components/LoadingScreen";
-import { api } from "@/convex/_generated/api";
+import { api } from "@haricot/convex-client";
 import { useRecipeLists } from "@/hooks/useRecipeLists";
 import { useTranslation } from "@/i18n/useTranslation";
 import { EMOJI_TAGS } from "@/types/emojiTags";
-import type { Recipe } from "@/types/recipe";
+import type { Recipe } from "@haricot/convex-client";
 import { getRecipeLanguage } from "@/utils/translation";
 import createListDetailStyles from "@/styles/listDetailStyles";
 import { useThemedStyles } from "@/styles/tokens";

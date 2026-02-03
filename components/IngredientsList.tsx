@@ -3,10 +3,10 @@ import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 
 import { useQuery } from "convex/react";
 
-import { api } from "@/convex/_generated/api";
-import type { Doc } from "@/convex/_generated/dataModel";
+import { api } from "@haricot/convex-client";
+import type { Doc } from "@haricot/convex-client";
 import { useTranslation } from "@/i18n/useTranslation";
-import type { Recipe, RecipeIngredient } from "@/types/recipe";
+import type { Recipe, RecipeIngredient } from "@haricot/convex-client";
 import { formatIngredientQuantity, extractIngredientNameFromText } from "@/utils/inventory";
 import type { ThemeTokens } from "@/styles/themes/types";
 import { useThemedStyles, useTokens } from "@/styles/tokens";

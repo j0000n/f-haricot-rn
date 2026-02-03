@@ -3,7 +3,7 @@ import { useInventoryDisplay } from "@/hooks/useInventoryDisplay";
 import { useTranslation } from "@/i18n/useTranslation";
 import createKitchenStyles from "@/styles/kitchenStyles";
 import { useThemedStyles } from "@/styles/tokens";
-import type { InventoryDisplayItem } from "@/types/food";
+import type { InventoryDisplayItem } from "@haricot/convex-client";
 import {
   LOCATION_ORDER,
   sortByLocation,

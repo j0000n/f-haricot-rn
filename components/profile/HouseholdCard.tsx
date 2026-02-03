@@ -1,7 +1,7 @@
 import { Pressable, Text, TextInput, View } from "react-native";
 import createProfileStyles from "@/styles/profileStyles";
 import { useTheme, useThemedStyles } from "@/styles/tokens";
-import type { Id } from "@/convex/_generated/dataModel";
+import type { Id } from "@haricot/convex-client";
 import type {
   HouseholdChild,
   HouseholdDetails,

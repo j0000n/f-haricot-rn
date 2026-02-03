@@ -1,4 +1,4 @@
-import { FoodLibrarySeedItem } from "../types/food";
+import type { FoodLibrarySeedItem } from "@haricot/convex-client";
 
 export const foodLibrarySeed: FoodLibrarySeedItem[] = [
   {

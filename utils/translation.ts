@@ -2,8 +2,8 @@
  * Translation and language utilities for food library and recipes
  */
 
-import type { SupportedLanguage } from "@/types/food";
-import type { SupportedRecipeLanguage } from "@/types/recipe";
+import type { SupportedLanguage } from "@haricot/convex-client";
+import type { SupportedRecipeLanguage } from "@haricot/convex-client";
 
 type FoodLanguage = SupportedLanguage | "ja" | "vi" | "tl";
 

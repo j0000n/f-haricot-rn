@@ -5,9 +5,9 @@ import { useQuery } from "convex/react";
 
 import { RecipesViewCard } from "@/components/cards/RecipesViewCard";
 import { LoadingScreen } from "@/components/LoadingScreen";
-import { api } from "@/convex/_generated/api";
+import { api } from "@haricot/convex-client";
 import { useTranslation } from "@/i18n/useTranslation";
-import type { Recipe } from "@/types/recipe";
+import type { Recipe } from "@haricot/convex-client";
 import { getRecipeLanguage } from "@/utils/translation";
 import { useThemedStyles, useTokens } from "@/styles/tokens";
 import type { ThemeTokens } from "@/styles/themes/types";

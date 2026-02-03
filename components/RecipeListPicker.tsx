@@ -15,7 +15,7 @@ import {
 
 import { useTranslation } from "@/i18n/useTranslation";
 import { useRecipeLists, COOK_ASAP_LIST_ID } from "@/hooks/useRecipeLists";
-import type { Recipe } from "@/types/recipe";
+import type { Recipe } from "@haricot/convex-client";
 import { calculateIngredientMatch } from "@/utils/inventory";
 import { useThemedStyles, useTokens } from "@/styles/tokens";
 import type { ThemeTokens } from "@/styles/themes/types";

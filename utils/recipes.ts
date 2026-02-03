@@ -1,8 +1,8 @@
 import type { TFunction } from "i18next";
 
-import type { Doc } from "@/convex/_generated/dataModel";
+import type { Doc } from "@haricot/convex-client";
 import { EMOJI_TAGS } from "@/types/emojiTags";
-import type { Recipe, RecipeIngredient } from "@/types/recipe";
+import type { Recipe, RecipeIngredient } from "@haricot/convex-client";
 
 const DIFFICULTY_EMOJIS = ["👶", "👨‍🍳", "👨‍🍳👨‍🍳", "⭐"] as const;
 

@@ -1,4 +1,4 @@
-import { api } from "@/convex/_generated/api";
+import { api } from "@haricot/convex-client";
 import type { TabBarTokens } from "@/styles/themes/types";
 import type { ThemeTokens } from "@/styles/tokens";
 import { useTheme, useThemedStyles } from "@/styles/tokens";

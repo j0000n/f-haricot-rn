@@ -8,7 +8,7 @@ import {
   SECONDARY_METRICS,
   type NutritionGoals,
   type NutritionMetric,
-} from "@/utils/nutritionGoals";
+} from "@haricot/convex-client";
 
 type HouseholdMessage = {
   tone: "info" | "success" | "error";

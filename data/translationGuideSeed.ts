@@ -1,4 +1,4 @@
-import { LocalizedRecipeText } from "../types/recipe";
+import type { LocalizedRecipeText } from "@haricot/convex-client";
 
 export interface TranslationGuideRow {
   code: string;

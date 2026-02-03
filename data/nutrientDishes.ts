@@ -1,4 +1,4 @@
-import type { NutrientDish } from "@/types/nutrition";
+import type { NutrientDish } from "@haricot/convex-client";
 
 export const nutrientDishes: NutrientDish[] = [
   {

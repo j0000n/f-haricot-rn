@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from "react";
 
-import type { InventoryDisplayItem } from "@/types/food";
-import type { Recipe } from "@/types/recipe";
+import type { InventoryDisplayItem } from "@haricot/convex-client";
+import type { Recipe } from "@haricot/convex-client";
 import { buildWidgetPayload } from "@/widgets/data";
 import { hasNativeWidgetSupport, setWidgetData } from "@/widgets/bridge";
 import type { WidgetPayload } from "@/widgets/types";

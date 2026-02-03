@@ -1,5 +1,5 @@
 import createOnboardingStyles from "@/styles/onboardingStyles";
-import { api } from "@/convex/_generated/api";
+import { api } from "@haricot/convex-client";
 import { useMutation, useQuery } from "convex/react";
 import { useEffect, useState } from "react";
 import { Alert, Pressable, ScrollView, Text, View } from "react-native";

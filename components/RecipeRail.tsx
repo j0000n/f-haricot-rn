@@ -4,7 +4,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { RecipeCard, RECIPE_CARD_WIDTHS } from "@/components/cards/RecipeCard";
 import { FullImageCard, FULL_IMAGE_CARD_WIDTH } from "@/components/cards/FullImageCard";
 import { useTranslation } from "@/i18n/useTranslation";
-import type { Recipe } from "@/types/recipe";
+import type { Recipe } from "@haricot/convex-client";
 import type { ThemeTokens } from "@/styles/themes/types";
 import { useThemedStyles, useTokens } from "@/styles/tokens";
 

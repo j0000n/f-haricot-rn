@@ -1,5 +1,5 @@
 import SignIn from "@/app/SignIn";
-import { api } from "@/convex/_generated/api";
+import { api } from "@haricot/convex-client";
 import "@/i18n/config";
 import { TranslationProvider, changeLanguage, useTranslation } from "@/i18n/useTranslation";
 import { RecipeListsProvider } from "@/hooks/useRecipeLists";

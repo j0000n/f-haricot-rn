@@ -2,7 +2,7 @@ import React from "react";
 import { Pressable, Text, View, StyleSheet } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useThemedStyles, useTokens } from "@/styles/tokens";
-import type { Id } from "@/convex/_generated/dataModel";
+import type { Id } from "@haricot/convex-client";
 
 export interface Tooltip {
   _id: Id<"tooltips">;

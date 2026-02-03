@@ -2,7 +2,7 @@ import { Modal, Pressable, Text, View } from "react-native";
 import createProfileStyles from "@/styles/profileStyles";
 import { useThemedStyles } from "@/styles/tokens";
 import type { PendingMember } from "@/components/profile/types";
-import type { Id } from "@/convex/_generated/dataModel";
+import type { Id } from "@haricot/convex-client";
 
 type PendingMembersModalProps = {
   visible: boolean;

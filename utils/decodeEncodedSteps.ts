@@ -2,7 +2,7 @@ import {
   translationGuideSeed,
   type TranslationGuideRow,
 } from "../data/translationGuideSeed";
-import type { LocalizedRecipeText, RecipeSourceStep, Recipe } from "../types/recipe";
+import type { LocalizedRecipeText, RecipeSourceStep, Recipe } from "@haricot/convex-client";
 
 export type DecodingMode = "runner" | "cards" | "voice" | "shopping";
 

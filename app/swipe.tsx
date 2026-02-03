@@ -2,11 +2,11 @@ import { Swipe } from "@/components/Swipe";
 import { useInventoryDisplay } from "@/hooks/useInventoryDisplay";
 import createHomeStyles from "@/styles/homeStyles";
 import { useThemedStyles } from "@/styles/tokens";
-import type { Recipe } from "@/types/recipe";
+import type { Recipe } from "@haricot/convex-client";
 import { useRouter } from "expo-router";
 import { useMemo } from "react";
 import { View } from "react-native";
-import { api } from "@/convex/_generated/api";
+import { api } from "@haricot/convex-client";
 import { useQuery } from "convex/react";
 
 export default function SwipeScreen() {

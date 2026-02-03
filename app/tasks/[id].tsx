@@ -1,5 +1,5 @@
-import { api } from "@/convex/_generated/api";
-import { Id } from "@/convex/_generated/dataModel";
+import { api } from "@haricot/convex-client";
+import { Id } from "@haricot/convex-client";
 import createTaskDetailStyles from "@/styles/taskDetailStyles";
 import { useMutation, useQuery } from "convex/react";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";

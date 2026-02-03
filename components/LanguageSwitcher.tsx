@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useMutation, useQuery } from "convex/react";
 
-import { api } from "@/convex/_generated/api";
+import { api } from "@haricot/convex-client";
 import {
   SUPPORTED_LANGUAGES,
   changeLanguage,

@@ -1,4 +1,4 @@
-import { api } from "@/convex/_generated/api";
+import { api } from "@haricot/convex-client";
 import { POSTHOG_API_KEY, POSTHOG_BASE_OPTIONS } from "@/utils/posthog";
 import { PropsWithChildren } from "react";
 import { Platform } from "react-native";
