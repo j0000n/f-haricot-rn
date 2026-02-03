@@ -393,6 +393,7 @@
     "errorLoadProfile": "No pudimos cargar los detalles de tu perfil. Por favor, inténtalo de nuevo en breve.",
     "language": "Idioma",
     "languageDesc": "Elige tu idioma preferido de la aplicación. El contenido se actualiza al instante.",
+    "userData": "Datos del Usuario",
     "nutritionTitle": "Nutrition goals",
     "nutritionDesc": "Set your intent now and adjust targets later as you learn what works.",
     "nutritionStarter": "Starter profile",
@@ -883,5 +884,10 @@
     "textNotesPrompt": "Add a quick note about what you bought.",
     "scannedReceiptPhotos": "Scanned {{count}} receipt photo(s).",
     "scannedGroceryImages": "Scanned grocery images."
+  },
+  "welcome": {
+    "title": "Bienvenido a Haricot",
+    "publicContent": "Este es contenido público que cualquiera puede ver.",
+    "loginPrompt": "Puedes iniciar sesión usando el encabezado de arriba."
   }
 }

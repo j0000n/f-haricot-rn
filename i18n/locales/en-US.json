@@ -456,6 +456,7 @@
     "errorLoadProfile": "We couldn't load your profile details. Please try again shortly.",
     "language": "Language",
     "languageDesc": "Choose your preferred app language. Content updates instantly.",
+    "userData": "User Data",
     "privacyTitle": "Privacy",
     "privacyDesc": "Control how analytics are collected on this device.",
     "analyticsToggleLabel": "Allow analytics",
@@ -1076,5 +1077,13 @@
     "textNotesPrompt": "Add a quick note about what you bought.",
     "scannedReceiptPhotos": "Scanned {{count}} receipt photo(s).",
     "scannedGroceryImages": "Scanned grocery images."
+  },
+  "welcome": {
+    "title": "Welcome to Haricot",
+    "publicContent": "This is public content that anyone can see.",
+    "loginPrompt": "You can log in using the header above."
+  },
+  "footer": {
+    "copyright": "Haricot © 2026"
   }
 }

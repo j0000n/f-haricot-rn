@@ -1058,5 +1058,10 @@
     "textNotesPrompt": "Add a quick note about what you bought.",
     "scannedReceiptPhotos": "Scanned {{count}} receipt photo(s).",
     "scannedGroceryImages": "Scanned grocery images."
+  },
+  "welcome": {
+    "title": "Bienvenue sur Haricot",
+    "publicContent": "Ceci est du contenu public que tout le monde peut voir.",
+    "loginPrompt": "Vous pouvez vous connecter en utilisant l'en-tête ci-dessus."
   }
 }

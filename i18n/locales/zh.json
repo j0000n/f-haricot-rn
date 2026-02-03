@@ -311,6 +311,7 @@
     "errorLoadProfile": "我们无法加载您的个人资料详细信息。请稍后重试。",
     "language": "语言",
     "languageDesc": "选择您偏好的应用语言，内容会即时更新。",
+    "userData": "用户数据",
     "nutritionTitle": "Nutrition goals",
     "nutritionDesc": "Set your intent now and adjust targets later as you learn what works.",
     "nutritionStarter": "Starter profile",
@@ -809,5 +810,10 @@
     "textNotesPrompt": "Add a quick note about what you bought.",
     "scannedReceiptPhotos": "Scanned {{count}} receipt photo(s).",
     "scannedGroceryImages": "Scanned grocery images."
+  },
+  "welcome": {
+    "title": "欢迎使用 Haricot",
+    "publicContent": "这是任何人都可以查看的公开内容。",
+    "loginPrompt": "您可以使用上方的标题栏登录。"
   }
 }

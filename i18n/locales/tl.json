@@ -311,6 +311,7 @@
     "errorLoadProfile": "Hindi namin ma-load ang iyong profile details. Pakisubukan ulit mamaya.",
     "language": "Wika",
     "languageDesc": "Piliin ang nais mong wika ng app. Agad na nau-update ang nilalaman.",
+    "userData": "Data ng User",
     "nutritionTitle": "Nutrition goals",
     "nutritionDesc": "Set your intent now and adjust targets later as you learn what works.",
     "nutritionStarter": "Starter profile",
@@ -809,5 +810,10 @@
     "textNotesPrompt": "Add a quick note about what you bought.",
     "scannedReceiptPhotos": "Scanned {{count}} receipt photo(s).",
     "scannedGroceryImages": "Scanned grocery images."
+  },
+  "welcome": {
+    "title": "Maligayang pagdating sa Haricot",
+    "publicContent": "Ito ay pampublikong nilalaman na makikita ng sinuman.",
+    "loginPrompt": "Maaari kang mag-log in gamit ang header sa itaas."
   }
 }

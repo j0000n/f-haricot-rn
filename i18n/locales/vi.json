@@ -311,6 +311,7 @@
     "errorLoadProfile": "Chúng tôi không thể tải chi tiết hồ sơ của bạn. Vui lòng thử lại sau.",
     "language": "Ngôn ngữ",
     "languageDesc": "Chọn ngôn ngữ ứng dụng ưa thích của bạn. Nội dung cập nhật ngay lập tức.",
+    "userData": "Dữ liệu Người dùng",
     "nutritionTitle": "Nutrition goals",
     "nutritionDesc": "Set your intent now and adjust targets later as you learn what works.",
     "nutritionStarter": "Starter profile",
@@ -809,5 +810,10 @@
     "textNotesPrompt": "Add a quick note about what you bought.",
     "scannedReceiptPhotos": "Scanned {{count}} receipt photo(s).",
     "scannedGroceryImages": "Scanned grocery images."
+  },
+  "welcome": {
+    "title": "Chào mừng đến với Haricot",
+    "publicContent": "Đây là nội dung công khai mà bất kỳ ai cũng có thể xem.",
+    "loginPrompt": "Bạn có thể đăng nhập bằng cách sử dụng tiêu đề ở trên."
   }
 }

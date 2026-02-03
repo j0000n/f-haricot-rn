@@ -311,6 +311,7 @@
     "errorLoadProfile": "تعذر تحميل تفاصيل ملفك الشخصي. يُرجى المحاولة مرة أخرى قريبًا.",
     "language": "اللغة",
     "languageDesc": "اختر لغة التطبيق المفضلة لديك، وسيتم تحديث المحتوى فوراً.",
+    "userData": "بيانات المستخدم",
     "nutritionTitle": "Nutrition goals",
     "nutritionDesc": "Set your intent now and adjust targets later as you learn what works.",
     "nutritionStarter": "Starter profile",
@@ -809,5 +810,10 @@
     "textNotesPrompt": "Add a quick note about what you bought.",
     "scannedReceiptPhotos": "Scanned {{count}} receipt photo(s).",
     "scannedGroceryImages": "Scanned grocery images."
+  },
+  "welcome": {
+    "title": "مرحباً بك في Haricot",
+    "publicContent": "هذا محتوى عام يمكن لأي شخص رؤيته.",
+    "loginPrompt": "يمكنك تسجيل الدخول باستخدام العنوان أعلاه."
   }
 }
