@@ -1,13 +1,14 @@
-import React, { createContext, useCallback, useContext, useMemo, useState } from "react";
-
-import type { Id } from "@haricot/convex-client";
+import React, { createContext, useCallback, useContext, useMemo } from "react";
+import { useQuery, useMutation } from "convex/react";
+import { api } from "@haricot/convex-client";
+import type { Id, Doc } from "@haricot/convex-client";
 
 export const COOK_ASAP_LIST_ID = "cook-asap";
 
 export type RecipeListType = "cook-asap" | "standard";
 
 type RecipeListBase = {
-  id: string;
+  id: Id<"lists">;
   name: string;
   emoji?: string;
 };
@@ -34,62 +35,70 @@ export type StandardRecipeList = RecipeListBase & {
 export type RecipeList = CookAsapRecipeList | StandardRecipeList;
 
 type RecipeListsContextValue = {
-  cookAsapList: CookAsapRecipeList;
+  cookAsapList: CookAsapRecipeList | undefined;
   standardLists: StandardRecipeList[];
   allLists: RecipeList[];
   recentLists: StandardRecipeList[];
-  addRecipeToList: (listId: string, recipeId: Id<"recipes">) => void;
-  removeRecipeFromList: (listId: string, recipeId: Id<"recipes">) => void;
-  createList: (name: string, emoji?: string) => StandardRecipeList;
-  updateList: (listId: string, updates: { name?: string; emoji?: string }) => void;
-  deleteList: (listId: string) => void;
+  isLoading: boolean;
+  addRecipeToList: (listId: Id<"lists"> | string, recipeId: Id<"recipes">) => Promise<void>;
+  removeRecipeFromList: (listId: Id<"lists"> | string, recipeId: Id<"recipes">) => Promise<void>;
+  createList: (name: string) => Promise<Id<"lists">>;
+  updateList: (listId: Id<"lists">, updates: { name?: string }) => Promise<void>;
+  deleteList: (listId: Id<"lists">) => Promise<void>;
   seedLists: () => void;
-  getListById: (listId: string) => RecipeList | undefined;
-  isRecipeInList: (listId: string, recipeId: Id<"recipes">) => boolean;
+  getListById: (listId: Id<"lists"> | string) => RecipeList | undefined;
+  isRecipeInList: (listId: Id<"lists"> | string, recipeId: Id<"recipes">) => boolean;
   getListsForRecipe: (recipeId: Id<"recipes">) => RecipeList[];
 };
 
 const RecipeListsContext = createContext<RecipeListsContextValue | undefined>(undefined);
 
-const buildInitialLists = (): RecipeList[] => {
-  const timestamp = Date.now();
-  return [
-    {
-      id: COOK_ASAP_LIST_ID,
-      name: "COOK$ASAP",
+/**
+ * Converts a Convex list document to RecipeList format
+ */
+function convertConvexListToList(list: Doc<"lists">): RecipeList {
+  const base = {
+    id: list._id,
+    name: list.name,
+    emoji: list.emoji,
+  };
+
+  if (list.type === "cook-asap") {
+    return {
+      ...base,
       type: "cook-asap",
-      entries: [],
-      updatedAt: timestamp,
-    },
-    {
-      id: "weeknight-favorites",
-      name: "Weeknight Favorites",
-      emoji: "🌙",
+      entries: list.entries || [],
+      updatedAt: list.updatedAt,
+    } satisfies CookAsapRecipeList;
+  } else {
+    return {
+      ...base,
       type: "standard",
-      recipeIds: [],
-      createdAt: timestamp,
-      updatedAt: timestamp,
-      lastUsedAt: 0,
-    },
-    {
-      id: "dessert-party",
-      name: "Dessert Party",
-      emoji: "🍰",
-      type: "standard",
-      recipeIds: [],
-      createdAt: timestamp,
-      updatedAt: timestamp,
-      lastUsedAt: 0,
-    },
-  ];
-};
+      recipeIds: list.recipeIds || [],
+      createdAt: list.createdAt,
+      updatedAt: list.updatedAt,
+      lastUsedAt: list.lastUsedAt || 0,
+    } satisfies StandardRecipeList;
+  }
+}
 
 export const RecipeListsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [lists, setLists] = useState<RecipeList[]>(() => buildInitialLists());
-  const [recentListIds, setRecentListIds] = useState<string[]>([]);
+  // Fetch lists from Convex
+  const convexLists = useQuery(api.lists.getAll);
+
+  // Track loading state
+  const isLoading = convexLists === undefined;
+
+  // Convert Convex documents to RecipeList format
+  const lists = useMemo<RecipeList[]>(() => {
+    if (convexLists === undefined) {
+      return []; // Still loading
+    }
+    return convexLists.map(convertConvexListToList);
+  }, [convexLists]);
 
   const cookAsapList = useMemo(
-    () => lists.find((list): list is CookAsapRecipeList => list.type === "cook-asap")!,
+    () => lists.find((list): list is CookAsapRecipeList => list.type === "cook-asap"),
     [lists],
   );
 
@@ -112,155 +121,115 @@ export const RecipeListsProvider: React.FC<{ children: React.ReactNode }> = ({ c
     return cookAsap ? [cookAsap, ...sortedOthers] : sortedOthers;
   }, [lists]);
 
-  const recordRecentList = useCallback((listId: string) => {
-    if (listId === COOK_ASAP_LIST_ID) {
-      return;
-    }
-
-    setRecentListIds((current) => {
-      const next = [listId, ...current.filter((id) => id !== listId)];
-      return next.slice(0, 10);
-    });
-  }, []);
+  // Convex mutations
+  const addRecipeMutation = useMutation(api.lists.addRecipe);
+  const removeRecipeMutation = useMutation(api.lists.removeRecipe);
+  const createListMutation = useMutation(api.lists.create);
+  const updateListMutation = useMutation(api.lists.update);
+  const deleteListMutation = useMutation(api.lists.deleteList);
 
   const addRecipeToList = useCallback(
-    (listId: string, recipeId: Id<"recipes">) => {
-      setLists((current) =>
-        current.map((list) => {
-          if (list.id !== listId) {
-            return list;
-          }
-
-          const timestamp = Date.now();
-
-          if (list.type === "cook-asap") {
-            if (list.entries.some((entry) => entry.recipeId === recipeId)) {
-              return list;
-            }
-
-            return {
-              ...list,
-              entries: [...list.entries, { recipeId, addedAt: timestamp }],
-              updatedAt: timestamp,
-            } satisfies CookAsapRecipeList;
-          }
-
-          if (list.recipeIds.includes(recipeId)) {
-            return list;
-          }
-
-          return {
-            ...list,
-            recipeIds: [...list.recipeIds, recipeId],
-            updatedAt: timestamp,
-            lastUsedAt: timestamp,
-          } satisfies StandardRecipeList;
-        }),
-      );
-
-      recordRecentList(listId);
-    },
-    [recordRecentList],
-  );
-
-  const removeRecipeFromList = useCallback((listId: string, recipeId: Id<"recipes">) => {
-    setLists((current) =>
-      current.map((list) => {
-        if (list.id !== listId) {
-          return list;
-        }
-
-        const timestamp = Date.now();
-
-        if (list.type === "cook-asap") {
-          return {
-            ...list,
-            entries: list.entries.filter((entry) => entry.recipeId !== recipeId),
-            updatedAt: timestamp,
-          } satisfies CookAsapRecipeList;
-        }
-
-        return {
-          ...list,
-          recipeIds: list.recipeIds.filter((entry) => entry !== recipeId),
-          updatedAt: timestamp,
-          lastUsedAt: list.lastUsedAt,
-        } satisfies StandardRecipeList;
-      }),
-    );
-  }, []);
-
-  const createList = useCallback(
-    (name: string, emoji?: string) => {
-      const timestamp = Date.now();
-      const newList: StandardRecipeList = {
-        id: `list-${timestamp.toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
-        name,
-        emoji,
-        type: "standard",
-        recipeIds: [],
-        createdAt: timestamp,
-        updatedAt: timestamp,
-        lastUsedAt: timestamp,
-      };
-
-      setLists((current) => [...current, newList]);
-      setRecentListIds((current) => [newList.id, ...current].slice(0, 10));
-
-      return newList;
-    },
-    [],
-  );
-
-  const updateList = useCallback((listId: string, updates: { name?: string; emoji?: string }) => {
-    setLists((current) =>
-      current.map((list) => {
-        if (list.id !== listId) {
-          return list;
-        }
-
-        const timestamp = Date.now();
-
-        if (list.type === "cook-asap") {
-          // Cook-asap list can't be edited (it's a special list)
-          return list;
-        }
-
-        return {
-          ...list,
-          name: updates.name ?? list.name,
-          emoji: updates.emoji !== undefined ? updates.emoji : list.emoji,
-          updatedAt: timestamp,
-        } satisfies StandardRecipeList;
-      }),
-    );
-  }, []);
-
-  const deleteList = useCallback(
-    (listId: string) => {
-      // Don't allow deleting the cook-asap list
+    async (listId: Id<"lists"> | string, recipeId: Id<"recipes">) => {
+      // Handle cook-asap list special case - check if listId is the cook-asap constant
       if (listId === COOK_ASAP_LIST_ID) {
-        return;
+        const cookAsap = cookAsapList;
+        if (!cookAsap) {
+          // Create cook-asap list if it doesn't exist
+          const newCookAsapId = await createListMutation({
+            name: "COOK$ASAP",
+            type: "cook-asap",
+          });
+          await addRecipeMutation({
+            listId: newCookAsapId,
+            recipeId,
+          });
+          return;
+        }
+        listId = cookAsap.id;
       }
 
-      setLists((current) => current.filter((list) => list.id !== listId));
-      setRecentListIds((current) => current.filter((id) => id !== listId));
+      // Now listId should be a Convex ID
+      await addRecipeMutation({
+        listId: listId as Id<"lists">,
+        recipeId,
+      });
     },
-    [],
+    [cookAsapList, addRecipeMutation, createListMutation],
+  );
+
+  const removeRecipeFromList = useCallback(
+    async (listId: Id<"lists"> | string, recipeId: Id<"recipes">) => {
+      // Handle cook-asap list special case
+      if (listId === COOK_ASAP_LIST_ID) {
+        const cookAsap = cookAsapList;
+        if (!cookAsap) {
+          return; // Can't remove from non-existent list
+        }
+        listId = cookAsap.id;
+      }
+
+      await removeRecipeMutation({
+        listId: listId as Id<"lists">,
+        recipeId,
+      });
+    },
+    [cookAsapList, removeRecipeMutation],
+  );
+
+  const createList = useCallback(
+    async (name: string): Promise<Id<"lists">> => {
+      const listId = await createListMutation({
+        name,
+        type: "standard",
+      });
+
+      // Return the ID - the query will update automatically
+      return listId;
+    },
+    [createListMutation],
+  );
+
+  const updateList = useCallback(
+    async (listId: Id<"lists">, updates: { name?: string }) => {
+      await updateListMutation({
+        listId,
+        name: updates.name,
+      });
+    },
+    [updateListMutation],
+  );
+
+  const deleteList = useCallback(
+    async (listId: Id<"lists">) => {
+      // Check if it's cook-asap list
+      const list = lists.find((l) => l.id === listId);
+      if (list?.type === "cook-asap") {
+        return; // Don't allow deleting cook-asap list
+      }
+
+      await deleteListMutation({ listId });
+    },
+    [lists, deleteListMutation],
   );
 
   const seedLists = useCallback(() => {
-    setLists(buildInitialLists());
-    setRecentListIds([]);
+    // No-op: lists are now managed by Convex
+    // This function is kept for API compatibility but does nothing
   }, []);
 
   const getListById = useCallback(
-    (listId: string) => lists.find((list) => list.id === listId),
-    [lists],
+    (listId: Id<"lists"> | string) => {
+      // Handle cook-asap special case
+      if (listId === COOK_ASAP_LIST_ID) {
+        return cookAsapList;
+      }
+      return lists.find((list) => list.id === listId);
+    },
+    [lists, cookAsapList],
   );
 
   const isRecipeInList = useCallback(
-    (listId: string, recipeId: Id<"recipes">) => {
+    (listId: Id<"lists"> | string, recipeId: Id<"recipes">) => {
       const list = getListById(listId);
       if (!list) {
         return false;
@@ -288,20 +257,18 @@ export const RecipeListsProvider: React.FC<{ children: React.ReactNode }> = ({ c
   );
 
   const recentLists = useMemo(() => {
-    const recent = recentListIds
-      .map((id) => standardLists.find((list) => list.id === id))
-      .filter((list): list is StandardRecipeList => Boolean(list));
-
-    if (recent.length >= 3) {
-      return recent.slice(0, 3);
-    }
-
-    const remaining = standardLists
-      .filter((list) => !recentListIds.includes(list.id))
-      .sort((a, b) => b.updatedAt - a.updatedAt);
-
-    return [...recent, ...remaining].slice(0, 3);
-  }, [recentListIds, standardLists]);
+    // Derive recent lists from lastUsedAt field
+    const sorted = [...standardLists].sort((a, b) => {
+      // Sort by lastUsedAt descending, then by updatedAt descending
+      const aLastUsed = a.lastUsedAt || 0;
+      const bLastUsed = b.lastUsedAt || 0;
+      if (aLastUsed !== bLastUsed) {
+        return bLastUsed - aLastUsed;
+      }
+      return b.updatedAt - a.updatedAt;
+    });
+    return sorted.slice(0, 3);
+  }, [standardLists]);
 
   const value = useMemo<RecipeListsContextValue>(
     () => ({
@@ -309,6 +276,7 @@ export const RecipeListsProvider: React.FC<{ children: React.ReactNode }> = ({ c
       standardLists,
       allLists,
       recentLists,
+      isLoading,
       addRecipeToList,
       removeRecipeFromList,
       createList,
@@ -328,6 +296,7 @@ export const RecipeListsProvider: React.FC<{ children: React.ReactNode }> = ({ c
       getListById,
       getListsForRecipe,
       isRecipeInList,
+      isLoading,
       recentLists,
       removeRecipeFromList,
       seedLists,

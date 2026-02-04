@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { Alert, Image, Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Alert, Image, Pressable, ScrollView, Text, View } from "react-native";
 
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useQuery } from "convex/react";
@@ -7,6 +7,7 @@ import type { Doc } from "@haricot/convex-client";
 
 import { RecipeCard } from "@/components/cards/RecipeCard";
 import { LoadingScreen } from "@/components/LoadingScreen";
+import { CreateEditListModal } from "@/components/CreateEditListModal";
 import { api } from "@haricot/convex-client";
 import { useRecipeLists } from "@/hooks/useRecipeLists";
 import { useTranslation } from "@/i18n/useTranslation";
@@ -40,8 +41,6 @@ export default function ListDetailScreen() {
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [selectedEmoji, setSelectedEmoji] = useState<string>("all");
   const [showEditModal, setShowEditModal] = useState(false);
-  const [editName, setEditName] = useState("");
-  const [editEmoji, setEditEmoji] = useState("");
   const inventoryCodesQuery = useQuery(api.users.getCurrentInventory, {});
   const orderedRecipeIds = useMemo(() => (list ? buildRecipeIds(list) : []), [list]);
   const recipesResult = useQuery(
@@ -153,12 +152,12 @@ export default function ListDetailScreen() {
       : t("lists.standardEmptyMessage");
   const isLoadingRecipes = orderedRecipeIds.length > 0 && recipesResult === undefined;
 
-  const handleRemove = (recipeId: Recipe["_id"]) => {
+  const handleRemove = async (recipeId: Recipe["_id"]) => {
     if (!list) {
       return;
     }
 
-    removeRecipeFromList(list.id, recipeId);
+    await removeRecipeFromList(list.id, recipeId);
   };
 
   const handleRecipePress = (recipeId: Recipe["_id"]) => {
@@ -169,23 +168,15 @@ export default function ListDetailScreen() {
     if (!list || list.type === "cook-asap") {
       return;
     }
-    setEditName(list.name);
-    setEditEmoji(list.emoji || "");
     setShowEditModal(true);
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async (name: string) => {
     if (!list || list.type === "cook-asap") {
       return;
     }
-    const trimmedName = editName.trim();
-    if (!trimmedName) {
-      Alert.alert(t("lists.editListErrorTitle"), t("lists.editListErrorNameRequired"));
-      return;
-    }
-    updateList(list.id, {
-      name: trimmedName,
-      emoji: editEmoji.trim() || undefined,
+    await updateList(list.id, {
+      name,
     });
     setShowEditModal(false);
   };
@@ -205,8 +196,8 @@ export default function ListDetailScreen() {
         {
           text: t("common.delete"),
           style: "destructive",
-          onPress: () => {
-            deleteList(list.id);
+          onPress: async () => {
+            await deleteList(list.id);
             router.back();
           },
         },
@@ -430,58 +421,13 @@ export default function ListDetailScreen() {
       )}
 
       {list && list.type !== "cook-asap" && (
-        <Modal
+        <CreateEditListModal
           visible={showEditModal}
-          transparent={true}
-          animationType="slide"
-          onRequestClose={() => setShowEditModal(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>{t("lists.editList")}</Text>
-
-              <Text style={styles.modalLabel}>{t("lists.listName")}</Text>
-              <TextInput
-                value={editName}
-                onChangeText={setEditName}
-                placeholder={t("lists.listNamePlaceholder")}
-                placeholderTextColor={styles.modalInput.color}
-                style={styles.modalInput}
-                autoFocus={true}
-                returnKeyType="next"
-              />
-
-              <Text style={styles.modalLabel}>{t("lists.listEmoji")} ({t("lists.optional")})</Text>
-              <TextInput
-                value={editEmoji}
-                onChangeText={setEditEmoji}
-                placeholder={t("lists.listEmojiPlaceholder")}
-                placeholderTextColor={styles.modalInput.color}
-                style={styles.modalInput}
-                maxLength={2}
-              />
-
-              <View style={styles.modalButtons}>
-                <Pressable
-                  onPress={() => {
-                    setShowEditModal(false);
-                    setEditName("");
-                    setEditEmoji("");
-                  }}
-                  style={[styles.modalButton, styles.modalButtonCancel]}
-                >
-                  <Text style={styles.modalButtonCancelText}>{t("common.cancel")}</Text>
-                </Pressable>
-                <Pressable
-                  onPress={handleSaveEdit}
-                  style={[styles.modalButton, styles.modalButtonSave]}
-                >
-                  <Text style={styles.modalButtonSaveText}>{t("common.save")}</Text>
-                </Pressable>
-              </View>
-            </View>
-          </View>
-        </Modal>
+          mode="edit"
+          initialName={list.name}
+          onClose={() => setShowEditModal(false)}
+          onSubmit={handleSaveEdit}
+        />
       )}
     </View>
   );

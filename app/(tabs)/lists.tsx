@@ -1,5 +1,6 @@
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { PageHeader } from "@/components/PageHeader";
+import { CreateEditListModal } from "@/components/CreateEditListModal";
 import { api } from "@haricot/convex-client";
 import { useRecipeLists, type RecipeList } from "@/hooks/useRecipeLists";
 import { useTranslation } from "@/i18n/useTranslation";
@@ -14,7 +15,7 @@ import {
 import { useQuery } from "convex/react";
 import { useRouter } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
-import { Alert, Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 
 type SortOption = "name" | "recipes" | "ready" | "match" | "updated";
 
@@ -36,14 +37,12 @@ export default function ListsScreen() {
   const tokens = useTokens();
   const router = useRouter();
   const { t } = useTranslation();
-  const { allLists, createList } = useRecipeLists();
+  const { allLists, createList, isLoading: listsLoading } = useRecipeLists();
   const [searchTerm, setSearchTerm] = useState("");
   const [sortOption, setSortOption] = useState<SortOption>("ready");
   const [filterOption, setFilterOption] = useState<FilterOption>("all");
   const [showSortMenu, setShowSortMenu] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [newListName, setNewListName] = useState("");
-  const [newListEmoji, setNewListEmoji] = useState("");
 
   const allRecipeIds = useMemo(() => {
     const ids = new Set<Recipe["_id"]>();
@@ -73,6 +72,7 @@ export default function ListsScreen() {
   );
 
   const isLoading =
+    listsLoading ||
     (allRecipeIds.length > 0 && recipesResult === undefined) ||
     inventoryCodesQuery === undefined;
 
@@ -209,20 +209,15 @@ export default function ListsScreen() {
     [t],
   );
 
-  const handleCreateList = useCallback(() => {
-    const trimmedName = newListName.trim();
-    if (!trimmedName) {
-      Alert.alert(t("lists.createListErrorTitle"), t("lists.createListErrorNameRequired"));
-      return;
-    }
-
-    const newList = createList(trimmedName, newListEmoji.trim() || undefined);
-    setShowCreateModal(false);
-    setNewListName("");
-    setNewListEmoji("");
-    // Navigate to the new list
-    router.push(`/lists/${newList.id}`);
-  }, [createList, newListName, newListEmoji, router, t]);
+  const handleCreateList = useCallback(
+    async (name: string) => {
+      const newListId = await createList(name);
+      setShowCreateModal(false);
+      // Navigate to the new list
+      router.push(`/lists/${newListId}`);
+    },
+    [createList, router],
+  );
 
   if (isLoading) {
     return <LoadingScreen />;
@@ -374,58 +369,12 @@ export default function ListsScreen() {
         )}
       </ScrollView>
 
-      <Modal
+      <CreateEditListModal
         visible={showCreateModal}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setShowCreateModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>{t("lists.createList")}</Text>
-
-            <Text style={styles.modalLabel}>{t("lists.listName")}</Text>
-            <TextInput
-              value={newListName}
-              onChangeText={setNewListName}
-              placeholder={t("lists.listNamePlaceholder")}
-              placeholderTextColor={tokens.colors.textMuted}
-              style={styles.modalInput}
-              autoFocus={true}
-              returnKeyType="next"
-            />
-
-            <Text style={styles.modalLabel}>{t("lists.listEmoji")} ({t("lists.optional")})</Text>
-            <TextInput
-              value={newListEmoji}
-              onChangeText={setNewListEmoji}
-              placeholder={t("lists.listEmojiPlaceholder")}
-              placeholderTextColor={tokens.colors.textMuted}
-              style={styles.modalInput}
-              maxLength={2}
-            />
-
-            <View style={styles.modalButtons}>
-              <Pressable
-                onPress={() => {
-                  setShowCreateModal(false);
-                  setNewListName("");
-                  setNewListEmoji("");
-                }}
-                style={[styles.modalButton, styles.modalButtonCancel]}
-              >
-                <Text style={styles.modalButtonCancelText}>{t("common.cancel")}</Text>
-              </Pressable>
-              <Pressable
-                onPress={handleCreateList}
-                style={[styles.modalButton, styles.modalButtonCreate]}
-              >
-                <Text style={styles.modalButtonCreateText}>{t("common.create")}</Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
+        mode="create"
+        onClose={() => setShowCreateModal(false)}
+        onSubmit={handleCreateList}
+      />
     </View>
   );
 }
