@@ -38,6 +38,7 @@ const colors = {
   logoFill: "#F8F6FF",
   logoPrimaryColor: "#cc0202", // Bright red - distinct from surface, matches accent
   logoSecondaryColor: "#6C9BFF", // Ultraviolet blue - complements red, distinct from border
+  logoTertiaryColor: "#6BFBA5", // Neon green - complements red and blue, adds contrast
   imageBackgroundColor: "#0F0D0D",
 } as const;
 

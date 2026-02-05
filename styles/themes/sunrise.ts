@@ -37,6 +37,7 @@ const colors = {
   logoFill: "#844660",
   logoPrimaryColor: "#450404", // Deep cranberry - distinct from surface, matches primary
   logoSecondaryColor: "#844660", // Cranberry rose - complements primary, distinct from border
+  logoTertiaryColor: "#ff3b30", // Bright red - complements cranberry tones, adds sunrise energy
   imageBackgroundColor: "#FFF7F7",
 } as const;
 

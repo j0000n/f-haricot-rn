@@ -36,6 +36,7 @@ const colors = {
   logoFill: "#5d4037",
   logoPrimaryColor: "#ffa726", // Bright orange juice
   logoSecondaryColor: "#ff8f00", // Yolk yellow-orange
+  logoTertiaryColor: "#ffe0b2", // Soft peach - complements orange and yellow, adds warmth
   imageBackgroundColor: "#ffe0b2", // Soft peach - image placeholders
 } as const;
 

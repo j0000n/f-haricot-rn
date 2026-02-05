@@ -35,8 +35,9 @@ const colors = {
   danger: "#FF0000",
   info: "#0000FF",
   logoFill: "#fff",
-  logoPrimaryColor: "#0D8B8F", // Bright teal - distinct from surface, complements theme
-  logoSecondaryColor: "#8B4C78", // Brighter magenta - distinct from border, complements primary
+  logoPrimaryColor: "#0D8B8F", // Bright teal - matches accent
+  logoSecondaryColor: "#8B4C78", // Brighter magenta - matches primary
+  logoTertiaryColor: "#0A7A7D", // Lighter teal - matches border
   imageBackgroundColor: "#5d2f4f", // Darker magenta - image placeholders (distinct from surface)
 } as const;
 

@@ -37,6 +37,7 @@ const colors = {
   logoFill: "#1a1a1a",
   logoPrimaryColor: "#1a1a1a", // Slightly lighter black
   logoSecondaryColor: "#1a1a1a", // Slightly lighter black
+  logoTertiaryColor: "#4a4a4a", // Medium gray - adds subtle variation to monochrome scheme
   imageBackgroundColor: "#f5f5e6", // Cream/yellowish white - image placeholders
 } as const;
 

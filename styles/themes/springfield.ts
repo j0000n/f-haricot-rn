@@ -38,6 +38,7 @@ const colors = {
   logoFill: "#2F2619",
   logoPrimaryColor: "#CC480F", // Bright orange - distinct from surface, matches accent
   logoSecondaryColor: "#C78C2C", // Golden yellow - complements orange, distinct from border
+  logoTertiaryColor: "#9A9D27", // Olive green - complements orange and yellow, adds Springfield character
   imageBackgroundColor: "#987AA5",
 } as const;
 

@@ -38,6 +38,7 @@ const colors = {
   logoFill: "#3D2817",
   logoPrimaryColor: "#5D4037", // Deep brown - distinct from surface, matches primary
   logoSecondaryColor: "#2D8659", // Lush green - complements brown, distinct from border
+  logoTertiaryColor: "#B85C38", // Rust orange - complements brown and green, adds warmth
   imageBackgroundColor: "#F5F3F0",
 } as const;
 

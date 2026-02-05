@@ -36,6 +36,7 @@ const colors = {
   logoFill: "#f1f3f5",
   logoPrimaryColor: "#ff6b9d", // Bright pink
   logoSecondaryColor: "#e94560", // Vibrant coral red
+  logoTertiaryColor: "#2196f3", // Bright blue - complements pink and coral, adds Motown energy
   imageBackgroundColor: "#16213e", // Rich navy - image placeholders
 } as const;
 

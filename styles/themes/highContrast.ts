@@ -146,6 +146,7 @@ const darkColors = {
   logoFill: "#ffffff",
   logoPrimaryColor: "#ffd400", // Bright yellow - distinct from surface, matches accent
   logoSecondaryColor: "#ffffff", // White - complements yellow, distinct from border
+  logoTertiaryColor: "#00ff8c", // Neon green - complements yellow and white, adds vibrancy
   imageBackgroundColor: "#0d0d0d",
 } as const;
 
@@ -171,6 +172,7 @@ const lightColors = {
   logoFill: "#000000",
   logoPrimaryColor: "#0057ff", // Bright blue - distinct from surface, matches accent
   logoSecondaryColor: "#000000", // Black - complements blue, distinct from border
+  logoTertiaryColor: "#007a1f", // Deep green - complements blue and black, adds contrast
   imageBackgroundColor: "#f5f5f5",
 } as const;
 

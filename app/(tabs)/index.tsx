@@ -478,8 +478,7 @@ export default function HomeScreen() {
         <PageHeader
           leftElement={
             <StaticBrandLogo
-              width={40}
-              height={40}
+              size={40}
               accessibilityLabel={t("home.logoAccessibility")}
             />
           }

@@ -35,8 +35,9 @@ const colors = {
   danger: "#FF6B6B",
   info: "#4D9FFF",
   logoFill: "#FBEFEF",
-  logoPrimaryColor: "#f9d79f", // Amber - distinct from surface, matches accent
-  logoSecondaryColor: "#AC8E8C", // Light plum - complements amber, distinct from border
+  logoPrimaryColor: "#f9d79f", // Amber - matches accent
+  logoSecondaryColor: "#AC8E8C", // Light plum - matches textMuted
+  logoTertiaryColor: "#D7C3C2", // Light gray - matches textSecondary
   imageBackgroundColor: "#1D1010",
 } as const;
 

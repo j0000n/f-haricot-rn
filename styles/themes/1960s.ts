@@ -37,6 +37,7 @@ const colors = {
   logoFill: "#403a21",
   logoPrimaryColor: "#e79950", // Warm orange - distinct from surface, matches accent
   logoSecondaryColor: "#a55652", // Rust - complements orange, distinct from border
+  logoTertiaryColor: "#D4A574", // Golden amber - complements orange and rust, adds warmth
   imageBackgroundColor: "#dbcb9a",
 } as const;
 

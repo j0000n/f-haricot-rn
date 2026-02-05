@@ -5,6 +5,7 @@ import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "@/i18n/useTranslation";
 import { useTheme, useThemedStyles } from "@/styles/tokens";
 import { ThemeTokens } from "@/styles/themes/types";
+import { StaticBrandLogo } from "@/components/StaticBrandLogo";
 
 interface PageHeaderProps {
   title?: string;
@@ -17,8 +18,8 @@ const createStyles = (tokens: ThemeTokens) =>
   StyleSheet.create({
     header: {
       backgroundColor: tokens.colors.surface,
-      paddingTop: tokens.layout.headerTopPadding,
-      paddingHorizontal: tokens.spacing.lg,
+      paddingTop: tokens.spacing.sm,
+      paddingHorizontal: tokens.spacing.sm,
       paddingBottom: tokens.spacing.sm,
       borderBottomWidth: tokens.borderWidths.thin,
       borderBottomColor: tokens.colors.border,
@@ -27,15 +28,30 @@ const createStyles = (tokens: ThemeTokens) =>
       flexDirection: "row",
       justifyContent: "space-between",
       alignItems: "center",
+      position: "relative",
     },
     headerLeft: {
-      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    headerCenter: {
+      position: "absolute",
+      left: 0,
+      right: 0,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    headerRight: {
+      alignItems: "center",
+      justifyContent: "center",
     },
     title: {
       fontSize: tokens.typography.title,
       fontFamily: tokens.fontFamilies.display,
+      lineHeight: tokens.lineHeights.tight,
       textTransform: "uppercase",
       color: tokens.colors.textPrimary,
+      textAlign: "center",
     },
     profileButton: {
       width: 40,
@@ -64,23 +80,37 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
     router.push("/profile");
   };
 
+  const defaultLeftElement = (
+    <StaticBrandLogo
+      size={40}
+      accessibilityLabel={t("home.logoAccessibility")}
+    />
+  );
+
   return (
     <View style={styles.header}>
       <View style={styles.headerTop}>
         <View style={styles.headerLeft}>
-          {leftElement || (title && <Text style={styles.title}>{title}</Text>)}
+          {leftElement ?? defaultLeftElement}
         </View>
-        {rightElement}
-        {showProfileButton && (
-          <Pressable
-            style={styles.profileButton}
-            onPress={handleProfilePress}
-            accessibilityLabel={t("components.goToProfile")}
-            accessibilityRole="button"
-          >
-            <Feather name="user" size={20} color={tokens.colors.textSecondary} />
-          </Pressable>
+        {title && (
+          <View style={styles.headerCenter}>
+            <Text style={styles.title}>{title}</Text>
+          </View>
         )}
+        <View style={styles.headerRight}>
+          {rightElement}
+          {showProfileButton && (
+            <Pressable
+              style={styles.profileButton}
+              onPress={handleProfilePress}
+              accessibilityLabel={t("components.goToProfile")}
+              accessibilityRole="button"
+            >
+              <Feather name="user" size={20} color={tokens.colors.textSecondary} />
+            </Pressable>
+          )}
+        </View>
       </View>
     </View>
   );

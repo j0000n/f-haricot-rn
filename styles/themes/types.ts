@@ -74,6 +74,7 @@ export type ThemeTokens = {
     logoFill: string;
     logoPrimaryColor: string;
     logoSecondaryColor: string;
+    logoTertiaryColor: string;
     imageBackgroundColor: string;
   };
   spacing: {

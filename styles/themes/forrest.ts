@@ -36,6 +36,7 @@ const colors = {
   logoFill: "#e8f5e9",
   logoPrimaryColor: "#66bb6a", // Bright lime green
   logoSecondaryColor: "#4a9d7a", // Vibrant emerald
+  logoTertiaryColor: "#2d5a47", // Rich moss green - complements lime and emerald, adds depth
   imageBackgroundColor: "#2d5a47", // Rich moss green - image placeholders
 } as const;
 

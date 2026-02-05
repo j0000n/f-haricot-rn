@@ -38,6 +38,7 @@ const colors = {
   logoFill: "#2D2D2D",
   logoPrimaryColor: "#FF6F61", // Coral - distinct from surface, matches theme accent
   logoSecondaryColor: "#A8E6CF", // Mint green - complements coral, distinct from border
+  logoTertiaryColor: "#FFE156", // Warm yellow - complements coral and mint, adds vibrancy
   imageBackgroundColor: "#FFE8E8",
 } as const;
 
