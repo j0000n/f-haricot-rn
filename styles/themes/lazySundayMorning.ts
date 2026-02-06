@@ -57,6 +57,10 @@ export const lazySundayMorningTheme: ThemeDefinition = {
       md: 16,
       lg: 24,
       round: baseRadii.round,
+      radiusControl: 12,
+      radiusCard: 16,
+      radiusSurface: 24,
+      radiusPill: baseRadii.round,
     },
     typography: baseTypography,
     fontFamilies: {

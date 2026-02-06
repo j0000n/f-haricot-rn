@@ -24,8 +24,15 @@ import {
   themeOptions,
 } from "./themes";
 import { useQuery } from "convex/react";
-import { api } from "@haricot/convex-client";
-import { AVAILABLE_LOGOS } from "@/components/logoAssets";
+import {
+  api,
+  toLegacyRadii,
+  toLegacySpacing,
+  toLegacyTypography,
+  toSemanticRadii,
+  toSemanticSpacing,
+  toSemanticTypography,
+} from "@haricot/convex-client";
 
 export type ThemeOption = (typeof themeOptions)[number];
 
@@ -55,12 +62,11 @@ type CustomThemeData = {
     logoFill?: string;
     imageBackgroundColor?: string;
   };
-  spacing: Omit<ThemeTokens["spacing"], "none">;
+  spacing: ThemeTokens["spacing"];
   padding: ThemeTokens["padding"];
   radii: ThemeTokens["radii"];
   typography: ThemeTokens["typography"];
   fontFamilies: ThemeTokens["fontFamilies"];
-  logoAsset: string;
   tabBar?: CustomTabBarTokens | null;
 };
 
@@ -208,7 +214,6 @@ export function ThemeProvider({
             radii,
             typography,
             fontFamilies,
-            logoAsset,
             tabBar,
             name,
             shareCode,
@@ -222,12 +227,24 @@ export function ThemeProvider({
               ...colors,
               logoFill: colors.logoFill ?? colors.textPrimary,
             },
-            spacing: { ...fallbackTokens.spacing, ...spacing },
+            spacing: {
+              ...fallbackTokens.spacing,
+              ...toLegacySpacing(spacing),
+              ...toSemanticSpacing(spacing),
+              none: 0 as const,
+            },
             padding,
-            radii: { ...fallbackTokens.radii, ...radii },
-            typography: { ...fallbackTokens.typography, ...typography },
+            radii: {
+              ...fallbackTokens.radii,
+              ...toLegacyRadii(radii),
+              ...toSemanticRadii(radii),
+            },
+            typography: {
+              ...fallbackTokens.typography,
+              ...toLegacyTypography(typography),
+              ...toSemanticTypography(typography),
+            },
             fontFamilies,
-            logoAsset,
             tabBar: tabBar
               ? {
                   ...tabBar,
@@ -465,37 +482,7 @@ export function ThemeProvider({
           },
         } as ThemeTokens,
         assets: {
-          logo: (() => {
-            // Handle different logo asset path formats
-            const assetPath = customTheme.logoAsset;
-
-            // First, try to find the logo in AVAILABLE_LOGOS
-            const matchedLogo = AVAILABLE_LOGOS.find((logo) => logo.path === assetPath);
-            if (matchedLogo) {
-              return matchedLogo.source;
-            }
-
-            // Fallback: handle path-based mapping for any path starting with @/assets/images/
-            if (assetPath.startsWith("@/assets/images/")) {
-              const imageName = assetPath.replace("@/assets/images/", "");
-              // Map logo paths to their require statements
-              const logoMap: Record<string, any> = {
-                "haricot-logo.svg": require("@/assets/images/haricot-logo.svg"),
-                "sunrise-logo.svg": require("@/assets/images/sunrise-logo.svg"),
-                "midnight-logo.svg": require("@/assets/images/midnight-logo.svg"),
-                "logo.svg": require("@/assets/images/logo.svg"),
-                "black-metal.svg": require("@/assets/images/black-metal.svg"),
-                "black-metal-logo.png": require("@/assets/images/black-metal-logo.png"),
-                "1950s.svg": require("@/assets/images/1950s.svg"),
-                "1960s.svg": require("@/assets/images/1960s.svg"),
-                "1990s.svg": require("@/assets/images/1990s.svg"),
-              };
-              return logoMap[imageName] || { uri: assetPath };
-            }
-
-            // Final fallback: return as URI
-            return { uri: assetPath };
-          })(),
+          logo: defaultDefinition.assets.logo,
         } as ThemeAssets,
       };
     }
@@ -543,6 +530,14 @@ export function ThemeProvider({
             extraSmall: Math.round(baseTokens.typography.extraSmall * scale),
             small: Math.round(baseTokens.typography.small * scale),
             tiny: Math.round(baseTokens.typography.tiny * scale),
+            typeDisplay: Math.round(baseTokens.typography.typeDisplay * scale),
+            typeTitle: Math.round(baseTokens.typography.typeTitle * scale),
+            typeHeading: Math.round(baseTokens.typography.typeHeading * scale),
+            typeSubheading: Math.round(baseTokens.typography.typeSubheading * scale),
+            typeBody: Math.round(baseTokens.typography.typeBody * scale),
+            typeBodySmall: Math.round(baseTokens.typography.typeBodySmall * scale),
+            typeCaption: Math.round(baseTokens.typography.typeCaption * scale),
+            typeMicro: Math.round(baseTokens.typography.typeMicro * scale),
           };
 
     const fontFamilies = accessibilityPreferences.dyslexiaEnabled

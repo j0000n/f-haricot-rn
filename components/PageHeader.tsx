@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, Pressable, StyleSheet } from "react-native";
+import { View, Text, Pressable, StyleSheet, Platform } from "react-native";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { useTranslation } from "@/i18n/useTranslation";
@@ -18,7 +18,7 @@ const createStyles = (tokens: ThemeTokens) =>
   StyleSheet.create({
     header: {
       backgroundColor: tokens.colors.surface,
-      paddingTop: tokens.spacing.sm,
+      ...(Platform.OS !== "web" && { paddingTop: tokens.spacing.xxl }),
       paddingHorizontal: tokens.spacing.sm,
       paddingBottom: tokens.spacing.sm,
       borderBottomWidth: tokens.borderWidths.thin,

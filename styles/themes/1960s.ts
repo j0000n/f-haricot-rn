@@ -58,6 +58,10 @@ export const sixtiesTheme: ThemeDefinition = {
       md: 14,  // Flowing rounded corners
       lg: 20,  // Peace and love roundness
       round: baseRadii.round,
+      radiusControl: 10,
+      radiusCard: 14,
+      radiusSurface: 20,
+      radiusPill: baseRadii.round,
     },
     typography: baseTypography,
     fontFamilies: {

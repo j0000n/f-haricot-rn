@@ -22,7 +22,6 @@ import {
 import { WebsiteStyleColorPicker } from "./WebsiteStyleColorPicker";
 import { FeatherIconPicker } from "./FeatherIconPicker";
 import { FontSelector } from "./FontSelector";
-import { AVAILABLE_LOGOS, LogoPicker, type LogoAsset } from "./LogoPicker";
 import { Slider } from "./Slider";
 
 type ThemeCreatorModalProps = {
@@ -49,7 +48,7 @@ type ColorSection = {
 
 type EditorMode = "edit" | "preview";
 
-// Updated font list with all available fonts - must match FONT_SOURCES keys in app/_layout.tsx
+// Curated font list for Theme Lab builder; must match FONT_SOURCES.
 const AVAILABLE_FONTS = [
   "Peignot",
   "Source Sans Pro",
@@ -61,230 +60,12 @@ const AVAILABLE_FONTS = [
   "Metaloxcide",
   "W95FA",
   "Sprat-Regular",
-  "Sprat-Light",
-  "Sprat-Medium",
   "Sprat-Bold",
-  "Sprat-Black",
-  "Sprat-Thin",
-  "Sprat-CondensedBlack",
-  "Sprat-CondensedBold",
-  "Sprat-CondensedLight",
-  "Sprat-CondensedMedium",
-  "Sprat-CondensedThin",
-  "Sprat-CondesedRegular",
-  "Sprat-ExtendedBlack",
-  "Sprat-ExtendedBold",
-  "Sprat-ExtendedLight",
-  "Sprat-ExtendedMedium",
-  "Sprat-ExtendedRegular",
-  "Sprat-ExtendedThin",
-  "SpratVF",
-  "OpenDyslexic-Regular",
-  "OpenDyslexic-Italic",
-  "OpenDyslexic-Bold",
-  "OpenDyslexic-Bold-Italic",
   "Gloock-Regular",
-  "Gnomon-Foreground",
-  "Gnomon-Simple",
-  "GreatVibes-Regular",
-  "NationalPark-VariableVF",
-  "Amiamie-Regular",
-  "Amiamie-Light",
-  "Amiamie-Black",
-  "Amiamie-Italic",
-  "Amiamie-LightItalic",
-  "Amiamie-BlackItalic",
-  "Amiamie-RegularRound",
-  "Amiamie-ItalicRound",
-  "Amiamie-BlackRound",
-  "Amiamie-BlackItalicRound",
-  "Basalte-Fond",
-  "Basalte-Multicolor",
-  "Basalte-Volume",
-  "Frick0.3-Regular",
-  "Frick0.3-Condensed",
-  "FT88-Regular",
-  "FT88-Bold",
-  "FT88-Italic",
-  "FT88-School",
-  "FT88-Serif",
-  "FT88-Expanded",
-  "FT88-Gothique",
-  "Garabosse-Gaillard·e",
-  "Garabosse-Mignon·ne",
-  "Garabosse-Nonpareil·le",
-  "Garabosse-Parangon",
-  "Garabosse-Perle",
-  "Equateur-Regular",
-  "Latitude-Regular",
-  "Libertinage",
-  "Libertinage-a",
-  "Libertinage-b",
-  "Libertinage-c",
-  "Libertinage-d",
-  "Libertinage-e",
-  "Libertinage-f",
-  "Libertinage-g",
-  "Libertinage-h",
-  "Libertinage-i",
-  "Libertinage-j",
-  "Libertinage-k",
-  "Libertinage-l",
-  "Libertinage-m",
-  "Libertinage-n",
-  "Libertinage-o",
-  "Libertinage-p",
-  "Libertinage-q",
-  "Libertinage-r",
-  "Libertinage-s",
-  "Libertinage-t",
-  "Libertinage-u",
-  "Libertinage-v",
-  "Libertinage-w",
-  "Libertinage-x",
-  "Libertinage-y",
-  "Libertinage-z",
-  // Note: Venus+ fonts with + character cause CTFontManagerError on iOS
-  // They are still available via app.json for native builds, but not loaded via useFonts
-  // "Venus+Acier",
-  // "Venus+Carrare",
-  // "Venus+Cormier",
-  // "Venus+Martre",
-  // "Venus+Plomb",
-  "zarathustra-v01",
-  // Saira fonts
-  "Saira-Thin",
-  "Saira-ThinItalic",
-  "Saira-ExtraLight",
-  "Saira-ExtraLightItalic",
-  "Saira-Light",
-  "Saira-LightItalic",
+  "OpenDyslexic-Regular",
   "Saira-Regular",
-  "Saira-Italic",
-  "Saira-Medium",
-  "Saira-MediumItalic",
-  "Saira-SemiBold",
-  "Saira-SemiBoldItalic",
-  "Saira-Bold",
-  "Saira-BoldItalic",
-  "Saira-ExtraBold",
-  "Saira-ExtraBoldItalic",
-  "Saira-Black",
-  "Saira-BlackItalic",
-  // Saira Condensed
-  "SairaCondensed-Thin",
-  "SairaCondensed-ThinItalic",
-  "SairaCondensed-ExtraLight",
-  "SairaCondensed-ExtraLightItalic",
-  "SairaCondensed-Light",
-  "SairaCondensed-LightItalic",
-  "SairaCondensed-Regular",
-  "SairaCondensed-Italic",
-  "SairaCondensed-Medium",
-  "SairaCondensed-MediumItalic",
-  "SairaCondensed-SemiBold",
-  "SairaCondensed-SemiBoldItalic",
-  "SairaCondensed-Bold",
-  "SairaCondensed-BoldItalic",
-  "SairaCondensed-ExtraBold",
-  "SairaCondensed-ExtraBoldItalic",
-  "SairaCondensed-Black",
-  "SairaCondensed-BlackItalic",
-  // Saira Expanded
-  "SairaExpanded-Thin",
-  "SairaExpanded-ThinItalic",
-  "SairaExpanded-ExtraLight",
-  "SairaExpanded-ExtraLightItalic",
-  "SairaExpanded-Light",
-  "SairaExpanded-LightItalic",
-  "SairaExpanded-Regular",
-  "SairaExpanded-Italic",
-  "SairaExpanded-Medium",
-  "SairaExpanded-MediumItalic",
-  "SairaExpanded-SemiBold",
-  "SairaExpanded-SemiBoldItalic",
-  "SairaExpanded-Bold",
-  "SairaExpanded-BoldItalic",
-  "SairaExpanded-ExtraBold",
-  "SairaExpanded-ExtraBoldItalic",
-  "SairaExpanded-Black",
-  "SairaExpanded-BlackItalic",
-  // Saira Extra Condensed
-  "SairaExtraCondensed-Thin",
-  "SairaExtraCondensed-ThinItalic",
-  "SairaExtraCondensed-ExtraLight",
-  "SairaExtraCondensed-ExtraLightItalic",
-  "SairaExtraCondensed-Light",
-  "SairaExtraCondensed-LightItalic",
-  "SairaExtraCondensed-Regular",
-  "SairaExtraCondensed-Italic",
-  "SairaExtraCondensed-Medium",
-  "SairaExtraCondensed-MediumItalic",
-  "SairaExtraCondensed-SemiBold",
-  "SairaExtraCondensed-SemiBoldItalic",
-  "SairaExtraCondensed-Bold",
-  "SairaExtraCondensed-BoldItalic",
-  "SairaExtraCondensed-ExtraBold",
-  "SairaExtraCondensed-ExtraBoldItalic",
-  "SairaExtraCondensed-Black",
-  "SairaExtraCondensed-BlackItalic",
-  // Saira Semi Condensed
-  "SairaSemiCondensed-Thin",
-  "SairaSemiCondensed-ThinItalic",
-  "SairaSemiCondensed-ExtraLight",
-  "SairaSemiCondensed-ExtraLightItalic",
-  "SairaSemiCondensed-Light",
-  "SairaSemiCondensed-LightItalic",
-  "SairaSemiCondensed-Regular",
-  "SairaSemiCondensed-Italic",
-  "SairaSemiCondensed-Medium",
-  "SairaSemiCondensed-MediumItalic",
-  "SairaSemiCondensed-SemiBold",
-  "SairaSemiCondensed-SemiBoldItalic",
-  "SairaSemiCondensed-Bold",
-  "SairaSemiCondensed-BoldItalic",
-  "SairaSemiCondensed-ExtraBold",
-  "SairaSemiCondensed-ExtraBoldItalic",
-  "SairaSemiCondensed-Black",
-  "SairaSemiCondensed-BlackItalic",
-  // Saira Semi Expanded
-  "SairaSemiExpanded-Thin",
-  "SairaSemiExpanded-ThinItalic",
-  "SairaSemiExpanded-ExtraLight",
-  "SairaSemiExpanded-ExtraLightItalic",
-  "SairaSemiExpanded-Light",
-  "SairaSemiExpanded-LightItalic",
-  "SairaSemiExpanded-Regular",
-  "SairaSemiExpanded-Italic",
-  "SairaSemiExpanded-Medium",
-  "SairaSemiExpanded-MediumItalic",
-  "SairaSemiExpanded-SemiBold",
-  "SairaSemiExpanded-SemiBoldItalic",
-  "SairaSemiExpanded-Bold",
-  "SairaSemiExpanded-BoldItalic",
-  "SairaSemiExpanded-ExtraBold",
-  "SairaSemiExpanded-ExtraBoldItalic",
-  "SairaSemiExpanded-Black",
-  "SairaSemiExpanded-BlackItalic",
-  // Saira Ultra Condensed
-  "SairaUltraCondensed-Thin",
-  "SairaUltraCondensed-ThinItalic",
-  "SairaUltraCondensed-ExtraLight",
-  "SairaUltraCondensed-ExtraLightItalic",
-  "SairaUltraCondensed-Light",
-  "SairaUltraCondensed-LightItalic",
-  "SairaUltraCondensed-Regular",
-  "SairaUltraCondensed-Italic",
-  "SairaUltraCondensed-Medium",
-  "SairaUltraCondensed-MediumItalic",
-  "SairaUltraCondensed-SemiBold",
-  "SairaUltraCondensed-SemiBoldItalic",
-  "SairaUltraCondensed-Bold",
-  "SairaUltraCondensed-BoldItalic",
-  "SairaUltraCondensed-ExtraBold",
-  "SairaUltraCondensed-ExtraBoldItalic",
-  "SairaUltraCondensed-Black",
-  "SairaUltraCondensed-BlackItalic",
+  "FT88-Regular",
+  "CutiveMono-Regular",
 ];
 
 // Color picker presets
@@ -440,7 +221,7 @@ export function ThemeCreatorModal({
   onThemeCreated,
 }: ThemeCreatorModalProps) {
   const styles = useThemedStyles(createStyles);
-  const { tokens, definition, assets } = useTheme();
+  const { tokens, definition } = useTheme();
   const { t } = useTranslation();
   const createTheme = useMutation(api.customThemes.createCustomTheme);
 
@@ -593,21 +374,6 @@ export function ThemeCreatorModal({
   const [tabBar, setTabBar] = useState<TabBarTokens>(() => getDefaultTabBar());
   const [activeTab, setActiveTab] = useState<"home" | "kitchen" | "lists">("home");
 
-  // Get the current logo path from assets
-  const getCurrentLogoPath = () => {
-    const logoAsset = assets.logo;
-    if (typeof logoAsset === "object" && "uri" in logoAsset && logoAsset.uri) {
-      // Try to match the URI to an available logo
-      const matchedLogo = AVAILABLE_LOGOS.find(logo => logo.path === logoAsset.uri);
-      if (matchedLogo) {
-        return matchedLogo.path;
-      }
-    }
-    return AVAILABLE_LOGOS[0].path;
-  };
-
-  const [selectedLogoPath, setSelectedLogoPath] = useState(getCurrentLogoPath());
-
   // Reset form to current theme when modal opens
   useEffect(() => {
     if (visible) {
@@ -660,7 +426,6 @@ export function ThemeCreatorModal({
         semiBold: tokens.fontFamilies.semiBold,
         bold: tokens.fontFamilies.bold,
       });
-      setSelectedLogoPath(getCurrentLogoPath());
       setThemeName("");
       setMode("edit");
 
@@ -673,7 +438,7 @@ export function ThemeCreatorModal({
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visible, tokens, assets, definition]);
+  }, [visible, tokens, definition]);
 
   const updateColor = (key: keyof ColorSection, value: string) => {
     setColors((prev) => ({ ...prev, [key]: value }));
@@ -780,10 +545,6 @@ export function ThemeCreatorModal({
   //   }));
   // };
 
-  const handleSelectLogo = (logo: LogoAsset) => {
-    setSelectedLogoPath(logo.path);
-  };
-
   const generateRandomThemeName = () => {
     const adjectives = t("themeCreator.randomName.adjectives", {
       returnObjects: true,
@@ -804,14 +565,14 @@ export function ThemeCreatorModal({
       // Derive global tokens from component tokens for backward compatibility
       // Use component tokens as source of truth, estimate global tokens
       const derivedSpacing = {
-        none: 0,
-        xxs: componentTokens.card.gap || 4,
-        xs: componentTokens.card.margin || 8,
-        sm: componentTokens.header.section.marginBottom || 12,
-        md: componentTokens.list.itemPadding.horizontal || 16,
-        lg: componentTokens.header.page.paddingHorizontal || 20,
-        xl: 24,
-        xxl: 40,
+        spacingMicro: componentTokens.rail.cardGap || 2,
+        spacingTight: componentTokens.input.labelGap || 4,
+        spacingCompact: componentTokens.card.gap || 8,
+        spacingStandard: componentTokens.header.section.marginBottom || 12,
+        spacingComfortable: componentTokens.list.itemPadding.horizontal || 16,
+        spacingRoomy: componentTokens.header.page.paddingHorizontal || 20,
+        spacingSpacious: componentTokens.header.page.paddingTop || 24,
+        spacingHero: 40,
       };
 
       const derivedPadding = {
@@ -822,13 +583,22 @@ export function ThemeCreatorModal({
       };
 
       const derivedRadii = {
-        sm: componentTokens.button.primary.borderRadius,
-        md: componentTokens.card.borderRadius,
-        lg: componentTokens.list.borderRadius,
+        radiusControl: componentTokens.button.primary.borderRadius,
+        radiusCard: componentTokens.card.borderRadius,
+        radiusSurface: componentTokens.list.borderRadius,
+        radiusPill: 999,
       };
 
-      // Remove 'none' from spacing as it's not in the Convex validator
-      const { none, ...spacingWithoutNone } = derivedSpacing;
+      const derivedTypography = {
+        typeDisplay: typography.typeDisplay ?? typography.display,
+        typeTitle: typography.typeTitle ?? typography.title,
+        typeHeading: typography.typeHeading ?? typography.heading,
+        typeSubheading: typography.typeSubheading ?? typography.subheading,
+        typeBody: typography.typeBody ?? typography.body,
+        typeBodySmall: typography.typeBodySmall ?? typography.extraSmall,
+        typeCaption: typography.typeCaption ?? typography.small,
+        typeMicro: typography.typeMicro ?? typography.tiny,
+      };
 
       const result = await createTheme({
         name: finalThemeName,
@@ -836,12 +606,11 @@ export function ThemeCreatorModal({
           ...colors,
           logoFill: colors.logoFill || colors.textPrimary, // Ensure logoFill is included
         },
-        spacing: spacingWithoutNone,
+        spacing: derivedSpacing,
         padding: derivedPadding,
         radii: derivedRadii,
-        typography,
+        typography: derivedTypography,
         fontFamilies,
-        logoAsset: selectedLogoPath,
         isPublic,
         tabBar: tabBar, // Include tabBar configuration
       });
@@ -979,20 +748,6 @@ export function ThemeCreatorModal({
                     placeholderTextColor={colors.textMuted}
                   />
                 </View>
-              </View>
-
-              <View style={[styles.section, { backgroundColor: colors.surface }]}>
-                <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
-                  {t("themeCreator.logo.title")}
-                </Text>
-                <LogoPicker
-                  selectedLogoPath={selectedLogoPath}
-                  onSelectLogo={handleSelectLogo}
-                  logoFillColor={colors.logoFill}
-                  onLogoFillColorChange={(color) => updateColor("logoFill", color)}
-                  colors={colors}
-                  tokens={tokens}
-                />
               </View>
 
               <View style={[styles.section, { backgroundColor: colors.surface }]}>

@@ -87,6 +87,14 @@ export type ThemeTokens = {
     lg: number;
     xl: number;
     xxl: number;
+    spacingMicro: number;
+    spacingTight: number;
+    spacingCompact: number;
+    spacingStandard: number;
+    spacingComfortable: number;
+    spacingRoomy: number;
+    spacingSpacious: number;
+    spacingHero: number;
   };
   padding: {
     screen: number;
@@ -99,6 +107,10 @@ export type ThemeTokens = {
     md: number;
     lg: number;
     round: number;
+    radiusControl: number;
+    radiusCard: number;
+    radiusSurface: number;
+    radiusPill: number;
   };
   typography: {
     display: number;
@@ -109,6 +121,14 @@ export type ThemeTokens = {
     extraSmall: number;
     small: number;
     tiny: number;
+    typeDisplay: number;
+    typeTitle: number;
+    typeHeading: number;
+    typeSubheading: number;
+    typeBody: number;
+    typeBodySmall: number;
+    typeCaption: number;
+    typeMicro: number;
   };
   fontFamilies: {
     display: string;
@@ -260,6 +280,14 @@ export const baseTypography = {
   extraSmall: 14,
   small: 14,
   tiny: 12,
+  typeDisplay: 40,
+  typeTitle: 32,
+  typeHeading: 24,
+  typeSubheading: 18,
+  typeBody: 16,
+  typeBodySmall: 14,
+  typeCaption: 14,
+  typeMicro: 12,
 } as const;
 
 export const baseFontFamilies = {
@@ -290,6 +318,14 @@ export const baseSpacing = {
   lg: 20,
   xl: 24,
   xxl: 40,
+  spacingMicro: 2,
+  spacingTight: 4,
+  spacingCompact: 8,
+  spacingStandard: 12,
+  spacingComfortable: 16,
+  spacingRoomy: 20,
+  spacingSpacious: 24,
+  spacingHero: 40,
 } as const;
 
 export const basePadding = {
@@ -304,6 +340,10 @@ export const baseRadii = {
   md: 12,
   lg: 28,
   round: 999,
+  radiusControl: 8,
+  radiusCard: 12,
+  radiusSurface: 28,
+  radiusPill: 999,
 } as const;
 
 export const baseIconSizes = {

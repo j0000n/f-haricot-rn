@@ -57,6 +57,10 @@ export const forrestTheme: ThemeDefinition = {
       md: 12,
       lg: 20,
       round: baseRadii.round,
+      radiusControl: 8,
+      radiusCard: 12,
+      radiusSurface: 20,
+      radiusPill: baseRadii.round,
     },
     typography: baseTypography,
     fontFamilies: {

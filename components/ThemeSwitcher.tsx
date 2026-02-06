@@ -2,7 +2,15 @@ import React, { useEffect, useState } from "react";
 import { Alert, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import * as Clipboard from "expo-clipboard";
 
-import { api } from "@haricot/convex-client";
+import {
+  api,
+  toLegacyRadii,
+  toLegacySpacing,
+  toLegacyTypography,
+  toSemanticRadii,
+  toSemanticSpacing,
+  toSemanticTypography,
+} from "@haricot/convex-client";
 import { useTranslation } from "@/i18n/useTranslation";
 import { defaultThemeName, getThemeDefinition } from "@/styles/themes";
 import type { ThemeName, ThemeTokens } from "@/styles/tokens";
@@ -65,12 +73,24 @@ export function ThemeSwitcher({ variant = "default" }: ThemeSwitcherProps) {
           ...savedCustomThemeQuery.colors,
           logoFill: savedCustomThemeQuery.colors.logoFill ?? savedCustomThemeQuery.colors.textPrimary,
         },
-        spacing: { ...fallbackTokens.spacing, ...savedCustomThemeQuery.spacing },
+        spacing: {
+          ...fallbackTokens.spacing,
+          ...toLegacySpacing(savedCustomThemeQuery.spacing),
+          ...toSemanticSpacing(savedCustomThemeQuery.spacing),
+          none: 0 as const,
+        },
         padding: savedCustomThemeQuery.padding,
-        radii: { ...fallbackTokens.radii, ...savedCustomThemeQuery.radii },
-        typography: { ...fallbackTokens.typography, ...savedCustomThemeQuery.typography },
+        radii: {
+          ...fallbackTokens.radii,
+          ...toLegacyRadii(savedCustomThemeQuery.radii),
+          ...toSemanticRadii(savedCustomThemeQuery.radii),
+        },
+        typography: {
+          ...fallbackTokens.typography,
+          ...toLegacyTypography(savedCustomThemeQuery.typography),
+          ...toSemanticTypography(savedCustomThemeQuery.typography),
+        },
         fontFamilies: savedCustomThemeQuery.fontFamilies,
-        logoAsset: savedCustomThemeQuery.logoAsset,
         tabBar: savedCustomThemeQuery.tabBar
           ? {
               ...savedCustomThemeQuery.tabBar,
@@ -120,12 +140,24 @@ export function ThemeSwitcher({ variant = "default" }: ThemeSwitcherProps) {
             ...customThemeQuery.colors,
             logoFill: customThemeQuery.colors.logoFill ?? customThemeQuery.colors.textPrimary,
           },
-          spacing: { ...fallbackTokens.spacing, ...customThemeQuery.spacing },
+          spacing: {
+            ...fallbackTokens.spacing,
+            ...toLegacySpacing(customThemeQuery.spacing),
+            ...toSemanticSpacing(customThemeQuery.spacing),
+            none: 0 as const,
+          },
           padding: customThemeQuery.padding,
-          radii: { ...fallbackTokens.radii, ...customThemeQuery.radii },
-          typography: { ...fallbackTokens.typography, ...customThemeQuery.typography },
+          radii: {
+            ...fallbackTokens.radii,
+            ...toLegacyRadii(customThemeQuery.radii),
+            ...toSemanticRadii(customThemeQuery.radii),
+          },
+          typography: {
+            ...fallbackTokens.typography,
+            ...toLegacyTypography(customThemeQuery.typography),
+            ...toSemanticTypography(customThemeQuery.typography),
+          },
           fontFamilies: customThemeQuery.fontFamilies,
-          logoAsset: customThemeQuery.logoAsset,
           tabBar: customThemeQuery.tabBar
             ? {
                 ...customThemeQuery.tabBar,

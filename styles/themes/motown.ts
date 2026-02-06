@@ -57,6 +57,10 @@ export const motownTheme: ThemeDefinition = {
       md: 10,
       lg: 16,
       round: baseRadii.round,
+      radiusControl: 6,
+      radiusCard: 10,
+      radiusSurface: 16,
+      radiusPill: baseRadii.round,
     },
     typography: baseTypography,
     fontFamilies: {

@@ -58,6 +58,10 @@ export const simpleComputerTheme: ThemeDefinition = {
       md: 0,   // Sharp corners
       lg: 0,   // Sharp corners
       round: baseRadii.round,
+      radiusControl: 0,
+      radiusCard: 0,
+      radiusSurface: 0,
+      radiusPill: baseRadii.round,
     },
     typography: baseTypography,
     fontFamilies: {
