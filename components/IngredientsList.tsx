@@ -211,11 +211,11 @@ export const IngredientsList: React.FC<IngredientsListProps> = ({
 
     const normalizedPreparation = preparation
       .toLowerCase()
-      .replace(/[.,;:!?()]/g, " ")
+      .replace(/[.,;:!?()/-]/g, " ")
       .replace(/\s+/g, " ")
       .trim();
 
-    const conditionalPhraseMap: Record<
+    const preparationPhraseMap: Record<
       string,
       { key: string; defaultFr: string; defaultEn: string }
     > = {
@@ -244,12 +244,27 @@ export const IngredientsList: React.FC<IngredientsListProps> = ({
         defaultFr: "pour garnir",
         defaultEn: "for garnish",
       },
+      "drained rinsed": {
+        key: "recipe.preparation.drainedRinsed",
+        defaultFr: "egouttes, rinces",
+        defaultEn: "drained, rinsed",
+      },
+      "packed washed and dried divided": {
+        key: "recipe.preparation.packedWashedDriedDivided",
+        defaultFr: "tasse, lave et seche, divise",
+        defaultEn: "packed, washed and dried, divided",
+      },
+      "bite sized pieces small potatoes": {
+        key: "recipe.preparation.biteSizedPiecesSmallPotatoes",
+        defaultFr: "en morceaux de la taille d une bouchee / petites pommes de terre",
+        defaultEn: "bite-sized pieces / small potatoes",
+      },
     };
 
-    const conditionalPhrase = conditionalPhraseMap[normalizedPreparation];
-    if (conditionalPhrase) {
-      return t(conditionalPhrase.key, {
-        defaultValue: language === "fr" ? conditionalPhrase.defaultFr : conditionalPhrase.defaultEn,
+    const preparationPhrase = preparationPhraseMap[normalizedPreparation];
+    if (preparationPhrase) {
+      return t(preparationPhrase.key, {
+        defaultValue: language === "fr" ? preparationPhrase.defaultFr : preparationPhrase.defaultEn,
       });
     }
 
@@ -272,6 +287,19 @@ export const IngredientsList: React.FC<IngredientsListProps> = ({
       "fine": "recipe.preparation.fine",
       "coarse": "recipe.preparation.coarse",
       "optional": "recipe.preparation.optional",
+      "and": "recipe.preparation.and",
+      "drained": "recipe.preparation.drained",
+      "rinsed": "recipe.preparation.rinsed",
+      "washed": "recipe.preparation.washed",
+      "dried": "recipe.preparation.dried",
+      "packed": "recipe.preparation.packed",
+      "divided": "recipe.preparation.divided",
+      "potato": "recipe.preparation.potato",
+      "potatoes": "recipe.preparation.potatoes",
+      "piece": "recipe.preparation.piece",
+      "pieces": "recipe.preparation.pieces",
+      "bite": "recipe.preparation.bite",
+      "sized": "recipe.preparation.sized",
     };
 
     // Split preparation string into words and translate each part

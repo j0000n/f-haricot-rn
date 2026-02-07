@@ -700,7 +700,23 @@
       "toTaste": "to taste",
       "orToTaste": "or to taste",
       "forServing": "for serving",
-      "forGarnish": "for garnish"
+      "forGarnish": "for garnish",
+      "and": "and",
+      "drained": "drained",
+      "rinsed": "rinsed",
+      "washed": "washed",
+      "dried": "dried",
+      "packed": "packed",
+      "divided": "divided",
+      "potato": "potato",
+      "potatoes": "potatoes",
+      "piece": "piece",
+      "pieces": "pieces",
+      "bite": "bite",
+      "sized": "sized",
+      "drainedRinsed": "drained, rinsed",
+      "packedWashedDriedDivided": "packed, washed and dried, divided",
+      "biteSizedPiecesSmallPotatoes": "bite-sized pieces / small potatoes"
     }
   },
   "legal": {

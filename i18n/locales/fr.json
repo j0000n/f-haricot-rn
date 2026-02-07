@@ -695,7 +695,23 @@
       "toTaste": "au goût",
       "orToTaste": "ou au goût",
       "forServing": "pour servir",
-      "forGarnish": "pour garnir"
+      "forGarnish": "pour garnir",
+      "and": "et",
+      "drained": "égoutté",
+      "rinsed": "rincé",
+      "washed": "lavé",
+      "dried": "séché",
+      "packed": "tassé",
+      "divided": "divisé",
+      "potato": "pomme de terre",
+      "potatoes": "pommes de terre",
+      "piece": "morceau",
+      "pieces": "morceaux",
+      "bite": "bouchée",
+      "sized": "taille",
+      "drainedRinsed": "égouttés, rincés",
+      "packedWashedDriedDivided": "tassé, lavé et séché, divisé",
+      "biteSizedPiecesSmallPotatoes": "en morceaux de la taille d'une bouchée / petites pommes de terre"
     }
   },
   "legal": {
