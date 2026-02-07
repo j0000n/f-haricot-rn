@@ -15,6 +15,7 @@ import {
   isThemeName,
   useThemedStyles,
 } from "@/styles/tokens";
+import { getRecipeLanguageResolution } from "@/utils/translation";
 import { clearPendingUserType, getPendingUserType } from "@/utils/pendingUserType";
 import { FONT_SOURCES } from "@/utils/fonts";
 import { AnalyticsProvider } from "@/components/AnalyticsProvider";
@@ -25,7 +26,7 @@ import { useFonts } from "expo-font";
 import { StatusBar } from "expo-status-bar";
 import { Stack, useRouter, useSegments } from "expo-router";
 import * as SecureStore from "expo-secure-store";
-import { useCallback, useEffect, useState, useMemo } from "react";
+import { useCallback, useEffect, useState, useMemo, useRef } from "react";
 import { ActivityIndicator, Platform, View } from "react-native";
 
 // Lazy-initialize ConvexReactClient to avoid creating React context before React Native is ready
@@ -68,10 +69,14 @@ function AuthenticatedApp() {
   const { isAuthenticated, isLoading } = useConvexAuth();
   const user = useQuery(api.users.getCurrentUser);
   const updateProfile = useMutation(api.users.updateProfile);
+  const logUnsupportedLanguageAccess = useMutation(
+    api.ingredientReviewQueue.logUnsupportedLanguageAccess,
+  );
   const [preferredTheme, setPreferredTheme] = useState<string | null>(defaultThemeName);
   const [customThemeShareCode, setCustomThemeShareCode] = useState<string | null>(null);
   const [accessibilityPreferences, setAccessibilityPreferences] =
     useState<AccessibilityPreferences>(DEFAULT_ACCESSIBILITY);
+  const loggedUnsupportedLanguageRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (user === undefined) {
@@ -154,6 +159,38 @@ function AuthenticatedApp() {
       void changeLanguage(preferredLanguage);
     }
   }, [user]);
+
+  useEffect(() => {
+    if (!user || user === undefined) {
+      return;
+    }
+
+    const currentUser = user as { _id?: string; preferredLanguage?: string | null };
+    const preferredLanguage = (currentUser.preferredLanguage || "").trim();
+    if (!preferredLanguage) {
+      return;
+    }
+
+    const resolution = getRecipeLanguageResolution(preferredLanguage);
+    if (!resolution.shouldLogUnsupportedFallback) {
+      return;
+    }
+
+    const logKey = `${currentUser._id ?? "unknown"}:${resolution.normalizedBaseLanguage}`;
+    if (loggedUnsupportedLanguageRef.current.has(logKey)) {
+      return;
+    }
+    loggedUnsupportedLanguageRef.current.add(logKey);
+
+    void logUnsupportedLanguageAccess({
+      preferredLanguage,
+      fallbackLanguage: resolution.fallbackLanguage,
+      context: "rn.recipe.render",
+      ...(currentUser._id ? { userId: currentUser._id } : {}),
+    }).catch((error) => {
+      console.warn("Failed to log unsupported recipe language fallback", error);
+    });
+  }, [logUnsupportedLanguageAccess, user]);
 
   useEffect(() => {
     if (!isAuthenticated || user === undefined) {

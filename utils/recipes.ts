@@ -13,6 +13,94 @@ type DifficultyInfo = {
   label: string;
 };
 
+const GENERIC_RECIPE_TITLES = new Set([
+  "recipe",
+  "recette",
+  "untitled",
+  "dish",
+  "meal",
+]);
+
+const normalizeTitle = (value?: string | null): string | undefined => {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.replace(/\s+/g, " ").trim();
+  return trimmed || undefined;
+};
+
+const isGenericRecipeTitle = (value?: string | null): boolean => {
+  const normalized = normalizeTitle(value)?.toLowerCase();
+  if (!normalized) return true;
+  if (GENERIC_RECIPE_TITLES.has(normalized)) return true;
+  if (/^recipe(\s+\d+)?$/.test(normalized)) return true;
+  if (/^recette(\s+\d+)?$/.test(normalized)) return true;
+  return false;
+};
+
+const titleCase = (value: string) =>
+  value
+    .split(" ")
+    .map((word) => {
+      if (!word) return word;
+      return word[0].toUpperCase() + word.slice(1);
+    })
+    .join(" ");
+
+const inferTitleFromSourceUrl = (sourceUrl?: string): string | undefined => {
+  if (!sourceUrl) return undefined;
+
+  try {
+    const pathname = new URL(sourceUrl).pathname;
+    const segments = pathname.split("/").filter(Boolean);
+    if (segments.length === 0) return undefined;
+
+    for (let index = segments.length - 1; index >= 0; index -= 1) {
+      const rawSegment = decodeURIComponent(segments[index] || "")
+        .replace(/\.(html?|php|aspx?)$/i, "")
+        .replace(/[-_]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+
+      if (!rawSegment) continue;
+
+      const candidate = titleCase(rawSegment);
+      if (!isGenericRecipeTitle(candidate)) {
+        return candidate;
+      }
+    }
+  } catch {
+    return undefined;
+  }
+
+  return undefined;
+};
+
+export function getRecipeDisplayTitle(
+  recipe: Recipe,
+  language: keyof Recipe["recipeName"],
+): string {
+  const candidates = [
+    recipe.recipeName[language],
+    recipe.recipeName.en,
+    ...Object.values(recipe.recipeName),
+  ];
+
+  for (const candidate of candidates) {
+    const normalized = normalizeTitle(candidate);
+    if (normalized && !isGenericRecipeTitle(normalized)) {
+      return normalized;
+    }
+  }
+
+  const inferredTitle = inferTitleFromSourceUrl(
+    recipe.sourceUrl || recipe.attribution?.sourceUrl,
+  );
+  if (inferredTitle) {
+    return inferredTitle;
+  }
+
+  return normalizeTitle(recipe.recipeName[language]) || normalizeTitle(recipe.recipeName.en) || "Recipe";
+}
+
 export function getRecipeDifficulty(recipe: Recipe): DifficultyInfo | null {
   const emoji = recipe.emojiTags.find((tag): tag is DifficultyEmoji =>
     DIFFICULTY_EMOJIS.includes(tag as DifficultyEmoji),

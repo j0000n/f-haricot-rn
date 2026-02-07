@@ -13,6 +13,7 @@ import { useWidgetSync } from "@/hooks/useWidgetSync";
 import { useTranslation } from "@/i18n/useTranslation";
 import createHomeStyles from "@/styles/homeStyles";
 import { useThemedStyles, useTokens } from "@/styles/tokens";
+import { getRecipeDisplayTitle } from "@/utils/recipes";
 import { getRecipeLanguage } from "@/utils/translation";
 import type { InventoryDisplayItem } from "@haricot/convex-client";
 import type { NutrientDish } from "@haricot/convex-client";
@@ -540,7 +541,7 @@ export default function HomeScreen() {
                       accessibilityRole="button"
                     >
                       <Text style={styles.searchResultTitle}>
-                        {recipe.recipeName[language] || recipe.recipeName.en}
+                        {getRecipeDisplayTitle(recipe, language)}
                       </Text>
                       <Text style={styles.searchResultDescription} numberOfLines={2}>
                         {recipe.description[language] || recipe.description.en}
@@ -658,7 +659,7 @@ export default function HomeScreen() {
             Drop in a link, photo transcription, or raw steps and watch the app build a fully localized recipe with encoded steps.
           </Text>
           <Text style={styles.ingestionBody}>
-            The UI below calls the same Convex action used by the ingestion pipeline. Use it to try URLs, paste OCR text, or validate social posts. Missing ingredients are auto-added to the food library so nothing blocks testing.
+            The UI below calls the same Convex action used by the ingestion pipeline. Use it to try URLs, paste OCR text, or validate social posts. Unknown ingredients now go to a review queue instead of being auto-added as provisional food rows.
           </Text>
 
           {sourceUrl && (
@@ -878,7 +879,7 @@ export default function HomeScreen() {
                       accessibilityRole="button"
                     >
                       <Text style={styles.searchResultTitle}>
-                        {recipe.recipeName[language] || recipe.recipeName.en}
+                        {getRecipeDisplayTitle(recipe, language)}
                       </Text>
                       <Text style={styles.searchResultDescription} numberOfLines={2}>
                         {recipe.description[language] || recipe.description.en}

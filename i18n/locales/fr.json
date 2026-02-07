@@ -690,7 +690,12 @@
       "small": "petit",
       "large": "grand",
       "fine": "fin",
-      "coarse": "gros"
+      "coarse": "gros",
+      "optional": "facultatif",
+      "toTaste": "au goût",
+      "orToTaste": "ou au goût",
+      "forServing": "pour servir",
+      "forGarnish": "pour garnir"
     }
   },
   "legal": {

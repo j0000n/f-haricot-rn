@@ -9,6 +9,18 @@ type FoodLanguage = SupportedLanguage | "ja" | "vi" | "tl";
 
 export const SUPPORTED_LANGUAGES: FoodLanguage[] = ["en", "es", "zh", "fr", "ar", "ja", "vi", "tl"];
 
+const RECIPE_LANGUAGE_MAP: Record<string, SupportedRecipeLanguage> = {
+  en: "en",
+  es: "es",
+  zh: "zh",
+  fr: "fr",
+  tl: "tl",
+  vi: "vi",
+  ar: "ar",
+  ja: "ja",
+};
+const UNSUPPORTED_RECIPE_LANGUAGE_FALLBACKS = new Set(["hi", "ur"]);
+
 type TranslationValue = string | { singular?: string; plural?: string };
 
 /**
@@ -54,19 +66,29 @@ export function resolveTranslation(
  * @returns A SupportedRecipeLanguage code (2-letter format)
  */
 export function getRecipeLanguage(i18nLanguage: string): SupportedRecipeLanguage {
-  // Extract base language code (e.g., "fr" from "fr-FR")
-  const code = i18nLanguage.split('-')[0].toLowerCase();
+  return getRecipeLanguageResolution(i18nLanguage).recipeLanguage;
+}
 
-  const map: Record<string, SupportedRecipeLanguage> = {
-    en: 'en',
-    es: 'es',
-    zh: 'zh',
-    fr: 'fr',
-    tl: 'tl',
-    vi: 'vi',
-    ar: 'ar',
-    ja: 'ja',
+export function getRecipeLanguageResolution(i18nLanguage: string): {
+  requestedLanguage: string;
+  normalizedBaseLanguage: string;
+  recipeLanguage: SupportedRecipeLanguage;
+  usedFallback: boolean;
+  shouldLogUnsupportedFallback: boolean;
+  fallbackLanguage: SupportedRecipeLanguage;
+} {
+  const requestedLanguage = i18nLanguage || "en";
+  const normalizedBaseLanguage = requestedLanguage.split("-")[0].toLowerCase();
+  const recipeLanguage = RECIPE_LANGUAGE_MAP[normalizedBaseLanguage] || "en";
+  const usedFallback = !(normalizedBaseLanguage in RECIPE_LANGUAGE_MAP);
+
+  return {
+    requestedLanguage,
+    normalizedBaseLanguage,
+    recipeLanguage,
+    usedFallback,
+    shouldLogUnsupportedFallback:
+      usedFallback && UNSUPPORTED_RECIPE_LANGUAGE_FALLBACKS.has(normalizedBaseLanguage),
+    fallbackLanguage: "en",
   };
-
-  return map[code] || 'en';
 }

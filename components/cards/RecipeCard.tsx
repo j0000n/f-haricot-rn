@@ -8,7 +8,7 @@ import type { ThemeTokens } from "@/styles/themes/types";
 import { useThemedStyles, useTokens } from "@/styles/tokens";
 import type { Recipe } from "@haricot/convex-client";
 import { calculateIngredientMatch } from "@/utils/inventory";
-import { formatRecipeTime } from "@/utils/recipes";
+import { formatRecipeTime, getRecipeDisplayTitle } from "@/utils/recipes";
 import { getRecipeLanguage } from "@/utils/translation";
 import { useQuery } from "convex/react";
 
@@ -141,6 +141,7 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
   const { t, i18n } = useTranslation();
   // Map i18n language code (e.g., "fr-FR") to recipe language code (e.g., "fr")
   const currentLanguage = getRecipeLanguage(i18n.language || "en") as keyof Recipe["recipeName"];
+  const displayTitle = getRecipeDisplayTitle(recipe, currentLanguage);
 
   const { matchPercentage, missingIngredients } = calculateIngredientMatch(
     recipe.ingredients,
@@ -198,7 +199,7 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
         pressed && styles.containerPressed,
       ]}
       accessibilityRole="button"
-      accessibilityLabel={recipe.recipeName[currentLanguage]}
+      accessibilityLabel={displayTitle}
     >
       <View style={[styles.imageContainer, { height: imageHeight }]}>
         {imageUrl ? (
@@ -228,7 +229,7 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
 
       <View style={styles.content}>
         <Text style={styles.title} numberOfLines={variant === "compact" ? 1 : 2}>
-          {recipe.recipeName[currentLanguage] || recipe.recipeName.en}
+          {displayTitle}
         </Text>
 
         <View style={styles.emojiRow}>

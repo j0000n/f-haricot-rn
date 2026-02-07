@@ -1,5 +1,5 @@
 import React, { useRef } from "react";
-import { Dimensions, Image, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { api } from "@haricot/convex-client";
 import { useTranslation } from "@/i18n/useTranslation";
@@ -7,7 +7,7 @@ import type { ThemeTokens } from "@/styles/themes/types";
 import { useThemedStyles, useTokens } from "@/styles/tokens";
 import type { Recipe } from "@haricot/convex-client";
 import { calculateIngredientMatch } from "@/utils/inventory";
-import { formatRecipeTime } from "@/utils/recipes";
+import { formatRecipeTime, getRecipeDisplayTitle } from "@/utils/recipes";
 import { getRecipeLanguage } from "@/utils/translation";
 import { useQuery } from "convex/react";
 
@@ -131,12 +131,17 @@ export const RecipesViewCard: React.FC<RecipesViewCardProps> = ({
   onPress,
   userInventory = [],
 }) => {
-  const windowWidth = Dimensions.get("window").width;
+  const windowWidth =
+    typeof globalThis !== "undefined" &&
+    (globalThis as { window?: { innerWidth?: number } }).window?.innerWidth
+      ? (globalThis as { window: { innerWidth: number } }).window.innerWidth
+      : 390;
   const styles = useThemedStyles<Styles>(createStyles);
   const tokens = useTokens();
   const { t, i18n } = useTranslation();
   // Map i18n language code (e.g., "fr-FR") to recipe language code (e.g., "fr")
   const currentLanguage = getRecipeLanguage(i18n.language || "en") as keyof Recipe["recipeName"];
+  const displayTitle = getRecipeDisplayTitle(recipe, currentLanguage);
 
   const { matchPercentage, missingIngredients } = calculateIngredientMatch(
     recipe.ingredients,
@@ -208,7 +213,7 @@ export const RecipesViewCard: React.FC<RecipesViewCardProps> = ({
       <View style={styles.content}>
         <View style={styles.titleContainer}>
           <Text style={styles.title} numberOfLines={2}>
-            {recipe.recipeName[currentLanguage] || recipe.recipeName.en}
+            {displayTitle}
           </Text>
         </View>
 

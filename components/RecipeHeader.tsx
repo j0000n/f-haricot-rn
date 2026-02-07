@@ -6,7 +6,7 @@ import { RecipeListPicker } from "@/components/RecipeListPicker";
 import { useTranslation } from "@/i18n/useTranslation";
 import type { Recipe } from "@haricot/convex-client";
 import { EMOJI_TAGS } from "@/types/emojiTags";
-import { formatRecipeTime, getRecipeDifficulty } from "@/utils/recipes";
+import { formatRecipeTime, getRecipeDifficulty, getRecipeDisplayTitle } from "@/utils/recipes";
 import type { ThemeTokens } from "@/styles/themes/types";
 import { useThemedStyles } from "@/styles/tokens";
 import { api } from "@haricot/convex-client";
@@ -113,6 +113,7 @@ export const RecipeHeader: React.FC<RecipeHeaderProps> = ({
   const styles = useThemedStyles<Styles>(createStyles);
   const { t } = useTranslation();
   const difficulty = getRecipeDifficulty(recipe);
+  const displayTitle = getRecipeDisplayTitle(recipe, language);
 
   // Get image URL with fallback chain following Convex file serving best practices
   // Fallback: transparentImageLargeStorageId → originalImageLargeStorageId → imageUrls[0]
@@ -128,11 +129,11 @@ export const RecipeHeader: React.FC<RecipeHeaderProps> = ({
         source={{ uri: imageUrl ?? "" }}
         style={styles.heroImage}
         resizeMode="cover"
-        accessibilityLabel={recipe.recipeName[language] || recipe.recipeName.en}
+        accessibilityLabel={displayTitle}
       />
 
       <Text style={styles.title}>
-        {recipe.recipeName[language] || recipe.recipeName.en}
+        {displayTitle}
       </Text>
 
       <View style={styles.infoBar}>

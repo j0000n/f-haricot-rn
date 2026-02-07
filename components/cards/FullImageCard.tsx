@@ -1,5 +1,5 @@
 import React from "react";
-import { Dimensions, Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { api } from "@haricot/convex-client";
 import { useTranslation } from "@/i18n/useTranslation";
@@ -7,7 +7,7 @@ import type { ThemeTokens } from "@/styles/themes/types";
 import { useThemedStyles, useTokens } from "@/styles/tokens";
 import type { Recipe } from "@haricot/convex-client";
 import { calculateIngredientMatch } from "@/utils/inventory";
-import { formatRecipeTime } from "@/utils/recipes";
+import { formatRecipeTime, getRecipeDisplayTitle } from "@/utils/recipes";
 import { getRecipeLanguage } from "@/utils/translation";
 import { useQuery } from "convex/react";
 
@@ -19,7 +19,11 @@ interface FullImageCardProps {
 
 type Styles = ReturnType<typeof createStyles>;
 
-const SCREEN_WIDTH = Dimensions.get("window").width;
+const SCREEN_WIDTH =
+  typeof globalThis !== "undefined" &&
+  (globalThis as { window?: { innerWidth?: number } }).window?.innerWidth
+    ? (globalThis as { window: { innerWidth: number } }).window.innerWidth
+    : 390;
 export const FULL_IMAGE_CARD_WIDTH = SCREEN_WIDTH * 0.8; // 4/5 of screen width
 const FULL_IMAGE_CARD_HEIGHT = FULL_IMAGE_CARD_WIDTH * 1.2; // Slightly taller for better aspect ratio
 
@@ -115,6 +119,7 @@ export const FullImageCard: React.FC<FullImageCardProps> = ({
   const tokens = useTokens();
   const { t, i18n } = useTranslation();
   const currentLanguage = getRecipeLanguage(i18n.language || "en") as keyof Recipe["recipeName"];
+  const displayTitle = getRecipeDisplayTitle(recipe, currentLanguage);
 
   const { matchPercentage, missingIngredients } = calculateIngredientMatch(
     recipe.ingredients,
@@ -218,7 +223,7 @@ export const FullImageCard: React.FC<FullImageCardProps> = ({
         {/* Recipe name at bottom */}
         <View style={styles.titleContainer}>
           <Text style={styles.title} numberOfLines={2}>
-            {recipe.recipeName[currentLanguage] || recipe.recipeName.en}
+            {displayTitle}
           </Text>
         </View>
       </View>

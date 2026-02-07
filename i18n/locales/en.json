@@ -695,7 +695,12 @@
       "small": "small",
       "large": "large",
       "fine": "fine",
-      "coarse": "coarse"
+      "coarse": "coarse",
+      "optional": "optional",
+      "toTaste": "to taste",
+      "orToTaste": "or to taste",
+      "forServing": "for serving",
+      "forGarnish": "for garnish"
     }
   },
   "legal": {

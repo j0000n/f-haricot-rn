@@ -19,6 +19,7 @@ const createStyles = (tokens: ThemeTokens) =>
     header: {
       backgroundColor: tokens.colors.surface,
       ...(Platform.OS !== "web" && { paddingTop: tokens.spacing.xxl }),
+      ...(Platform.OS === "web" && { paddingTop: tokens.spacing.sm }),
       paddingHorizontal: tokens.spacing.sm,
       paddingBottom: tokens.spacing.sm,
       borderBottomWidth: tokens.borderWidths.thin,

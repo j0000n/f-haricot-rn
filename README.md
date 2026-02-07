@@ -1,54 +1,36 @@
-# Welcome to your Expo app 👋
+# Haricot RN
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+React Native / Expo client for Haricot.
+
+## Active Planning Docs
+- Active system plans now live in `/Users/jlw/code/f-haricot/haricot-convex/plan`.
+- Archived RN docs and plans were moved to:
+  - `/Users/jlw/code/f-haricot/old-docs/haricot-rn/docs`
+  - `/Users/jlw/code/f-haricot/old-docs/haricot-rn/plan`
+  - `/Users/jlw/code/f-haricot/old-docs/haricot-rn/root-markdown`
 
 ## Backend
+- Convex backend lives in `/Users/jlw/code/f-haricot/haricot-convex`.
+- Shared client package: `@haricot/convex-client`.
 
-The Convex backend lives in the `haricot-convex` repo. This app consumes the shared client package `@haricot/convex-client`.
-
-## Get started
-
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-#TODO, this version is working but without proper encoding, but this is a safe commit to go back to, also the actual todo : UPDATE THE README!!!
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
+## Getting Started
+1. Install dependencies:
 ```bash
-npm run reset-project
+npm install
+```
+2. Start Expo:
+```bash
+npm run start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Common Commands
+- `npm run start:dev` - Expo with dev client.
+- `npm run ios` - iOS simulator/device run.
+- `npm run android` - Android emulator/device run.
+- `npm run web` - Web target via Expo.
+- `npm run lint` - ESLint.
+- `npm run typecheck` - TypeScript checks.
 
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## Notes
+- Use `/Users/jlw/code/f-haricot/haricot-convex/plan` for current architecture/ingestion/translation planning.
+- Keep this README and `AGENTS.md` as the only markdown docs in this repo root.

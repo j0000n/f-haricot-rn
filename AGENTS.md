@@ -1,37 +1,41 @@
 # Repository Guidelines
 
-## Project Structure & Module Organization
-- `app/` holds the Expo Router screens and entry points for the mobile/web UI.
-- `components/`, `hooks/`, `styles/`, `utils/`, and `lib/` contain shared UI, hooks, styling helpers, and core utilities.
-- `convex/` contains Convex backend functions and auth handlers.
-- `assets/` stores static assets (images, fonts). Platform-specific projects live in `ios/` and `android/` after prebuild.
-- `app-example/` is the archived starter template; it is excluded from TypeScript compilation.
+## Scope
+These instructions apply to `/Users/jlw/code/f-haricot/haricot-rn`.
 
-## Build, Test, and Development Commands
-- `npm install`: install dependencies.
-- `npm run start`: run Expo dev server (default).
-- `npm run start:dev`: start with a dev client.
-- `npm run ios` / `npm run android`: run native builds on simulator/device.
-- `npm run web`: run web build via Expo.
-- `npm run lint` / `npm run lint:fix`: run ESLint (Expo config).
-- `npm run typecheck`: TypeScript typecheck (`strict` enabled).
-- `npm run convex:dev`: run Convex dev deployment.
-- `npm run prebuild`: generate native projects; use `prebuild:clean` to reset.
-- `npm run build:ios` / `npm run build:android`: EAS cloud builds.
+## Project Structure
+- `app/` contains Expo Router screens.
+- `components/`, `hooks/`, `styles/`, `utils/`, `lib/` contain shared UI and utilities.
+- `assets/` stores static assets.
+- `i18n/` contains locale config and translation resources.
 
-## Coding Style & Naming Conventions
-- TypeScript is the default; path alias `@/*` maps to the repo root.
-- Components in `components/` use `PascalCase.tsx` filenames; hooks in `hooks/` use `useX.ts(x)`.
-- Follow existing formatting; enforce with `npm run lint` and `npm run typecheck`.
+## Active vs Archived Docs
+- Active planning source of truth: `/Users/jlw/code/f-haricot/haricot-convex/plan`.
+- Archived RN docs/plans:
+  - `/Users/jlw/code/f-haricot/old-docs/haricot-rn/docs`
+  - `/Users/jlw/code/f-haricot/old-docs/haricot-rn/plan`
+  - `/Users/jlw/code/f-haricot/old-docs/haricot-rn/root-markdown`
 
-## Testing Guidelines
-- Automated E2E tests are currently removed (see `docs/testing.md`).
-- Validate changes by running lint/typecheck and exercising flows in Expo (`npm run start`).
-- For email flows, local SMTP uses MailDev (`npm run maildev`) with `MAILDEV_SMTP_HOST`.
+## Build and Dev Commands
+- `npm install`
+- `npm run start`
+- `npm run start:dev`
+- `npm run ios`
+- `npm run android`
+- `npm run web`
+- `npm run lint`
+- `npm run typecheck`
 
-## Commit & Pull Request Guidelines
-- Recent commits use short, direct subjects without a strict convention; keep messages imperative and scoped (e.g., “Fix onboarding step”).
-- PRs should describe the user-facing impact, list key changes, and include screenshots for UI updates.
+## Coding Conventions
+- TypeScript-first, keep strict typing.
+- Use `@/*` path alias conventions already in repo.
+- Components: `PascalCase.tsx`.
+- Hooks: `useX.ts(x)`.
 
-## Configuration & Secrets
-- Local settings live in `.env.local` (Convex, SMTP, API keys). Do not commit secrets; share values through secure channels.
+## Testing Expectations
+- Run `npm run lint` and `npm run typecheck` for all RN changes.
+- Validate behavior in Expo on at least one target platform.
+
+## Secrets
+- Keep secrets in `.env.local`.
+- Do not commit credentials.

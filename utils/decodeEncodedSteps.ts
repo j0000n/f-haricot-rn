@@ -138,6 +138,26 @@ const isDecodingValid = (decodedSteps: DecodedStepCard[]): boolean => {
   return readableCount >= decodedSteps.length * 0.5;
 };
 
+const mapSourceStepsToCards = (
+  steps: RecipeSourceStep[],
+  mode: DecodingMode,
+): DecodedStepCard[] =>
+  steps.map((step, index) => ({
+    stepNumber: step.stepNumber ?? index + 1,
+    title: step.text,
+    detail: [
+      step.text,
+      step.timeInMinutes !== undefined ? `${step.timeInMinutes} min` : undefined,
+      step.temperature
+        ? `${step.temperature.value}°${step.temperature.unit}`
+        : undefined,
+    ]
+      .filter(Boolean)
+      .join(" • ") || step.text,
+    cues: [],
+    mode,
+  }));
+
 export const decodeEncodedSteps = (
   encodedSteps: string | undefined,
   language: keyof LocalizedRecipeText | string,
@@ -155,30 +175,23 @@ export const decodeEncodedSteps = (
     tl?: RecipeSourceStep[];
   },
 ): DecodedStepCard[] => {
+  const translatedSteps = sourceStepsLocalized?.[language as keyof typeof sourceStepsLocalized];
+  const shouldPreferLocalizedSteps =
+    language !== "en" &&
+    Array.isArray(translatedSteps) &&
+    translatedSteps.length > 0;
+
+  // Prefer explicit localized source steps for non-English views.
+  // This guarantees language-correct rendering even when translation guide rows are incomplete.
+  if (shouldPreferLocalizedSteps) {
+    return mapSourceStepsToCards(translatedSteps, mode);
+  }
+
   if (!encodedSteps || !encodedSteps.trim()) {
     warnMissingEncodedSteps();
-
-    // Try to use translated steps first
-    const translatedSteps = sourceStepsLocalized?.[language as keyof typeof sourceStepsLocalized];
     const stepsToUse = translatedSteps || fallbackSteps;
 
-    return (
-      stepsToUse?.map((step, index) => ({
-        stepNumber: step.stepNumber ?? index + 1,
-        title: step.text,
-        detail: [
-          step.text,
-          step.timeInMinutes !== undefined ? `${step.timeInMinutes} min` : undefined,
-          step.temperature
-            ? `${step.temperature.value}°${step.temperature.unit}`
-            : undefined,
-        ]
-          .filter(Boolean)
-          .join(" • ") || step.text,
-        cues: [],
-        mode,
-      })) ?? []
-    );
+    return stepsToUse ? mapSourceStepsToCards(stepsToUse, mode) : [];
   }
 
   const translationLookup = getLookup(translationGuides);
@@ -209,21 +222,8 @@ export const decodeEncodedSteps = (
     console.warn(
       "[decodeEncodedSteps] Decoding validation failed; falling back to sourceSteps. This may indicate missing translations.",
     );
-    return fallbackSteps.map((step, index) => ({
-      stepNumber: step.stepNumber ?? index + 1,
-      title: step.text,
-      detail: [
-        step.text,
-        step.timeInMinutes !== undefined ? `${step.timeInMinutes} min` : undefined,
-        step.temperature
-          ? `${step.temperature.value}°${step.temperature.unit}`
-          : undefined,
-      ]
-        .filter(Boolean)
-        .join(" • ") || step.text,
-      cues: [],
-      mode,
-    }));
+    const stepsToUse = translatedSteps && translatedSteps.length > 0 ? translatedSteps : fallbackSteps;
+    return mapSourceStepsToCards(stepsToUse, mode);
   }
 
   return decodedSteps;

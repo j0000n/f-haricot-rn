@@ -43,8 +43,12 @@ const createStyles = (tokens: ThemeTokens) =>
       borderColor: tokens.colors.danger,
       backgroundColor: tokens.colors.overlay,
     },
+    quantityColumn: {
+      width: 190,
+      flexShrink: 0,
+    },
     quantity: {
-      minWidth: 72,
+      width: "100%",
       fontFamily: tokens.fontFamilies.semiBold,
       fontSize: tokens.typography.small,
       color: tokens.colors.textPrimary,
@@ -135,6 +139,9 @@ export const IngredientsList: React.FC<IngredientsListProps> = ({
   }
 
   const getDisplayName = (ingredient: RecipeIngredient) => {
+    const ingredientWithLocalizedFallback = ingredient as RecipeIngredient & {
+      displayNameLocalized?: Partial<Record<keyof Recipe["recipeName"], string>>;
+    };
     const entry = libraryByCode.get(ingredient.foodCode);
 
     if (entry) {
@@ -148,7 +155,11 @@ export const IngredientsList: React.FC<IngredientsListProps> = ({
         return baseName;
       }
 
-      const variety = entry.varieties.find((variant) => variant.code === ingredient.varietyCode);
+      const varieties = entry.varieties as Array<{
+        code: string;
+        translations: Record<string, string>;
+      }>;
+      const variety = varieties.find((variant) => variant.code === ingredient.varietyCode);
       if (!variety) {
         return baseName;
       }
@@ -160,12 +171,26 @@ export const IngredientsList: React.FC<IngredientsListProps> = ({
       return `${baseName} (${varietyName})`;
     }
 
+    const localizedFallbackName =
+      ingredientWithLocalizedFallback.displayNameLocalized?.[language] ||
+      ingredientWithLocalizedFallback.displayNameLocalized?.en;
+    if (localizedFallbackName) {
+      return localizedFallbackName;
+    }
+
     // Fallback: Extract name from originalText
     if (ingredient.originalText) {
       const cleanedName = extractIngredientNameFromText(ingredient.originalText);
       if (cleanedName && cleanedName.length > 0) {
         return cleanedName;
       }
+    }
+
+    if (ingredient.foodCode.startsWith("missing.")) {
+      return ingredient.foodCode
+        .replace("missing.", "")
+        .replace(/_/g, " ")
+        .trim();
     }
 
     // Fallback: Extract from provisional code
@@ -183,6 +208,50 @@ export const IngredientsList: React.FC<IngredientsListProps> = ({
 
   const translatePreparation = (preparation: string): string => {
     if (!preparation) return "";
+
+    const normalizedPreparation = preparation
+      .toLowerCase()
+      .replace(/[.,;:!?()]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    const conditionalPhraseMap: Record<
+      string,
+      { key: string; defaultFr: string; defaultEn: string }
+    > = {
+      "optional": {
+        key: "recipe.preparation.optional",
+        defaultFr: "facultatif",
+        defaultEn: "optional",
+      },
+      "to taste": {
+        key: "recipe.preparation.toTaste",
+        defaultFr: "au goût",
+        defaultEn: "to taste",
+      },
+      "or to taste": {
+        key: "recipe.preparation.orToTaste",
+        defaultFr: "ou au goût",
+        defaultEn: "or to taste",
+      },
+      "for serving": {
+        key: "recipe.preparation.forServing",
+        defaultFr: "pour servir",
+        defaultEn: "for serving",
+      },
+      "for garnish": {
+        key: "recipe.preparation.forGarnish",
+        defaultFr: "pour garnir",
+        defaultEn: "for garnish",
+      },
+    };
+
+    const conditionalPhrase = conditionalPhraseMap[normalizedPreparation];
+    if (conditionalPhrase) {
+      return t(conditionalPhrase.key, {
+        defaultValue: language === "fr" ? conditionalPhrase.defaultFr : conditionalPhrase.defaultEn,
+      });
+    }
 
     // Map common preparation terms to translation keys
     const prepMap: Record<string, string> = {
@@ -202,10 +271,11 @@ export const IngredientsList: React.FC<IngredientsListProps> = ({
       "large": "recipe.preparation.large",
       "fine": "recipe.preparation.fine",
       "coarse": "recipe.preparation.coarse",
+      "optional": "recipe.preparation.optional",
     };
 
     // Split preparation string into words and translate each part
-    const words = preparation.toLowerCase().split(/\s+/);
+    const words = normalizedPreparation.split(/\s+/);
     const translatedWords = words.map((word) => {
       // Remove common punctuation
       const cleanWord = word.replace(/[.,;:!?]/g, "");
@@ -225,6 +295,29 @@ export const IngredientsList: React.FC<IngredientsListProps> = ({
       return result.charAt(0).toUpperCase() + result.slice(1);
     }
     return result;
+  };
+
+  const shouldHidePreparation = (preparation: string | undefined, isOptional: boolean): boolean => {
+    if (!preparation) return true;
+
+    const normalized = preparation
+      .toLowerCase()
+      .replace(/[.,;:!?()]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    if (!normalized) return true;
+    if (!isOptional) return false;
+
+    // Avoid duplicate rendering when optional is already shown next to the ingredient name.
+    return normalized === "optional" || normalized === "for serving" || normalized === "for garnish";
+  };
+
+  const stripOptionalMarker = (name: string): string => {
+    return name
+      .replace(/\s*\((optional|facultatif)\)\s*$/i, "")
+      .replace(/\s*,\s*(optional|facultatif)\s*$/i, "")
+      .trim();
   };
 
   // Detect optional serving ingredients (unit: "count", quantity: 1, often in "For serving" sections)
@@ -258,27 +351,36 @@ export const IngredientsList: React.FC<IngredientsListProps> = ({
           (ingredient.varietyCode ? inventorySet.has(ingredient.varietyCode) : false);
         const displayName = getDisplayName(ingredient);
         const isOptional = isOptionalServingIngredient(ingredient);
+        const preparationText = ingredient.preparation ?? "";
+        const displayNameWithoutOptional = isOptional ? stripOptionalMarker(displayName) : displayName;
 
         return (
           <View
             key={`${ingredient.foodCode}-${ingredient.varietyCode ?? "default"}`}
             style={[styles.row, !hasIngredient && styles.rowMissing]}
           >
-            {!isOptional && (
-              <Text style={styles.quantity}>
-                {formatIngredientQuantity(ingredient, { language, t })}
-              </Text>
-            )}
+            <View style={styles.quantityColumn}>
+              {!isOptional && (
+                <Text style={styles.quantity}>
+                  {formatIngredientQuantity(ingredient, { language, t })}
+                </Text>
+              )}
+            </View>
 
             <View style={styles.details}>
               <Text style={[styles.name, !hasIngredient && styles.nameMissing]}>
-                {displayName}
+                {displayNameWithoutOptional}
                 {isOptional && (
-                  <Text style={styles.preparation}> ({t("common.optional", { defaultValue: "optional" })})</Text>
+                  <Text style={styles.preparation}>
+                    {" "}
+                    ({t("recipe.preparation.optional", {
+                      defaultValue: language === "fr" ? "facultatif" : "optional",
+                    })})
+                  </Text>
                 )}
               </Text>
-              {ingredient.preparation ? (
-                <Text style={styles.preparation}>{translatePreparation(ingredient.preparation)}</Text>
+              {!shouldHidePreparation(preparationText, isOptional) ? (
+                <Text style={styles.preparation}>{translatePreparation(preparationText)}</Text>
               ) : null}
             </View>
 
