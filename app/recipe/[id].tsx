@@ -288,7 +288,6 @@ export default function RecipeDetailScreen() {
   const [selectedCookingMethod, setSelectedCookingMethod] = useState<string | null>(null);
 
   const recipe = useQuery(api.recipes.getById, recipeId ? { id: recipeId } : "skip");
-  const translationGuides = useQuery(api.translationGuides.listAll, {});
   const userInventory = useQuery(api.users.getCurrentInventory, {});
   const currentUser = useQuery(api.users.getCurrentUser);
 
@@ -303,7 +302,9 @@ export default function RecipeDetailScreen() {
 
     if (hasMultipleMethods && selectedCookingMethod && recipe.cookingMethods) {
       // Find selected method's steps
-      const method = recipe.cookingMethods.find((m) => m.methodName === selectedCookingMethod);
+      const method = recipe.cookingMethods.find(
+        (m: { methodName: string }) => m.methodName === selectedCookingMethod,
+      );
       if (method) {
         // Decode steps for this method (if encodedSteps exists) or use sourceSteps
         // Prioritize method-specific localized steps, fallback to recipe-level localized steps
@@ -312,7 +313,7 @@ export default function RecipeDetailScreen() {
           recipeLanguage,
           "cards",
           method.steps,
-          translationGuides ?? undefined,
+          undefined,
           method.stepsLocalized || recipe.sourceStepsLocalized,
         );
       }
@@ -324,7 +325,7 @@ export default function RecipeDetailScreen() {
       recipeLanguage,
       "cards",
       recipe.sourceSteps,
-      translationGuides ?? undefined,
+      undefined,
       recipe.sourceStepsLocalized,
     );
   }, [
@@ -336,7 +337,6 @@ export default function RecipeDetailScreen() {
     recipe?.sourceSteps,
     recipe?.sourceStepsLocalized,
     recipeLanguage,
-    translationGuides,
   ]);
 
   // Set default selected method on mount (must be called before conditional returns)
@@ -355,11 +355,11 @@ export default function RecipeDetailScreen() {
         recipeLanguage,
         "cards",
         recipe.sourceSteps,
-        translationGuides ?? undefined,
+        undefined,
         recipe.sourceStepsLocalized,
       );
     },
-    [recipe, recipeLanguage, recipe?.encodedSteps, recipe?.sourceSteps, translationGuides, recipe?.sourceStepsLocalized],
+    [recipe, recipeLanguage, recipe?.encodedSteps, recipe?.sourceSteps, recipe?.sourceStepsLocalized],
   );
 
   const attributionDetails = useMemo(() => {
@@ -627,7 +627,7 @@ export default function RecipeDetailScreen() {
         <RecipeRunner
           recipe={recipe}
           language={recipeLanguage}
-          translationGuides={translationGuides ?? undefined}
+          translationGuides={undefined}
           onExit={() => setIsRunnerMode(false)}
         />
       </>
@@ -686,7 +686,7 @@ export default function RecipeDetailScreen() {
             {hasMultipleMethods && recipe.cookingMethods && (
               <View style={{ marginBottom: tokens.spacing.md }}>
                 <TabSwitcher
-                  tabs={recipe.cookingMethods.map((method) => ({
+                  tabs={recipe.cookingMethods.map((method: { methodName: string }) => ({
                     id: method.methodName,
                     label: method.methodName,
                   }))}

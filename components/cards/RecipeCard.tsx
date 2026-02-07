@@ -2,15 +2,14 @@ import React, { useRef } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { RecipeListPicker } from "@/components/RecipeListPicker";
-import { api } from "@haricot/convex-client";
 import { useTranslation } from "@/i18n/useTranslation";
+import { useRecipeCardImageUrl } from "@/hooks/useRecipeCardImageUrl";
 import type { ThemeTokens } from "@/styles/themes/types";
 import { useThemedStyles, useTokens } from "@/styles/tokens";
 import type { Recipe } from "@haricot/convex-client";
 import { calculateIngredientMatch } from "@/utils/inventory";
 import { formatRecipeTime, getRecipeDisplayTitle } from "@/utils/recipes";
 import { getRecipeLanguage } from "@/utils/translation";
-import { useQuery } from "convex/react";
 
 interface RecipeCardProps {
   recipe: Recipe;
@@ -165,14 +164,7 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({
   const shouldShowMatch = hasInventory && matchPercentage < 100;
   const actionsRowRef = useRef<View>(null);
 
-  // Get image URL with fallback chain following Convex file serving best practices
-  // https://docs.convex.dev/file-storage/serve-files
-  // Fallback: transparentImageSmallStorageId → originalImageSmallStorageId → imageUrls[0]
-  const imageUrl = useQuery(api.fileUrls.getRecipeCardImageUrl, {
-    transparentImageSmallStorageId: recipe.transparentImageSmallStorageId,
-    originalImageSmallStorageId: recipe.originalImageSmallStorageId,
-    imageUrls: recipe.imageUrls,
-  });
+  const imageUrl = useRecipeCardImageUrl(recipe);
 
   const handleCardPress = (event: any) => {
     // Check if the press originated from within the actions row
