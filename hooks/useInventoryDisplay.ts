@@ -80,7 +80,10 @@ const buildInventoryItem = (
   language: SupportedLanguage,
 ): InventoryDisplayItem => {
   const variety = entry.varietyCode
-    ? libraryItem.varieties.find((itemVariety) => itemVariety.code === entry.varietyCode)
+    ? libraryItem.varieties.find(
+        (itemVariety: FoodLibraryLookupItem["varieties"][number]) =>
+          itemVariety.code === entry.varietyCode,
+      )
     : undefined;
 
   const displayName = getLocalizedValue(libraryItem.translations, language);
@@ -145,7 +148,7 @@ export const useInventoryDisplay = () => {
     );
 
     const libraryByCode = new Map<string, FoodLibraryLookupItem>(
-      foodLibrary.map((item) => [item.code, item]),
+      foodLibrary.map((item: FoodLibraryLookupItem) => [item.code, item]),
     );
 
     const items: InventoryDisplayItem[] = [];

@@ -1,5 +1,5 @@
-import type { Doc } from "../convex/_generated/dataModel";
 import type {
+  Doc,
   LocalizedRecipeText,
   RecipeIngredient,
   RecipeSourceStep,

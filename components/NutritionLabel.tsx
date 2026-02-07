@@ -190,6 +190,15 @@ export const NutritionLabel: React.FC<NutritionLabelProps> = ({
 }) => {
   const styles = useThemedStyles<Styles>(createStyles);
   const { t } = useTranslation();
+  const servingsPerContainerCount = (() => {
+    if (!facts.servingPerContainer) {
+      return undefined;
+    }
+    const parsed = Number.parseFloat(
+      facts.servingPerContainer.replace(/[^0-9.]/g, ""),
+    );
+    return Number.isFinite(parsed) ? parsed : undefined;
+  })();
 
   return (
     <View style={styles.container} accessibilityRole="summary">
@@ -204,8 +213,10 @@ export const NutritionLabel: React.FC<NutritionLabelProps> = ({
 
       <View style={styles.labelRow}>
         <Text style={styles.labelText}>
-          {facts.servingPerContainer
-            ? t("recipe.nutrition.servingsPerContainer", { count: facts.servingPerContainer })
+          {servingsPerContainerCount !== undefined
+            ? t("recipe.nutrition.servingsPerContainer", {
+                count: servingsPerContainerCount,
+              })
             : t("recipe.nutrition.servingsPerContainerOne")}
         </Text>
       </View>

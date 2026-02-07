@@ -373,7 +373,7 @@ export const IngredientsList: React.FC<IngredientsListProps> = ({
 
   return (
     <View style={styles.container}>
-      {ingredients.map((ingredient) => {
+      {ingredients.map((ingredient, index) => {
         const hasIngredient =
           inventorySet.has(ingredient.foodCode) ||
           (ingredient.varietyCode ? inventorySet.has(ingredient.varietyCode) : false);
@@ -384,7 +384,7 @@ export const IngredientsList: React.FC<IngredientsListProps> = ({
 
         return (
           <View
-            key={`${ingredient.foodCode}-${ingredient.varietyCode ?? "default"}`}
+            key={`${ingredient.foodCode}-${ingredient.varietyCode ?? "default"}-${ingredient.originalText ?? ""}-${index}`}
             style={[styles.row, !hasIngredient && styles.rowMissing]}
           >
             <View style={styles.quantityColumn}>

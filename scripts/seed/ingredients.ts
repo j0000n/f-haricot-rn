@@ -2,8 +2,12 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import type { FoodLibrarySeedItem, LocalizedText } from "../../types/food";
-import type { NutritionFacts } from "../../types/nutrition";
+import type {
+  FoodLibrarySeedItem,
+  Id,
+  LocalizedText,
+  NutritionFacts,
+} from "@haricot/convex-client";
 import Replicate from "replicate";
 
 type IngredientInput = {
@@ -789,7 +793,7 @@ async function enrichWithOpenAi(query: string) {
 async function uploadImageToConvex(
   imageUrl: string,
   debug = false,
-): Promise<import("../../convex/_generated/dataModel").Id<"_storage"> | undefined> {
+): Promise<Id<"_storage"> | undefined> {
   const convexUrl = process.env.EXPO_PUBLIC_CONVEX_URL || process.env.CONVEX_URL;
 
   if (!convexUrl) {
@@ -827,7 +831,7 @@ async function uploadImageToConvex(
     }
 
     const result = await response.json();
-    const storageId = result.value as import("../../convex/_generated/dataModel").Id<"_storage">;
+    const storageId = result.value as Id<"_storage">;
 
     if (debug) {
       console.log(`[DEBUG] Successfully uploaded image, storage ID: ${storageId}`);
@@ -982,7 +986,7 @@ async function normalizeIngredient(
   const nutrition = mapUsdaNutrition(usdaFood, debug);
 
   // Try to upload images to Convex
-  let imageStorageId: import("../../convex/_generated/dataModel").Id<"_storage"> | undefined = undefined;
+  let imageStorageId: Id<"_storage"> | undefined = undefined;
   let imageUrl = generatedImageResult.url;
 
   if (!imageUrl) {
@@ -1070,7 +1074,6 @@ async function normalizeIngredient(
     category,
     categoryTranslations,
     defaultImageUrl: imageUrl,
-    defaultImageStorageId: imageStorageId,
     emoji: openAiEnrichment?.emoji,
     shelfLifeDays,
     storageLocation,

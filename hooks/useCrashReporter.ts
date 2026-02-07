@@ -52,12 +52,19 @@ const normalizeError = (error: unknown): NormalizedError => {
 };
 
 const getReleaseChannel = () => {
-  if (Constants.expoConfig?.extra?.releaseChannel) {
-    return String(Constants.expoConfig.extra.releaseChannel);
+  const extra = Constants.expoConfig?.extra as
+    | {
+        releaseChannel?: string;
+        eas?: { channel?: string };
+      }
+    | undefined;
+
+  if (extra?.releaseChannel) {
+    return String(extra.releaseChannel);
   }
 
-  if (Constants.expoConfig?.releaseChannel) {
-    return String(Constants.expoConfig.releaseChannel);
+  if (extra?.eas?.channel) {
+    return String(extra.eas.channel);
   }
 
   return undefined;

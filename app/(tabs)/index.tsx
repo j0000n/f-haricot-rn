@@ -82,6 +82,7 @@ const LINK_PREVIEW_FALLBACKS: Record<string, Omit<LinkPreviewData, "url">> = {
 
 export default function HomeScreen() {
   const tasks = useQuery(api.tasks.get);
+  type TaskItem = NonNullable<typeof tasks>[number];
   const updateProfile = useMutation(api.users.updateProfile);
   const doSomething = useAction(api.testFunction.doSomething);
   const generateRecipeImagePrompt = useAction(api.promptGenerators.generateRecipeImagePrompt);
@@ -1060,7 +1061,7 @@ export default function HomeScreen() {
               {t("home.noTasks")}
             </Text>
           ) : (
-            tasks?.map((task) => (
+            tasks?.map((task: TaskItem) => (
               <Link key={task._id} href={`/tasks/${task._id}`} asChild>
                 <Pressable style={styles.taskCard}>
                   <Text style={styles.taskTitle}>{task.title}</Text>

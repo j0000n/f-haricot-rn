@@ -2,8 +2,10 @@ import { useMemo, useRef, useState } from "react";
 import {
   Animated,
   Dimensions,
+  type GestureResponderEvent,
   Image,
   PanResponder,
+  type PanResponderGestureState,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -152,7 +154,10 @@ export const Swipe = ({
 
   const panResponder = useRef(
     PanResponder.create({
-      onMoveShouldSetPanResponder: (_, gesture) => {
+      onMoveShouldSetPanResponder: (
+        _: GestureResponderEvent,
+        gesture: PanResponderGestureState,
+      ) => {
         const horizontalSwipe = Math.abs(gesture.dx) > Math.abs(gesture.dy);
         return horizontalSwipe && Math.abs(gesture.dx) > 6;
       },
@@ -164,7 +169,10 @@ export const Swipe = ({
       onPanResponderMove: Animated.event([null, { dx: pan.x, dy: pan.y }], {
         useNativeDriver: false,
       }),
-      onPanResponderRelease: (_, gesture) => {
+      onPanResponderRelease: (
+        _: GestureResponderEvent,
+        gesture: PanResponderGestureState,
+      ) => {
         if (gesture.dx > SWIPE_THRESHOLD) {
           forceSwipe("right");
           return;

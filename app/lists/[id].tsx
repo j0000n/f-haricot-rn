@@ -361,12 +361,16 @@ export default function ListDetailScreen() {
                   style={styles.listCardLink}
                   accessibilityRole="button"
                 >
-                  <Image
-                    source={{ uri: recipe.imageUrls?.[0] ?? "" }}
-                    style={styles.listImage}
-                    resizeMode="cover"
-                    accessibilityLabel={recipe.recipeName[language] || recipe.recipeName.en}
-                  />
+                  {recipe.imageUrls?.[0] ? (
+                    <Image
+                      source={{ uri: recipe.imageUrls[0] }}
+                      style={styles.listImage}
+                      resizeMode="cover"
+                      accessibilityLabel={recipe.recipeName[language] || recipe.recipeName.en}
+                    />
+                  ) : (
+                    <View style={styles.listImage} />
+                  )}
 
                   <View style={styles.listContent}>
                     <View style={styles.listTitleRow}>

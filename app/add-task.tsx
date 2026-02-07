@@ -219,7 +219,9 @@ export default function AddInventoryModal() {
     if (!foodLibrary) {
       return new Map();
     }
-    return new Map<string, Doc<"foodLibrary">>(foodLibrary.map((item) => [item.code, item]));
+    return new Map<string, Doc<"foodLibrary">>(
+      foodLibrary.map((item: Doc<"foodLibrary">) => [item.code, item]),
+    );
   }, [foodLibrary]);
 
   const getDisplayName = (itemCode: string, varietyCode?: string) => {
@@ -239,7 +241,9 @@ export default function AddInventoryModal() {
       return itemName;
     }
 
-    const variety = item.varieties.find((entry) => entry.code === varietyCode);
+    const variety = item.varieties.find(
+      (entry: Doc<"foodLibrary">["varieties"][number]) => entry.code === varietyCode,
+    );
     if (!variety) {
       return itemName;
     }
@@ -730,7 +734,7 @@ export default function AddInventoryModal() {
                               {t("inventoryCapture.varietyNone")}
                             </Text>
                           </Pressable>
-                          {varieties.map((variety) => {
+                          {varieties.map((variety: Doc<"foodLibrary">["varieties"][number]) => {
                             const varietyLabel =
                               variety.translations[languageKey] ??
                               variety.translations.en ??

@@ -30,6 +30,18 @@ const createStyles = (tokens: ThemeTokens) =>
       aspectRatio: 1,
       borderRadius: tokens.radii.md,
     },
+    heroImageFallback: {
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: tokens.colors.surfaceVariant,
+    },
+    heroImageFallbackText: {
+      paddingHorizontal: tokens.spacing.md,
+      fontFamily: tokens.fontFamilies.semiBold,
+      fontSize: tokens.typography.body,
+      color: tokens.colors.textSecondary,
+      textAlign: "center",
+    },
     title: {
       fontFamily: tokens.fontFamilies.bold,
       fontSize: tokens.typography.heading,
@@ -122,15 +134,22 @@ export const RecipeHeader: React.FC<RecipeHeaderProps> = ({
     originalImageLargeStorageId: recipe.originalImageLargeStorageId,
     imageUrls: recipe.imageUrls,
   });
+  const hasImageUrl = typeof imageUrl === "string" && imageUrl.trim().length > 0;
 
   return (
     <View style={styles.container}>
-      <Image
-        source={{ uri: imageUrl ?? "" }}
-        style={styles.heroImage}
-        resizeMode="cover"
-        accessibilityLabel={displayTitle}
-      />
+      {hasImageUrl ? (
+        <Image
+          source={{ uri: imageUrl }}
+          style={styles.heroImage}
+          resizeMode="cover"
+          accessibilityLabel={displayTitle}
+        />
+      ) : (
+        <View style={[styles.heroImage, styles.heroImageFallback]}>
+          <Text style={styles.heroImageFallbackText}>{displayTitle}</Text>
+        </View>
+      )}
 
       <Text style={styles.title}>
         {displayTitle}

@@ -28,6 +28,7 @@ declare module "react-native" {
     PanResponder,
     LayoutAnimation,
     AccessibilityInfo,
+    Dimensions,
   } from "react-native/types/index";
 
   // Re-export types
@@ -42,6 +43,8 @@ declare module "react-native" {
     ImageStyle,
     ViewStyle,
     TextStyle,
+    GestureResponderEvent,
+    PanResponderGestureState,
   } from "react-native/types/index";
 
   // Re-export everything else

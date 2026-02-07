@@ -1,7 +1,7 @@
 import React from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import type { InventoryDisplayItem } from '@/types/food';
+import type { InventoryDisplayItem } from '@haricot/convex-client';
 import { ThemeTokens } from '@/styles/themes/types';
 import { useThemedStyles } from '@/styles/tokens';
 

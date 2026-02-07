@@ -5,6 +5,7 @@ import { Stack, useLocalSearchParams } from "expo-router";
 import { useQuery } from "convex/react";
 
 import { api } from "@haricot/convex-client";
+import type { Doc } from "@haricot/convex-client";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { useTranslation } from "@/i18n/useTranslation";
 import type { ThemeTokens } from "@/styles/themes/types";
@@ -168,7 +169,7 @@ export default function IngredientDetailScreen() {
     return <LoadingScreen />;
   }
 
-  const food = foodLibrary?.find((item) => item.code === foodCode);
+  const food = foodLibrary?.find((item: Doc<"foodLibrary">) => item.code === foodCode);
 
   if (!food) {
     return (
@@ -268,7 +269,7 @@ export default function IngredientDetailScreen() {
             <View style={styles.sectionCard}>
               <Text style={styles.sectionTitle}>{t("ingredient.varieties")}</Text>
               <View style={{ gap: styles.sectionCard.gap }}>
-                {food.varieties.map((variety) => (
+                {food.varieties.map((variety: Doc<"foodLibrary">["varieties"][number]) => (
                   <View key={variety.code} style={styles.listItem}>
                     <Text style={styles.listItemTitle}>
                       {resolveTranslation(variety.translations, language)}
